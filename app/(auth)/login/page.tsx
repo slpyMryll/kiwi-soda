@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { Mail, Lock } from "lucide-react";
-import { signInWithGoogle, signInWithEmail } from "./actions";
+import { signInWithGoogle, signInWithEmail } from "@/lib/actions/auth";
 import { useState, useRef } from "react";
 
 export default function Home() {
