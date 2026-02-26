@@ -1,9 +1,14 @@
-import Image from "next/image";
+'use client'
+import { redirect } from 'next/navigation'
 
 export default function Home() {
+  const handleSigninBtn = async () => {
+    redirect('/login')
+  }
   return (
-    <div className="flex min-h-screen items-center justify-center">
-
+    <div>
+      <h1>HomePage</h1>
+      <button onClick={handleSigninBtn}>Go to Sign in page</button>
     </div>
   );
 }
