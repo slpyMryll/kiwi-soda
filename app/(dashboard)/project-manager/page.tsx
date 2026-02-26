@@ -2,7 +2,7 @@ import React from 'react'
 
 const page = () => {
   return (
-    <div>Logged in </div>
+    <div>PM Logged in </div>
   )
 }
 

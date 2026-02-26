@@ -11,23 +11,36 @@ export default function Onboarding() {
   const router = useRouter()
 
   const handleComplete = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const { data: { user } } = await supabase.auth.getUser()
+  e.preventDefault();
+  
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (user) {
-      await supabase.from('profiles').upsert({
-        id: user.id,
-        full_name: name,
-        username: username,
-        has_completed_onboarding: true
-      })
-
-      await supabase.auth.updateUser({ password: password })
-
-      router.push('/dashboard')
-    }
+  if (userError || !user) {
+    alert("Session expired. Please log in again.");
+    return;
   }
 
+  const { error: profileError } = await supabase.from('profiles').upsert({
+    id: user.id,
+    full_name: name,
+    username: username,
+    has_completed_onboarding: true
+  });
+
+  if (profileError) {
+    alert(`Profile Error: ${profileError.message}`);
+    return;
+  }
+
+  const { error: authError } = await supabase.auth.updateUser({ password: password });
+
+  if (authError) {
+    alert(`Auth Error: ${authError.message} (Try a stronger password)`);
+    return;
+  }
+  await supabase.auth.refreshSession();
+  window.location.href = '/dashboard-redirect';
+};
   return (
     <main className="min-h-screen flex items-center justify-center bg-bg-main p-6">
       <form onSubmit={handleComplete} className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md space-y-4">
