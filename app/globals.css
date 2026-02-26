@@ -5,6 +5,7 @@
   --color-green-dark: #1B4332;     /* Main Color */
   
   --font-sans: var(--font-plus-jakarta), var(--font-inter), ui-sans-serif, system-ui;
+  --font-inter: "Inter", sans-serif;
   --color-text-header: var(--color-green-dark);
 
   --color-text-main: #171717;
@@ -19,12 +20,11 @@
   --color-bg-main: #f3f4f6;    
   --color-card-white: #ffffff;
   
-  --background-image-surface-accent: linear-gradient(to right, #a9dc02, #1b4332);  /* Button Active States */
-  --background-image-surface-brand: linear-gradient(
-    to right, #122E47, #122E47),
-    var(--color-green-dark); /* Button Active States */
-}
-
+  --background-image-surface-accent: linear-gradient(to right, #a9dc02, var(--color-green-dark));  /* Button Active States */
+  --background-image-surface-brand: 
+    linear-gradient(to right, rgba(18, 46, 71, 0.7), rgba(18, 46, 71, 0.7)), 
+    linear-gradient(var(--color-green-dark), var(--color-green-dark));
+  }
 @layer base {
   body {
     @apply bg-bg-main text-slate-900 font-sans antialiased;
