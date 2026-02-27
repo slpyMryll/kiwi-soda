@@ -1,26 +1,39 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* Typography */
+  --color-green-dark: #1B4332;     /* Main Color */
+  
+  --font-sans: var(--font-plus-jakarta), var(--font-inter), ui-sans-serif, system-ui;
+  --font-inter: "Inter", sans-serif;
+  --color-text-header: var(--color-green-dark);
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-text-main: #171717;
+  --color-text-muted: #6b7280;
+  --color-text-muted-light: #9ca3af;  
+  
+  --color-progress-low: #D97706;
+  --color-progress-mid: #CCAD47;
+  --color-progress-high: #1B4332;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Backgrounds and Cards */
+  --color-bg-main: #f3f4f6;    
+  --color-card-white: #ffffff;
+  
+  --background-image-surface-accent: linear-gradient(to right, #a9dc02, var(--color-green-dark));  /* Button Active States */
+  --background-image-surface-brand: 
+    linear-gradient(to right, rgba(18, 46, 71, 0.7), rgba(18, 46, 71, 0.7)), 
+    linear-gradient(var(--color-green-dark), var(--color-green-dark));
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  body {
+    @apply bg-bg-main text-slate-900 font-sans antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-text-header font-bold tracking-tight;
+  }
+  
+  p {
+    @apply text-text-main;
+  }
 }
