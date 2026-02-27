@@ -30,4 +30,4 @@
 
 
 ### Important Links
-[Design Specs](git@github.com:slpyMryll/Kiwi-Soda-docportal.git)
+[Design Specs](https://github.com/slpyMryll/kiwi-soda)
