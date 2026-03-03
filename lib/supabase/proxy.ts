@@ -6,8 +6,6 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
-  // With Fluid compute, don't put this client in a global environment
-  // variable. Always create a new one on each request.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,45 +19,67 @@ export async function updateSession(request: NextRequest) {
           supabaseResponse = NextResponse.next({
             request,
           })
-          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value, options }) => 
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
+  const pathname = request.nextUrl.pathname
 
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims()
+  // 1. Define Public Routes
+  const publicRoutes = ['/', '/login', '/forgot-password', '/auth']
+  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith('/auth'))
 
-  const user = data?.claims
-
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // 2. GUARD: Redirect unauthenticated users to login
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
-  // creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  // 3. GUARD: Restrict access to password update page to recovery sessions only
+  if (pathname.startsWith('/update-password')) {
+    const isRecovery = (session as any)?.recovery;
+    if (!isRecovery) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+  }
 
+  // 4. GUARD: Onboarding Page
+  if (pathname.startsWith('/onboarding')) {
+    if (!user) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('has_completed_onboarding')
+      .eq('id', user.id)
+      .single()
+    const isRecovery = (session as any)?.recovery;
+    if (profile?.has_completed_onboarding || isRecovery) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard-redirect'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // 5. GUARD: Prevent logged-in users from seeing the login page
+  if (user && pathname === '/login') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard-redirect'
+    return NextResponse.redirect(url)
+  }
+
+  // IMPORTANT: Return the synchronized response object to maintain session
   return supabaseResponse
 }
