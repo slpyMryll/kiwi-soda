@@ -26,13 +26,13 @@ export async function updateSession(request: NextRequest) {
       },
     }
   )
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession();
 
-  const { data: { session } } = await supabase.auth.getSession()
-  const user = session?.user
   const pathname = request.nextUrl.pathname
 
   // 1. Define Public Routes
-  const publicRoutes = ['/', '/login', '/forgot-password', '/auth']
+  const publicRoutes = ['/', '/login', '/forgot-password', '/auth', '/update-password']
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith('/auth'))
 
   // 2. GUARD: Redirect unauthenticated users to login
