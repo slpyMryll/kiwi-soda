@@ -5,13 +5,13 @@ export interface Project {
   id: string;
   title: string;
   description: string;
-  postedAt: Date;
+  postedAt: string;
   imageUrl?: string;
   tags: string[];
   progress: number;
   commentsCount: number;
   isFollowing: boolean;
-
+  isGuest?: boolean;
   //Project Manager Role
   status: ProjectStatus;
   liveStatus: LiveSatus;
