@@ -2,15 +2,13 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Card } from "@/components/ui/card";
+import { ProjectsWorkedDataPoint } from "@/types/pm";
 
-const data = [
-  { name: "Campus Week 2024", value: 55, color: "#8B5CF6" },
-  { name: "Protect Project Nature", value: 67, color: "#FCA5A5" },
-  { name: "VSU Anniversary 2024", value: 51, color: "#67E8F9" },
-  { name: "Students Night 2024", value: 42, color: "#FDBA74" },
-];
+interface Props {
+  data: ProjectsWorkedDataPoint[];
+}
 
-export function ProjectsWorkedCard() {
+export function ProjectsWorkedCard({ data }: Props) {
   return (
     <Card className="p-4 sm:p-6 border-none shadow-sm rounded-2xl h-full flex flex-col justify-center">
       <h3 className="text-sm font-bold text-[#153B44] mb-4 text-center sm:text-left">Projects Worked</h3>
@@ -34,7 +32,7 @@ export function ProjectsWorkedCard() {
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-xl sm:text-2xl font-bold text-[#153B44]">4</span>
+            <span className="text-xl sm:text-2xl font-bold text-[#153B44]">{data.length}</span>
             <span className="text-[10px] text-gray-400">projects</span>
           </div>
         </div>

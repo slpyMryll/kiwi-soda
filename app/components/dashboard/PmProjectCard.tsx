@@ -1,19 +1,9 @@
 import { FC } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { ProgressBar } from '../ui/ProgressBar';
+import { PmProjectData } from '@/types/pm';
 
-interface PmProjectCardProps {
-  title: string;
-  status: 'Active' | 'Completed' | 'Pending';
-  isLive: boolean;
-  progress: number;
-  projectLead: string;
-  members: string;
-  deadline: string;
-  budget: string;
-}
-
-export const PmProjectCard: FC<PmProjectCardProps> = ({
+export const PmProjectCard: FC<PmProjectData> = ({
   title, status, isLive, progress, projectLead, members, deadline, budget,
 }) => {
   return (

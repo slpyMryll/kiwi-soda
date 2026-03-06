@@ -3,24 +3,12 @@
 import React, { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-export interface SidebarTask {
-  id: string;
-  name: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
-  dueDate: string; 
-}
+import { SidebarTask } from "@/types/pm"; 
+import { getIsoWeekNumber } from "@/lib/utils/date-helpers"; 
 
 interface TaskSidebarProps {
   tasks?: SidebarTask[];
 }
-
-const getWeekNumber = (d: Date) => {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-};
 
 export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -40,7 +28,7 @@ export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
     const generatedWeeks = [];
     for (let i = 0; i < 6; i++) {
       const weekDays = [];
-      const weekNum = getWeekNumber(new Date(startDate));
+      const weekNum = getIsoWeekNumber(new Date(startDate)); 
       
       for (let j = 0; j < 7; j++) {
         weekDays.push(new Date(startDate));
@@ -75,7 +63,6 @@ export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
 
   return (
     <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-8 h-full flex flex-col">
-      
       <div className="flex flex-col">
         <h2 className="text-2xl sm:text-[26px] font-bold text-[#153B44] mb-1 sm:mb-2 tracking-tight">Task Timeline</h2>
         <p className="text-xs sm:text-[15px] text-gray-500 mb-6 sm:mb-8">Keep every council task on schedule</p>
@@ -85,7 +72,7 @@ export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
             <button onClick={handlePrevMonth} className="hover:bg-white/20 rounded p-0.5 transition-colors">
               <ChevronLeft className="w-4 h-4" strokeWidth={3} />
             </button>
-            <span className="text-[12px] sm:text-[13px] font-medium min-w-[80px] text-center tracking-wide">
+            <span className="text-[12px] sm:text-[13px] font-medium min-w-20 text-center tracking-wide">
               {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
             </span>
             <button onClick={handleNextMonth} className="hover:bg-white/20 rounded p-0.5 transition-colors">
@@ -95,7 +82,6 @@ export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
         </div>
         
         <div className="grid grid-cols-8 gap-y-3 sm:gap-y-4 gap-x-1 sm:gap-x-2 items-center justify-items-center w-full">
-          
           <span className="text-[11px] sm:text-[13px] font-medium text-[#153B44]">
             {String(month + 1).padStart(2, '0')}
           </span>
@@ -169,7 +155,6 @@ export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
           )}
         </div>
       </div>
-      
     </div>
   );
 }
