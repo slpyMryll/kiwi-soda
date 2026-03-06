@@ -1,0 +1,85 @@
+import { Project } from "@/types/projects"; 
+export const MOCK_TRENDING_TOPICS = [
+  {
+    id: "1",
+    title: "Protect Project Nature 2026",
+    description: "A student-led initiative to reforest the upper campus areas.",
+    tags: ["#Nature", "#Sustainability", "#VSU-SSC"],
+    status: "Active",
+    progress: 67,
+  },
+  {
+    id: "2",
+    title: "Digital Student ID System",
+    description: "Modernizing campus access by implementing an encrypted digital ID.",
+    tags: ["#Digital", "#Tech", "#Security"],
+    status: "Active",
+    progress: 45,
+  }
+];
+
+export const HOW_IT_WORKS_STEPS = [
+  { id: 1, label: "Submit a Proposal"},
+  { id: 2, label: "Review & Approval" },
+  { id: 3, label: "Track Progress"},
+];
+
+export const MOCK_PROJECTS: Project[] = [
+  {
+    id: "1",
+    title: "Project Protect Nature 2026",
+    description: "A comprehensive initiative to protect our campus flora...",
+    postedAt: "2026-01-24T00:00:00.000Z",
+    imageUrl: "/project-card-place.webp",
+    tags: ["#Nature", "#Protect"],
+    progress: 50,
+    commentsCount: 99,
+    isFollowing: false,
+    status: "Active",
+    liveStatus: "Live",
+    totalBudget: 50000,
+    spentBudget: 12500,
+    membersCount: 12,
+    deadline: "2026-05-30T00:00:00.000Z",
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: "2",
+    title: "Campus Wifi Expansion",
+    description: "Expanding the coverage of the free student wifi across lower campus...",
+    postedAt: "2026-01-24T00:00:00.000Z",
+    imageUrl: "/project-card-place.webp",
+    tags: ["#Tech", "#Connectivity"],
+    progress: 34,
+    commentsCount: 42,
+    isFollowing: true,
+    status: "Active",
+    liveStatus: "Live",
+    totalBudget: 50000,
+    spentBudget: 12500,
+    membersCount: 12,
+    deadline: "2026-05-30T00:00:00.000Z",
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: "3",
+    title: "Digital ID System Implementation",
+    description: "Successfully implemented the digital ID gates for the main entrance.",
+    postedAt: "2025-10-10T00:00:00.000Z",
+    imageUrl: "/project-card-place.webp",
+    tags: ["#Security", "#Digital"],
+    progress: 100,
+    commentsCount: 156,
+    isFollowing: false,
+    status: "Completed",
+    liveStatus: "Draft",
+    totalBudget: 120000,
+    spentBudget: 120000,
+    membersCount: 8,
+    deadline: "2025-12-15T00:00:00.000Z",
+    created_at: new Date(),
+    updated_at: new Date(),
+  }
+];
