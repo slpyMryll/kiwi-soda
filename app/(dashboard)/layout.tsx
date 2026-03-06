@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { logout } from '@/lib/actions/auth'
+import { Header } from '../components/layout/Header';
+import { Footer } from '../components/layout/Footer';
+import { Sidebar } from '../components/layout/Sidebar';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -10,40 +12,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name')
+    .select('role, full_name, avatar_url') 
     .eq('id', user.id) 
     .single();
 
   return (
-    <div className="flex min-h-screen bg-bg-main">
-      <aside className="w-64 bg-green-dark text-white p-6 flex flex-col shadow-xl">
-        <div className="mb-8">
-          <h1 className="text-white text-2xl">OnTrack</h1>
-          <p className="text-xs opacity-60 mt-1">USSC Management</p>
-        </div>
-        
-        <nav className="flex-1 space-y-2">
-          <div className="py-2 px-4 bg-white/10 rounded-lg">
-            <p className="text-[10px] uppercase tracking-wider opacity-50">Current Role</p>
-            <p className="text-sm font-bold">{profile?.role || 'viewer'}</p>
-          </div>
-          {/* Add Nav Links here */}
-        </nav>
-
-        <button 
-          onClick={logout} 
-          className="mt-auto w-full text-left p-3 text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
-        >
-          Logout
-        </button>
-      </aside>
+    <div className="flex flex-col min-h-screen bg-bg-main">
+      <Header user={user} profile={profile} role={profile?.role} />
       
-      <main className="flex-1 p-10">
-        <header className="mb-8">
-          <h2 className="text-2xl">Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}</h2>
-        </header>
-        {children}
-      </main>
+      <div className="flex flex-1 relative w-full mx-auto">
+        
+        <Sidebar role={profile?.role} />
+        
+        <main className="flex-1 flex flex-col overflow-x-hidden bg-linear-to-b from-[#153B44] from-0% via-bg-main via-10% to-bg-main">
+          {children}
+        </main>
+
+      </div>
+
+      <Footer />
     </div>
   );
 }
