@@ -55,7 +55,6 @@ export function ProjectFilters() {
 
   return (
     <div className="w-full space-y-6 my-8">
-      {/* Search Bar & Settings Dropdown */}
       <div className="flex items-center gap-3 w-full">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -68,14 +67,12 @@ export function ProjectFilters() {
           />
         </div>
 
-        {/* The SlidersHorizontal Dropdown Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger className="bg-gray-200/50 hover:bg-gray-200 p-3.5 rounded-xl text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center shrink-0 focus:outline-none">
             <SlidersHorizontal className="w-5 h-5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 p-2 bg-white rounded-xl shadow-lg border border-gray-200">
             
-            {/* Sort: By Date */}
             <DropdownMenuLabel className="font-bold text-gray-900">Sort By Date</DropdownMenuLabel>
             <DropdownMenuItem 
               onClick={() => updateQueryParams({ sort: "newest" })}
@@ -94,7 +91,6 @@ export function ProjectFilters() {
 
             <DropdownMenuSeparator className="bg-gray-200 my-1" />
 
-            {/* Sort: Alphabetically */}
             <DropdownMenuLabel className="font-bold text-gray-900">Sort Alphabetically</DropdownMenuLabel>
             <DropdownMenuItem 
               onClick={() => updateQueryParams({ sort: "a-z" })}
@@ -113,7 +109,6 @@ export function ProjectFilters() {
 
             <DropdownMenuSeparator className="bg-gray-200 my-1" />
 
-            {/* Filter: Timeframe */}
             <DropdownMenuLabel className="font-bold text-gray-900">Filter Timeframe</DropdownMenuLabel>
             <DropdownMenuItem 
               onClick={() => updateQueryParams({ date: "all" })}
@@ -134,7 +129,6 @@ export function ProjectFilters() {
         </DropdownMenu>
       </div>
 
-      {/* Navigation Tabs */}
       <div className="flex items-center justify-center gap-8 border-b border-gray-200 px-4">
         <button 
           onClick={() => updateQueryParams({ status: "all" })} 
