@@ -16,7 +16,7 @@ async function getRoleRedirectPath(supabase: any, userId: string) {
   const rolePaths: Record<string, string> = {
     admin: '/admin',
     'project-manager': '/project-manager',
-    viewer: '/viewer', // Default role
+    viewer: '/viewer',
   }
 
   return rolePaths[profile.role] || '/viewer'
@@ -57,4 +57,30 @@ export async function logout() {
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
   redirect('/login')
+}
+
+export async function resetPassword(email: string, origin: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/update-password`,
+  })
+  if (error) return { error: error.message }
+  return { success: true }
+}
+
+export async function updatePasswordAction(formData: FormData) {
+  const password = formData.get('password') as string;
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.auth.updateUser({ password });
+
+  if (error) return { error: error.message };
+
+  let finalPath = '/viewer';
+  
+  if (data?.user?.id) {
+    finalPath = await getRoleRedirectPath(supabase, data.user.id);
+  }
+
+  redirect(finalPath);
 }
