@@ -32,7 +32,7 @@ export function Sidebar({ role }: SidebarProps) {
               className={cn(
                 "flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm",
                 isActive
-                  ? "bg-linear-to-r from-[#e1f0c2] to-transparent text-[#1B4332]"
+                  ? "bg-surface-accent text-green-dark shadow-sm"
                   : "text-gray-500 hover:bg-white hover:shadow-sm hover:text-gray-900"
               )}
             >
