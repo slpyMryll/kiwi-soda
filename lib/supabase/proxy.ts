@@ -27,24 +27,31 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   const pathname = request.nextUrl.pathname
 
   // 1. Define Public Routes
-  const publicRoutes = ['/', '/login', '/forgot-password', '/auth', '/update-password']
+  const publicRoutes = ['/', '/login', '/forgot-password', '/auth']
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith('/auth'))
 
-  // 2. CRITICAL: Pass-through for update-password. 
-  if (pathname.startsWith('/update-password')) {
-    return supabaseResponse
-  }
-
-  // 3. GUARD: Redirect unauthenticated users to login
+  // 2. GUARD: Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
+
+  // 3. GUARD: Restrict access to password update page to recovery sessions only
+  if (pathname.startsWith('/update-password')) {
+    const isRecovery = (session as any)?.recovery;
+    if (!isRecovery) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+  }
+
   // 4. GUARD: Onboarding Page
   if (pathname.startsWith('/onboarding')) {
     if (!user) {
@@ -58,8 +65,8 @@ export async function updateSession(request: NextRequest) {
       .select('has_completed_onboarding')
       .eq('id', user.id)
       .single()
-      
-    if (profile?.has_completed_onboarding) {
+    const isRecovery = (session as any)?.recovery;
+    if (profile?.has_completed_onboarding || isRecovery) {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard-redirect'
       return NextResponse.redirect(url)
@@ -73,5 +80,6 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // IMPORTANT: Return the synchronized response object to maintain session
   return supabaseResponse
 }
