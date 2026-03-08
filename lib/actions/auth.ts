@@ -58,3 +58,24 @@ export async function logout() {
   revalidatePath('/', 'layout')
   redirect('/login')
 }
+
+export async function resetPassword(email: string, origin: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/update-password`,
+  })
+  if (error) return { error: error.message }
+  return { success: true }
+}
+
+
+export async function updatePasswordAction(formData: FormData) {
+  const password = formData.get('password') as string;
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) return { error: error.message };
+
+  redirect('/dashboard-redirect');
+}

@@ -2,64 +2,85 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  let supabaseResponse = NextResponse.next({ request })
 
-  // With Fluid compute, don't put this client in a global environment
-  // variable. Always create a new one on each request.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) => 
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
+  const pathname = request.nextUrl.pathname
 
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims()
+  // 1. Define Public Routes
+  const publicRoutes = ['/', '/login', '/forgot-password', '/auth']
+  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith('/auth'))
 
-  const user = data?.claims
+  // 2. Fetch profile data if user exists
+  let userRole = 'viewer';
+  let hasCompletedOnboarding = false;
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, has_completed_onboarding')
+      .eq('id', user.id)
+      .single()
+    
+    userRole = String(profile?.role);
+    hasCompletedOnboarding = profile?.has_completed_onboarding || false;
   }
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
-  // creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  // 3. GUARD: Redirect unauthenticated users to login
+  if (!user && !isPublicRoute) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // 4. GUARD: Password Update
+  if (pathname.startsWith('/update-password')) {
+    const isRecovery = (session as any)?.recovery;
+    if (!isRecovery) return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // 5. GUARD: Onboarding Page
+  if (pathname.startsWith('/onboarding')) {
+    if (!user) return NextResponse.redirect(new URL('/login', request.url));
+    const isRecovery = (session as any)?.recovery;
+    if (hasCompletedOnboarding || isRecovery) {
+      return NextResponse.redirect(new URL('/dashboard-redirect', request.url))
+    }
+  }
+
+  // 6. GUARD: Prevent logged-in users from seeing the login page
+  if (user && pathname === '/login') {
+    return NextResponse.redirect(new URL('/dashboard-redirect', request.url))
+  }
+
+  // 7. GUARD: Role-Based Route Protection (RBAC)
+  if (user && hasCompletedOnboarding) {
+    if (pathname.startsWith('/admin') && userRole !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard-redirect', request.url))
+    }
+    if (pathname.startsWith('/project-manager') && userRole !== 'project-manager') {
+      return NextResponse.redirect(new URL('/dashboard-redirect', request.url))
+    }
+    if (pathname.startsWith('/viewer') && userRole !== 'viewer') {
+      return NextResponse.redirect(new URL('/dashboard-redirect', request.url))
+    }
+  }
 
   return supabaseResponse
 }
