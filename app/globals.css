@@ -24,7 +24,11 @@
   --color-bg-main: #f3f4f6;    
   --color-card-white: #ffffff;
 
-  --background-image-surface-accent: linear-gradient(to right, #a9dc02, var(--color-green-dark));  /* Button Active States */
+  --background-image-surface-accent: linear-gradient(
+    to right, 
+    oklch(0.83 0.19 105.5 / 0.2), 
+    oklch(0.24 0.05 163.4 / 0.2)
+  );  /* Button Active States */
   --background-image-surface-brand: 
     linear-gradient(to right, rgba(18, 46, 71, 0.7), rgba(18, 46, 71, 0.7)), 
     linear-gradient(var(--color-green-dark), var(--color-green-dark));

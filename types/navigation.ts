@@ -20,7 +20,7 @@ export type NavItem = {
 
 export const NAV_CONFIG: Record<string, NavItem[]> = {
   viewer: [
-    { name: "Explore Feed", href: "/viewer/explore", icon: Compass },
+    { name: "Explore Feed", href: "/viewer", icon: Compass },
     { name: "My Following", href: "/viewer/following", icon: Heart },
     { name: "Project Map", href: "/viewer/project-map", icon: Map },
     { divider: true },
@@ -28,7 +28,7 @@ export const NAV_CONFIG: Record<string, NavItem[]> = {
     { name: "Settings", href: "/viewer/settings", icon: Settings },
   ],
   "project-manager": [
-    { name: "Dashboard", href: "/project-manager/dashboard", icon: LayoutDashboard },
+    { name: "Dashboard", href: "/project-manager", icon: LayoutDashboard },
     { name: "Projects", href: "/project-manager/projects", icon: FolderKanban },
     { name: "Tasks", href: "/project-manager/tasks", icon: CheckSquare },
     { name: "Budget", href: "/project-manager/budget", icon: Wallet },
@@ -37,7 +37,7 @@ export const NAV_CONFIG: Record<string, NavItem[]> = {
     { name: "Settings", href: "/project-manager/settings", icon: Settings },
   ],
   admin: [
-    { name: "Admin Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Admin Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "User", href: "/admin/users", icon: FolderKanban },
     { name: "Reports & Reviews", href: "/admin/reports", icon: PhilippinePeso },
     { name: "System Settings", href: "admin/settings", icon: Settings},
