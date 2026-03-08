@@ -6,7 +6,7 @@ import { Header } from "./components/layout/Header";
 
 import { HeroBanner } from "./components/dashboard/HeroBanner";
 import { ProjectFilters } from "./components/dashboard/ProjectFilters";
-import { ProjectCard } from "./components/dashboard/ProjectCard";
+import { GuestProjectFeed } from "./components/landing/GuestProjectFeed";
 import { MOCK_PROJECTS } from "@/lib/constants/mock-data";
 import { getFilteredAndSortedProjects } from "@/lib/utils/project-helpers";
 import { redirect } from "next/navigation";
@@ -60,31 +60,7 @@ export default async function LandingPage({
 
             <ProjectFilters />
 
-            <div className="space-y-6 mt-6">
-              {processedProjects.length > 0 ? (
-                processedProjects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    userRole="guest"
-                    project={project}
-                  />
-                ))
-              ) : (
-                <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 border-dashed">
-                  <p className="text-sm text-gray-500 font-medium">
-                    No projects matched your search or filters.
-                  </p>
-                </div>
-              )}
-
-              <div className="text-center py-10">
-                <p className="text-xs text-gray-400 font-medium">
-                  No more projects to
-                  <br />
-                  show
-                </p>
-              </div>
-            </div>
+            <GuestProjectFeed projects={processedProjects} />
           </div>
           <Footer />
         </main>

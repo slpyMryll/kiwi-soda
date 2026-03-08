@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProgressBar } from "../ui/ProgressBar";
 import { ProjectCardProps} from "@/types/projects";
 
-export function ProjectCard({ project, userRole = 'guest' }: ProjectCardProps) {
+export function ProjectCard({ project, userRole = 'guest', onReadMore }: ProjectCardProps) {
   const router = useRouter();
   
   const isGuest = userRole === 'guest';
@@ -20,6 +20,14 @@ export function ProjectCard({ project, userRole = 'guest' }: ProjectCardProps) {
     }
   };
 
+  const handleReadMore = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onReadMore) {
+      onReadMore();
+    } else if (!isGuest) {
+      router.push(`/${userRole}/projects/${project.id}`);
+    }
+  };
   const formattedPostedDate = new Date(project.postedAt).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric'
   });
@@ -101,7 +109,7 @@ export function ProjectCard({ project, userRole = 'guest' }: ProjectCardProps) {
             </button>
           </div>
           
-          <button onClick={handleAction} className="w-full sm:w-auto flex justify-center items-center gap-2 border border-gray-300 rounded-full px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors">
+          <button onClick={handleReadMore} className="w-full sm:w-auto flex justify-center items-center gap-2 border border-gray-300 rounded-full px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors">
             Read More <ArrowRight className="w-4 h-4" />
           </button>
         </div>
