@@ -23,7 +23,10 @@ export function Sidebar({ role }: SidebarProps) {
           }
 
           const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = 
+          item.href === "/project-manager" 
+            ? pathname === item.href 
+            : pathname.startsWith(item.href || ""); 
 
           return (
             <Link
