@@ -26,6 +26,7 @@ export default async function PmProjectsPage() {
       id: p.id,
       title: p.title,
       description: p.description,
+      location: p.location || "VSU Campus",
       imageUrl: p.image_url,
       tags: p.tags || [],
       status: p.status,
