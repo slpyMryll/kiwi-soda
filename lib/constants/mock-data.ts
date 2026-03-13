@@ -1,4 +1,5 @@
 import { Project } from "@/types/projects"; 
+
 export const MOCK_TRENDING_TOPICS = [
   {
     id: "1",
@@ -29,6 +30,7 @@ export const MOCK_PROJECTS: Project[] = [
     id: "1",
     title: "Project Protect Nature 2026",
     description: "A comprehensive initiative to protect our campus flora...",
+    location: "Upper Campus",
     postedAt: "2026-01-24T00:00:00.000Z",
     imageUrl: "/project-card-place.webp",
     tags: ["#Nature", "#Protect"],
@@ -65,6 +67,7 @@ export const MOCK_PROJECTS: Project[] = [
     id: "2",
     title: "Campus Wifi Expansion",
     description: "Expanding the coverage of the free student wifi across lower campus...",
+    location: "Lower Campus",
     postedAt: "2026-01-24T00:00:00.000Z",
     imageUrl: "/project-card-place.webp",
     tags: ["#Tech", "#Connectivity"],
@@ -95,6 +98,7 @@ export const MOCK_PROJECTS: Project[] = [
     id: "3",
     title: "Digital ID System Implementation",
     description: "Successfully implemented the digital ID gates for the main entrance.",
+    location: "Main Entrance",
     postedAt: "2025-10-10T00:00:00.000Z",
     imageUrl: "/project-card-place.webp",
     tags: ["#Security", "#Digital"],

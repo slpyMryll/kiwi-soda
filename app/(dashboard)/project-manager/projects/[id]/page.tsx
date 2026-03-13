@@ -9,13 +9,25 @@ export default async function ManageProjectPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const { id } = await params;
+  let id = "";
+  try {
+    const resolvedParams = await params;
+    id = resolvedParams?.id || "";
+  } catch (e) {
+    return notFound();
+  }
   
-  const resolvedSearchParams = await searchParams;
-  const tabParam = typeof resolvedSearchParams.tab === 'string' ? resolvedSearchParams.tab : "Overview";
-  
-  const validTabs = ["Overview", "Tasks & Team", "Budget", "Timeline", "Documents", "Charts"];
-  const initialTab = validTabs.includes(tabParam) ? tabParam : "Overview";
+  if (!id) return notFound();
+
+  let initialTab = "Overview";
+  try {
+    const resolvedSearchParams = await searchParams;
+    const tabParam = resolvedSearchParams?.tab;
+    const validTabs = ["Overview", "Tasks & Team", "Budget", "Timeline", "Documents", "Charts"];
+    if (typeof tabParam === "string" && validTabs.includes(tabParam)) {
+      initialTab = tabParam;
+    }
+  } catch (e) {}
 
   const supabase = await createClient();
   
@@ -30,63 +42,102 @@ export default async function ManageProjectPage({
       *,
       project_members ( profile_id, project_role, profiles ( full_name, avatar_url ) ),
       tasks ( *, profiles ( full_name ) ),
-      budget_logs ( * ),
-      project_milestones ( * )
+      budget_logs ( *, profiles:changed_by ( full_name ) ),
+      project_milestones ( * ),
+      project_documents ( *, profiles:uploaded_by ( full_name ) )
     `)
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    console.error("Supabase Fetch Error:", error.message);
+  if (error && error.code !== 'PGRST116') {
+    console.error("SUPABASE FETCH ERROR:", error.message, error.details, error.hint);
   }
 
-  if (error || !projectData) return notFound();
+  if (!projectData) {
+    return notFound();
+  }
+
+  const safeMembers = Array.isArray(projectData?.project_members) 
+    ? projectData.project_members.filter((m: any) => m && typeof m === 'object') : [];
+    
+  const safeTasks = Array.isArray(projectData?.tasks) 
+    ? projectData.tasks.filter((t: any) => t && typeof t === 'object') : [];
+    
+  const safeMilestones = Array.isArray(projectData?.project_milestones) 
+    ? projectData.project_milestones.filter((m: any) => m && typeof m === 'object') : [];
+    
+  const safeBudgetLogs = Array.isArray(projectData?.budget_logs) 
+    ? projectData.budget_logs.filter((l: any) => l && typeof l === 'object') : [];
+
+  const safeDocuments = Array.isArray(projectData?.project_documents) 
+    ? projectData.project_documents.filter((d: any) => d && typeof d === 'object') : [];
+
+  const safePMs = Array.isArray(availablePMs) 
+    ? availablePMs.filter((pm: any) => pm && typeof pm === 'object') : [];
 
   const project: any = {
     ...projectData,
-    totalBudget: Number(projectData.total_budget),
-    spentBudget: Number(projectData.spent_budget),
-    membersCount: projectData.project_members?.length || 0,
+    id: projectData?.id || id,
+    title: projectData?.title || "Untitled Project",
+    description: projectData?.description || "",
+    location: projectData?.location || "VSU Campus",
+    liveStatus: projectData?.live_status || "Draft",
+    imageUrl: projectData?.image_url || "/project-card-place.webp",
+    postedAt: projectData?.posted_at || projectData?.created_at || new Date().toISOString(),
+    totalBudget: Number(projectData?.total_budget || 0),
+    spentBudget: Number(projectData?.spent_budget || 0),
+    membersCount: safeMembers.length,
     
-    members: projectData.project_members?.map((m: any) => ({
-      id: m.profile_id,
-      name: m.profiles?.full_name || "Unknown Officer",
-      role: m.project_role || "Member",
-      avatarUrl: m.profiles?.avatar_url
-    })) || [],
+    members: safeMembers.map((m: any) => ({
+      id: m?.profile_id || "unknown",
+      name: m?.profiles?.full_name || "Unknown Officer",
+      role: m?.project_role || "Member",
+      avatarUrl: m?.profiles?.avatar_url || null
+    })),
 
-    tasks: projectData.tasks?.map((t: any) => ({
-      id: t.id,
-      title: t.title,
-      assignee: t.profiles?.full_name || "Unassigned",
-      assigned_to: t.assigned_to,
-      dueDate: t.due_date ? new Date(t.due_date).toLocaleDateString() : 'N/A',
-      status: t.status,
-      cost: t.cost
-    })) || [],
+    tasks: safeTasks.map((t: any, index: number) => ({
+      id: t?.id || `task-${index}`,
+      title: t?.title || "Untitled Task",
+      assignee: t?.profiles?.full_name || "Unassigned",
+      assigned_to: t?.assigned_to || null,
+      dueDate: t?.due_date ? new Date(t.due_date).toLocaleDateString() : 'N/A',
+      status: t?.status || "Pending",
+      cost: t?.cost || 0
+    })),
 
-    milestones: projectData.project_milestones?.map((m: any) => ({
-      id: m.id,
-      title: m.title,
-      deadline: m.end_date ? new Date(m.end_date).toLocaleDateString() : 'No deadline',
-      status: m.status,
-      progress: m.progress
-    })) || [],
+    milestones: safeMilestones.map((m: any, index: number) => ({
+      id: m?.id || `milestone-${index}`,
+      title: m?.title || "Untitled Milestone",
+      deadline: m?.end_date ? new Date(m.end_date).toLocaleDateString() : 'No deadline',
+      status: m?.status || "Pending",
+      progress: m?.progress || 0
+    })),
 
-    budgetUpdates: projectData.budget_logs?.map((log: any) => {
-      const parts = (log.budget_change_reason || "").split(":");
+    budgetUpdates: safeBudgetLogs.map((log: any, index: number) => {
+      const parts = (log?.budget_change_reason || "").split(":");
       return {
-        id: log.id,
-        date: new Date(log.changed_at).toLocaleString(),
-        amountChange: log.new_amount - log.old_amount,
+        id: log?.id || `log-${index}`,
+        date: log?.changed_at ? new Date(log.changed_at).toLocaleString() : 'Unknown Date',
+        amountChange: (log?.new_amount || 0) - (log?.old_amount || 0),
         category: parts.length > 1 ? parts[0] : "General",
-        description: parts.length > 1 ? parts[1].trim() : log.budget_change_reason,
-        oldTotal: log.old_amount,
-        newTotal: log.new_amount,
-        isInitial: log.is_initial
+        description: parts.length > 1 ? parts[1].trim() : (log?.budget_change_reason || "No description"),
+        updatedBy: log?.profiles?.full_name || "System",
+        oldTotal: log?.old_amount || 0,
+        newTotal: log?.new_amount || 0,
+        isInitial: log?.is_initial || false
       };
-    }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) || []
+    }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+
+    documents: safeDocuments.map((d: any, index: number) => ({
+      id: d?.id || `doc-${index}`,
+      name: d?.name || "Untitled Document",
+      url: d?.file_url || "#",
+      size: d?.file_size || 0,
+      type: d?.file_type || "unknown",
+      uploadedBy: d?.profiles?.full_name || "Unknown",
+      date: d?.created_at ? new Date(d.created_at).toLocaleDateString() : 'Unknown Date'
+    })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
   };
 
-  return <ProjectDetailClient project={project} availablePMs={availablePMs || []} initialTab={initialTab} />;
+  return <ProjectDetailClient project={project} availablePMs={safePMs} initialTab={initialTab} />;
 }
