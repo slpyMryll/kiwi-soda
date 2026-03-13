@@ -42,16 +42,22 @@ export function PmProjectCard(project: Project) {
 
   const handleToggleStatus = async () => {
     setIsPending(true);
-    await toggleProjectLiveStatus(id, liveStatus);
+    const res = await toggleProjectLiveStatus(id, liveStatus);
     setIsPending(false);
-    setIsToggleModalOpen(false);
+    if (res.error) alert(`Error: ${res.error}`);
+    else setIsToggleModalOpen(false);
   };
 
   const handleDelete = async () => {
     setIsPending(true);
-    await deleteProject(id);
+    const res = await deleteProject(id);
     setIsPending(false);
-    setIsDeleteDialogOpen(false);
+
+    if (res.error) {
+      alert(`Delete Error: ${res.error}`);
+    } else {
+      setIsDeleteDialogOpen(false);
+    }
   };
 
   const statsMapping = [
@@ -70,7 +76,6 @@ export function PmProjectCard(project: Project) {
               <h3 className="text-lg font-bold text-[#153B44] leading-tight truncate">
                 {title}
               </h3>
-
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${status === "Active" ? "bg-[#153B44] text-white" : "bg-gray-100 text-gray-500"}`}
@@ -100,7 +105,7 @@ export function PmProjectCard(project: Project) {
                     onClick={() => {
                       setIsMenuOpen(false);
                       setIsToggleModalOpen(true);
-                    }} // UPDATED ACTION
+                    }}
                     disabled={isPending}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
                   >
@@ -119,8 +124,7 @@ export function PmProjectCard(project: Project) {
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                   >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Project
+                    <Trash2 className="w-4 h-4" /> Delete Project
                   </button>
                 </div>
               )}
@@ -148,7 +152,6 @@ export function PmProjectCard(project: Project) {
           <Link
             href={`/project-manager/projects/${id}`}
             className="flex items-center justify-center p-1.5 sm:p-2 rounded-full bg-gray-50 hover:bg-[#BFFFE3] text-gray-400 hover:text-[#153B44] transition-colors shrink-0"
-            title="Manage Project"
           >
             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </Link>
@@ -174,8 +177,8 @@ export function PmProjectCard(project: Project) {
             </h3>
             <p className="text-sm text-center text-gray-500 mb-6">
               {liveStatus === "Live"
-                ? "This will hide the project from the public feed. Only council members will be able to see it."
-                : "This will make the project visible on the public dashboard for all VSU students to track."}
+                ? "This will hide the project from the public feed."
+                : "This will make the project visible to all VSU students."}
             </p>
             <div className="flex gap-3">
               <button
@@ -188,11 +191,7 @@ export function PmProjectCard(project: Project) {
               <button
                 onClick={handleToggleStatus}
                 disabled={isPending}
-                className={`flex-1 py-2.5 text-white font-semibold rounded-xl transition-colors flex items-center justify-center disabled:opacity-70 ${
-                  liveStatus === "Live"
-                    ? "bg-orange-600 hover:bg-orange-700"
-                    : "bg-[#1B4332] hover:bg-green-900"
-                }`}
+                className={`flex-1 py-2.5 text-white font-semibold rounded-xl transition-colors flex items-center justify-center disabled:opacity-70 ${liveStatus === "Live" ? "bg-orange-600 hover:bg-orange-700" : "bg-[#1B4332] hover:bg-green-900"}`}
               >
                 {isPending ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -217,8 +216,7 @@ export function PmProjectCard(project: Project) {
             <p className="text-sm text-center text-gray-500 mb-6">
               Are you sure you want to delete{" "}
               <span className="font-bold text-gray-700">"{title}"</span>? This
-              action cannot be undone and will permanently remove all associated
-              logs.
+              action cannot be undone.
             </p>
             <div className="flex gap-3">
               <button

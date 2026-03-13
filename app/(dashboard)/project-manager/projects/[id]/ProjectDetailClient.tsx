@@ -10,24 +10,10 @@ import { TimelineTab } from "@/app/components/projects/manage/tabs/TimelineTab";
 import { DocumentsTab } from "@/app/components/projects/manage/tabs/DocumentsTab";
 import { ChartsTab } from "@/app/components/projects/manage/tabs/ChartsTab";
 
-const TABS = [
-  "Overview",
-  "Tasks & Team",
-  "Budget",
-  "Timeline",
-  "Documents",
-  "Charts",
-];
+const TABS = ["Overview", "Tasks & Team", "Budget", "Timeline", "Documents", "Charts"];
 
-export default function ProjectDetailClient({
-  project,
-  availablePMs,
-  initialTab,
-}: {
-  project: any;
-  availablePMs: any[];
-  initialTab: string;
-}) {
+export default function ProjectDetailClient({ project, availablePMs, initialTab }: { project: any, availablePMs: any[], initialTab: string }) {
+  
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleTabChange = (tab: string) => {
@@ -38,35 +24,10 @@ export default function ProjectDetailClient({
   };
 
   const stats = [
-    {
-      label: "Progress",
-      value: `${project.progress}%`,
-      icon: CheckCircle2,
-      color: "text-green-500",
-      bg: "bg-green-100",
-    },
-    {
-      label: "Budget Spent",
-      value: `${(project.spentBudget / 1000).toFixed(1)}k`,
-      icon: PhilippinePeso,
-      color: "text-blue-500",
-      bg: "bg-blue-100",
-    },
-    {
-      label: "Team Members",
-      value: project.membersCount,
-      icon: Users,
-      color: "text-purple-500",
-      bg: "bg-purple-100",
-    },
-    {
-      label: "Pending Tasks",
-      value:
-        project.tasks?.filter((t: any) => t.status !== "Completed").length || 0,
-      icon: Clock,
-      color: "text-orange-500",
-      bg: "bg-orange-100",
-    },
+    { label: "Progress", value: `${project.progress}%`, icon: CheckCircle2, color: "text-green-500", bg: "bg-green-100" },
+    { label: "Budget Spent", value: `${(project.spentBudget / 1000).toFixed(1)}k`, icon: PhilippinePeso, color: "text-blue-500", bg: "bg-blue-100" },
+    { label: "Team Members", value: project.membersCount, icon: Users, color: "text-purple-500", bg: "bg-purple-100" },
+    { label: "Pending Tasks", value: project.tasks?.filter((t: any) => t.status !== 'Completed').length || 0, icon: Clock, color: "text-orange-500", bg: "bg-orange-100" },
   ];
 
   return (
@@ -77,22 +38,13 @@ export default function ProjectDetailClient({
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
-            <div
-              key={idx}
-              className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4"
-            >
-              <div
-                className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center shrink-0`}
-              >
+            <div key={idx} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center shrink-0`}>
                 <Icon className={`w-6 h-6 ${stat.color}`} />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 leading-none">
-                  {stat.value}
-                </h3>
-                <p className="text-xs font-semibold text-gray-500 mt-1">
-                  {stat.label}
-                </p>
+                <h3 className="text-2xl font-bold text-gray-900 leading-none">{stat.value}</h3>
+                <p className="text-xs font-semibold text-gray-500 mt-1">{stat.label}</p>
               </div>
             </div>
           );
@@ -105,8 +57,8 @@ export default function ProjectDetailClient({
             key={tab}
             onClick={() => handleTabChange(tab)}
             className={`flex-1 min-w-[120px] py-2.5 text-sm font-bold rounded-xl transition-all ${
-              activeTab === tab
-                ? "bg-white text-[#153B44] shadow-sm"
+              activeTab === tab 
+                ? "bg-white text-[#153B44] shadow-sm" 
                 : "text-gray-500 hover:text-gray-900"
             }`}
           >
@@ -117,20 +69,11 @@ export default function ProjectDetailClient({
 
       <div className="w-full">
         {activeTab === "Overview" && <OverviewTab project={project} />}
-        {activeTab === "Tasks & Team" && (
-          <TasksAndTeamTab
-            projectId={project.id}
-            members={project.members}
-            tasks={project.tasks}
-            availablePMs={availablePMs}
-          />
-        )}
+        {activeTab === "Tasks & Team" && <TasksAndTeamTab projectId={project.id} members={project.members} tasks={project.tasks} availablePMs={availablePMs} />}
         {activeTab === "Budget" && <BudgetTab project={project} />}
-        {activeTab === "Timeline" && (
-          <TimelineTab projectId={project.id} milestones={project.milestones} />
-        )}
-        {activeTab === "Documents" && <DocumentsTab />}
-        {activeTab === "Charts" && <ChartsTab />}
+        {activeTab === "Timeline" && <TimelineTab projectId={project.id} milestones={project.milestones} />}
+        {activeTab === "Documents" && <DocumentsTab project={project} />}
+        {activeTab === "Charts" && <ChartsTab project={project} />} 
       </div>
     </div>
   );
