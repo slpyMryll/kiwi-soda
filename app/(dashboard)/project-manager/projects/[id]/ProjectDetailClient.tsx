@@ -56,7 +56,7 @@ export default function ProjectDetailClient({ project, availablePMs, initialTab 
           <button
             key={tab}
             onClick={() => handleTabChange(tab)}
-            className={`flex-1 min-w-[120px] py-2.5 text-sm font-bold rounded-xl transition-all ${
+            className={`flex-1 min-w-30 py-2.5 text-sm font-bold rounded-xl transition-all ${
               activeTab === tab 
                 ? "bg-white text-[#153B44] shadow-sm" 
                 : "text-gray-500 hover:text-gray-900"
