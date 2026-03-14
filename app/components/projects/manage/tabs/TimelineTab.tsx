@@ -117,17 +117,17 @@ export function TimelineTab({
   const safeMilestonesList = Array.isArray(milestones) ? milestones : [];
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm">
-      <div className="flex justify-between items-center mb-8">
+    <div className="bg-white p-5 sm:p-8 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <h2 className="text-xl font-bold text-gray-900">Project Milestones</h2>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <button className="flex items-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+            <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2.5 sm:py-2 rounded-lg text-sm font-semibold transition-colors">
               <Plus className="w-4 h-4" /> Add Milestone
             </button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Milestone</DialogTitle>
             </DialogHeader>
@@ -143,7 +143,7 @@ export function TimelineTab({
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1">
                     Target End Date
@@ -201,9 +201,9 @@ export function TimelineTab({
         </Dialog>
       </div>
 
-      <div className="relative border-l-2 border-gray-100 ml-5 space-y-10 pb-4">
+      <div className="relative border-l-2 border-gray-100 ml-4 sm:ml-5 space-y-8 sm:space-y-10 pb-4">
         {safeMilestonesList.length === 0 && (
-          <p className="text-sm text-gray-500 pl-8">No milestones added yet.</p>
+          <p className="text-sm text-gray-500 pl-6 sm:pl-8">No milestones added yet.</p>
         )}
 
         {safeMilestonesList.map((m: any, idx: number) => {
@@ -212,49 +212,49 @@ export function TimelineTab({
           return (
             <div
               key={m?.id || `fallback-${idx}`}
-              className="relative pl-8 group"
+              className="relative pl-6 sm:pl-8 group"
             >
               <div
-                className={`absolute -left-5 top-0 w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10 transition-colors ${getStatusColor(m?.status)}`}
+                className={`absolute -left-5.25 top-0 w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10 transition-colors ${getStatusColor(m?.status)}`}
               >
                 {getStatusIcon(m?.status)}
               </div>
 
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900 group-hover:text-[#1B4332] transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between items-start gap-3 sm:gap-4 mb-3 sm:mb-2 w-full">
+                <div className="w-full sm:w-auto pr-2">
+                  <h4 className="text-sm font-bold text-gray-900 group-hover:text-[#1B4332] transition-colors leading-tight">
                     {m?.title || "Untitled"}
                   </h4>
-                  <p className="text-xs text-gray-500 mt-0.5 font-medium flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" /> Target Date:{" "}
+                  <p className="text-xs text-gray-500 mt-1 font-medium flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 shrink-0" /> Target Date:{" "}
                     {m?.deadline || "No deadline"}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
                   <span
-                    className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${getBadgeColor(m?.status)}`}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider whitespace-nowrap ${getBadgeColor(m?.status)}`}
                   >
                     {m?.status || "Pending"}
                   </span>
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => setEditingMilestone(m)}
-                      className="p-1.5 text-gray-400 hover:text-[#1B4332] hover:bg-green-50 rounded-lg transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-[#1B4332] hover:bg-green-50 rounded-lg transition-colors border border-gray-100 sm:border-transparent"
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                     <button
                       onClick={() => setDeletingMilestone(m)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-gray-100 sm:border-transparent"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-3 sm:mt-4">
                 <div className="flex justify-between text-xs text-gray-400 font-bold mb-1.5">
                   <span>Progress</span>
                   <span>{m?.progress || 0}%</span>
@@ -275,7 +275,7 @@ export function TimelineTab({
         open={!!editingMilestone}
         onOpenChange={(open) => !open && setEditingMilestone(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Milestone</DialogTitle>
           </DialogHeader>
@@ -291,7 +291,7 @@ export function TimelineTab({
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-bold text-gray-700 block mb-1">
                   Target End Date
@@ -354,7 +354,7 @@ export function TimelineTab({
         open={!!deletingMilestone}
         onOpenChange={(open) => !open && setDeletingMilestone(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md w-[95vw]">
           <div className="flex flex-col items-center text-center p-2">
             <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4">
               <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -369,18 +369,18 @@ export function TimelineTab({
               </span>
               ? This action cannot be undone.
             </p>
-            <div className="flex gap-3 w-full">
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
               <button
                 onClick={() => setDeletingMilestone(null)}
                 disabled={isLoading}
-                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors disabled:opacity-50"
+                className="flex-1 py-3 sm:py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteMilestone}
                 disabled={isLoading}
-                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center disabled:opacity-70"
+                className="flex-1 py-3 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center disabled:opacity-70"
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
