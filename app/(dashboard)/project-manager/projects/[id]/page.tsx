@@ -2,10 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import ProjectDetailClient from "./ProjectDetailClient";
 
-export default async function ManageProjectPage({ 
+export default async function ManageProjectPage({
   params,
-  searchParams 
-}: { 
+  searchParams,
+}: {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
@@ -16,64 +16,91 @@ export default async function ManageProjectPage({
   } catch (e) {
     return notFound();
   }
-  
+
   if (!id) return notFound();
 
   let initialTab = "Overview";
   try {
     const resolvedSearchParams = await searchParams;
     const tabParam = resolvedSearchParams?.tab;
-    const validTabs = ["Overview", "Tasks & Team", "Budget", "Timeline", "Documents", "Charts"];
+    const validTabs = [
+      "Overview",
+      "Tasks & Team",
+      "Budget",
+      "Timeline",
+      "Documents",
+      "Charts",
+    ];
     if (typeof tabParam === "string" && validTabs.includes(tabParam)) {
       initialTab = tabParam;
     }
   } catch (e) {}
 
   const supabase = await createClient();
-  
-  const { data: availablePMs } = await supabase
-    .from('profiles')
-    .select('id, full_name, avatar_url')
-    .eq('role', 'project-manager');
 
-  const { data: projectData, error } = await supabase
+  const pmsPromise = supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .eq("role", "project-manager");
+
+  const projectPromise = supabase
     .from("projects")
-    .select(`
-      *,
+    .select(
+      `
+      id, title, description, location, live_status, image_url, posted_at, created_at, total_budget, spent_budget, progress, deadline,
       project_members ( profile_id, project_role, profiles ( full_name, avatar_url ) ),
-      tasks ( *, profiles ( full_name ) ),
-      budget_logs ( *, profiles:changed_by ( full_name ) ),
-      project_milestones ( * ),
-      project_documents ( *, profiles:uploaded_by ( full_name ) )
-    `)
+      tasks ( id, title, assigned_to, due_date, status, cost, profiles ( full_name ) ),
+      budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
+      project_milestones ( id, title, end_date, status, progress ),
+      project_documents ( id, name, file_url, file_size, file_type, created_at, profiles:uploaded_by ( full_name ) )
+    `,
+    )
     .eq("id", id)
     .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') {
-    console.error("SUPABASE FETCH ERROR:", error.message, error.details, error.hint);
+  const [{ data: availablePMs }, { data: projectData, error }] =
+    await Promise.all([pmsPromise, projectPromise]);
+
+  if (error && error.code !== "PGRST116") {
+    console.error(
+      "SUPABASE FETCH ERROR:",
+      error.message,
+      error.details,
+      error.hint,
+    );
   }
 
   if (!projectData) {
     return notFound();
   }
 
-  const safeMembers = Array.isArray(projectData?.project_members) 
-    ? projectData.project_members.filter((m: any) => m && typeof m === 'object') : [];
-    
-  const safeTasks = Array.isArray(projectData?.tasks) 
-    ? projectData.tasks.filter((t: any) => t && typeof t === 'object') : [];
-    
-  const safeMilestones = Array.isArray(projectData?.project_milestones) 
-    ? projectData.project_milestones.filter((m: any) => m && typeof m === 'object') : [];
-    
-  const safeBudgetLogs = Array.isArray(projectData?.budget_logs) 
-    ? projectData.budget_logs.filter((l: any) => l && typeof l === 'object') : [];
+  const safeMembers = Array.isArray(projectData?.project_members)
+    ? projectData.project_members.filter((m: any) => m && typeof m === "object")
+    : [];
 
-  const safeDocuments = Array.isArray(projectData?.project_documents) 
-    ? projectData.project_documents.filter((d: any) => d && typeof d === 'object') : [];
+  const safeTasks = Array.isArray(projectData?.tasks)
+    ? projectData.tasks.filter((t: any) => t && typeof t === "object")
+    : [];
 
-  const safePMs = Array.isArray(availablePMs) 
-    ? availablePMs.filter((pm: any) => pm && typeof pm === 'object') : [];
+  const safeMilestones = Array.isArray(projectData?.project_milestones)
+    ? projectData.project_milestones.filter(
+        (m: any) => m && typeof m === "object",
+      )
+    : [];
+
+  const safeBudgetLogs = Array.isArray(projectData?.budget_logs)
+    ? projectData.budget_logs.filter((l: any) => l && typeof l === "object")
+    : [];
+
+  const safeDocuments = Array.isArray(projectData?.project_documents)
+    ? projectData.project_documents.filter(
+        (d: any) => d && typeof d === "object",
+      )
+    : [];
+
+  const safePMs = Array.isArray(availablePMs)
+    ? availablePMs.filter((pm: any) => pm && typeof pm === "object")
+    : [];
 
   const project: any = {
     ...projectData,
@@ -83,16 +110,19 @@ export default async function ManageProjectPage({
     location: projectData?.location || "VSU Campus",
     liveStatus: projectData?.live_status || "Draft",
     imageUrl: projectData?.image_url || "/project-card-place.webp",
-    postedAt: projectData?.posted_at || projectData?.created_at || new Date().toISOString(),
+    postedAt:
+      projectData?.posted_at ||
+      projectData?.created_at ||
+      new Date().toISOString(),
     totalBudget: Number(projectData?.total_budget || 0),
     spentBudget: Number(projectData?.spent_budget || 0),
     membersCount: safeMembers.length,
-    
+
     members: safeMembers.map((m: any) => ({
       id: m?.profile_id || "unknown",
       name: m?.profiles?.full_name || "Unknown Officer",
       role: m?.project_role || "Member",
-      avatarUrl: m?.profiles?.avatar_url || null
+      avatarUrl: m?.profiles?.avatar_url || null,
     })),
 
     tasks: safeTasks.map((t: any, index: number) => ({
@@ -100,44 +130,69 @@ export default async function ManageProjectPage({
       title: t?.title || "Untitled Task",
       assignee: t?.profiles?.full_name || "Unassigned",
       assigned_to: t?.assigned_to || null,
-      dueDate: t?.due_date ? new Date(t.due_date).toLocaleDateString() : 'N/A',
+      dueDate: t?.due_date ? new Date(t.due_date).toLocaleDateString() : "N/A",
       status: t?.status || "Pending",
-      cost: t?.cost || 0
+      cost: t?.cost || 0,
     })),
 
     milestones: safeMilestones.map((m: any, index: number) => ({
       id: m?.id || `milestone-${index}`,
       title: m?.title || "Untitled Milestone",
-      deadline: m?.end_date ? new Date(m.end_date).toLocaleDateString() : 'No deadline',
+      deadline: m?.end_date
+        ? new Date(m.end_date).toLocaleDateString()
+        : "No deadline",
       status: m?.status || "Pending",
-      progress: m?.progress || 0
+      progress: m?.progress || 0,
     })),
 
-    budgetUpdates: safeBudgetLogs.map((log: any, index: number) => {
-      const parts = (log?.budget_change_reason || "").split(":");
-      return {
-        id: log?.id || `log-${index}`,
-        date: log?.changed_at ? new Date(log.changed_at).toLocaleString() : 'Unknown Date',
-        amountChange: (log?.new_amount || 0) - (log?.old_amount || 0),
-        category: parts.length > 1 ? parts[0] : "General",
-        description: parts.length > 1 ? parts[1].trim() : (log?.budget_change_reason || "No description"),
-        updatedBy: log?.profiles?.full_name || "System",
-        oldTotal: log?.old_amount || 0,
-        newTotal: log?.new_amount || 0,
-        isInitial: log?.is_initial || false
-      };
-    }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    budgetUpdates: safeBudgetLogs
+      .map((log: any, index: number) => {
+        const parts = (log?.budget_change_reason || "").split(":");
+        return {
+          id: log?.id || `log-${index}`,
+          date: log?.changed_at
+            ? new Date(log.changed_at).toLocaleString()
+            : "Unknown Date",
+          amountChange: (log?.new_amount || 0) - (log?.old_amount || 0),
+          category: parts.length > 1 ? parts[0] : "General",
+          description:
+            parts.length > 1
+              ? parts[1].trim()
+              : log?.budget_change_reason || "No description",
+          updatedBy: log?.profiles?.full_name || "System",
+          oldTotal: log?.old_amount || 0,
+          newTotal: log?.new_amount || 0,
+          isInitial: log?.is_initial || false,
+        };
+      })
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime(),
+      ),
 
-    documents: safeDocuments.map((d: any, index: number) => ({
-      id: d?.id || `doc-${index}`,
-      name: d?.name || "Untitled Document",
-      url: d?.file_url || "#",
-      size: d?.file_size || 0,
-      type: d?.file_type || "unknown",
-      uploadedBy: d?.profiles?.full_name || "Unknown",
-      date: d?.created_at ? new Date(d.created_at).toLocaleDateString() : 'Unknown Date'
-    })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    documents: safeDocuments
+      .map((d: any, index: number) => ({
+        id: d?.id || `doc-${index}`,
+        name: d?.name || "Untitled Document",
+        url: d?.file_url || "#",
+        size: d?.file_size || 0,
+        type: d?.file_type || "unknown",
+        uploadedBy: d?.profiles?.full_name || "Unknown",
+        date: d?.created_at
+          ? new Date(d.created_at).toLocaleDateString()
+          : "Unknown Date",
+      }))
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime(),
+      ),
   };
 
-  return <ProjectDetailClient project={project} availablePMs={safePMs} initialTab={initialTab} />;
+  return (
+    <ProjectDetailClient
+      project={project}
+      availablePMs={safePMs}
+      initialTab={initialTab}
+    />
+  );
 }
