@@ -52,9 +52,9 @@ export function BudgetTab({ project }: any) {
   };
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-8">
+    <div className="bg-white p-5 sm:p-8 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-8">
       <div>
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
           <h3 className="text-sm font-bold text-gray-600">
             Total Budget Allocation
           </h3>
@@ -62,18 +62,18 @@ export function BudgetTab({ project }: any) {
             Approved
           </span>
         </div>
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-3xl font-bold text-[#1B4332]">
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <span className="text-2xl sm:text-3xl font-bold text-[#1B4332] break-all">
             ₱{project.totalBudget.toLocaleString()}
           </span>
 
           <Dialog open={isBudgetEditOpen} onOpenChange={setIsBudgetEditOpen}>
             <DialogTrigger asChild>
-              <button className="text-gray-400 hover:text-gray-600 transition-colors">
+              <button className="text-gray-400 hover:text-gray-600 transition-colors p-1">
                 <Edit2 className="w-5 h-5" />
               </button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md w-[95vw]">
               <DialogHeader>
                 <DialogTitle>Adjust Total Budget</DialogTitle>
               </DialogHeader>
@@ -116,43 +116,43 @@ export function BudgetTab({ project }: any) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 shadow-sm">
-          <p className="text-xs font-bold text-gray-500 mb-1 uppercase">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 shadow-sm flex flex-col justify-center">
+          <p className="text-[11px] sm:text-xs font-bold text-gray-500 mb-1 uppercase">
             Total Allocated
           </p>
-          <p className="text-2xl font-bold text-gray-700">
+          <p className="text-xl sm:text-2xl font-bold text-gray-700 break-all">
             ₱{project.totalBudget.toLocaleString()}
           </p>
         </div>
-        <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 shadow-sm">
-          <p className="text-xs font-bold text-gray-500 mb-1 uppercase">
+        <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 shadow-sm flex flex-col justify-center">
+          <p className="text-[11px] sm:text-xs font-bold text-gray-500 mb-1 uppercase">
             Budget Used
           </p>
-          <p className="text-2xl font-bold text-red-500">
+          <p className="text-xl sm:text-2xl font-bold text-red-500 break-all">
             ₱{project.spentBudget.toLocaleString()}
           </p>
         </div>
-        <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 shadow-sm">
-          <p className="text-xs font-bold text-gray-500 mb-1 uppercase">
+        <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 shadow-sm flex flex-col justify-center sm:col-span-2 lg:col-span-1">
+          <p className="text-[11px] sm:text-xs font-bold text-gray-500 mb-1 uppercase">
             Remaining
           </p>
-          <p className="text-2xl font-bold text-green-500">
+          <p className="text-xl sm:text-2xl font-bold text-green-500 break-all">
             ₱{remaining.toLocaleString()}
           </p>
         </div>
       </div>
 
       <div>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h3 className="text-sm font-bold text-gray-900">Expense Breakdown</h3>
           <Dialog open={isExpenseOpen} onOpenChange={setIsExpenseOpen}>
             <DialogTrigger asChild>
-              <button className="flex items-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-colors">
+              <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2.5 sm:py-2 rounded-lg text-xs font-semibold transition-colors">
                 <Plus className="w-4 h-4" /> Add Expense
               </button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Record New Expense</DialogTitle>
               </DialogHeader>
@@ -213,13 +213,13 @@ export function BudgetTab({ project }: any) {
           </Dialog>
         </div>
 
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-sm text-left">
+        <div className="w-full overflow-x-auto -mx-5 px-5 sm:mx-0 sm:px-0">
+          <table className="w-full text-sm text-left min-w-125">
             <thead className="text-xs text-gray-500 border-b border-gray-200">
               <tr>
-                <th className="pb-3 font-semibold">Category</th>
-                <th className="pb-3 font-semibold">Amount</th>
-                <th className="pb-3 font-semibold">Description</th>
+                <th className="pb-3 font-semibold px-2">Category</th>
+                <th className="pb-3 font-semibold px-2">Amount</th>
+                <th className="pb-3 font-semibold px-2">Description</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -232,11 +232,11 @@ export function BudgetTab({ project }: any) {
               )}
               {expenses.map((exp: any) => (
                 <tr key={exp.id} className="text-gray-900 font-medium">
-                  <td className="py-4">{exp.category}</td>
-                  <td className="py-4 font-bold text-red-500">
+                  <td className="py-4 px-2">{exp.category}</td>
+                  <td className="py-4 px-2 font-bold text-red-500">
                     ₱{exp.amountChange.toLocaleString()}
                   </td>
-                  <td className="py-4 text-gray-500 font-normal">
+                  <td className="py-4 px-2 text-gray-500 font-normal">
                     {exp.description}
                   </td>
                 </tr>
@@ -246,13 +246,13 @@ export function BudgetTab({ project }: any) {
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-2">
         <h3 className="text-sm font-bold text-gray-900 mb-6 flex items-center gap-2">
           <Clock className="w-4 h-4 text-gray-400" /> Budget Audit Trail
         </h3>
-        <div className="space-y-6 relative before:absolute before:inset-0 before:ml-3.5 before:h-full before:w-0.5 before:bg-gray-100">
+        <div className="space-y-6 relative before:absolute before:inset-0 before:ml-3.25 before:h-full before:w-0.5 before:bg-gray-100">
           {project.budgetUpdates?.map((log: any) => (
-            <div key={log.id} className="relative flex items-start gap-6 group">
+            <div key={log.id} className="relative flex items-start gap-4 sm:gap-6 group">
               <div
                 className={`flex items-center justify-center w-7 h-7 rounded-full border-2 border-white ${log.isInitial ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-600"} shrink-0 shadow-sm z-10`}
               >
@@ -262,19 +262,19 @@ export function BudgetTab({ project }: any) {
                   <Receipt className="w-3.5 h-3.5" />
                 )}
               </div>
-              <div className="flex-1 bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:border-gray-200 transition-colors">
-                <div className="flex justify-between items-center mb-1">
+              <div className="flex-1 bg-white p-3 sm:p-4 rounded-xl border border-gray-100 shadow-sm hover:border-gray-200 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 mb-2 sm:mb-1">
                   <h4 className="font-bold text-sm text-gray-900">
                     {log.updatedBy}
                   </h4>
-                  <time className="text-[10px] text-gray-400 font-medium">
+                  <time className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
                     {log.date}
                   </time>
                 </div>
                 <p className="text-xs text-gray-500 leading-relaxed">
                   {log.description}
                 </p>
-                <div className="mt-2 text-[10px] font-bold text-gray-400 flex items-center gap-2">
+                <div className="mt-2 text-[10px] font-bold text-gray-400 flex flex-wrap items-center gap-2">
                   <span>₱{log.oldTotal.toLocaleString()}</span>
                   <span>➔</span>
                   <span className="text-[#1B4332]">
