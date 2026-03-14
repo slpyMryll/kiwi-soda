@@ -73,32 +73,62 @@ export function ProjectDetailView({
           spentBudget={project.spentBudget}
         />
 
-        <ProjectBudgetHistory updates={project.budgetUpdates} isGuest={isGuest} />
+        <ProjectBudgetHistory
+          updates={project.budgetUpdates}
+          isGuest={isGuest}
+        />
 
         <section>
           <h2 className="text-lg font-bold text-[#1B4332] mb-4">
-            Project Leaders
+            Project Team
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100"
-              >
-                <div className="w-10 h-10 rounded-full bg-[#1B4332] text-white flex items-center justify-center font-bold text-sm">
-                  JD
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-900 leading-none">
-                    John Doe
-                  </p>
-                  <p className="text-[11px] text-gray-500 font-medium">
-                    Project Lead
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {project.members && project.members.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {project.members.map((member: any, i: number) => {
+                const initials = member.name
+                  ? member.name
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")
+                      .substring(0, 2)
+                      .toUpperCase()
+                  : "??";
+
+                return (
+                  <div
+                    key={member.id || i}
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100"
+                  >
+                    {member.avatarUrl ? (
+                      <img
+                        src={member.avatarUrl}
+                        alt={member.name}
+                        className="w-10 h-10 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-[#1B4332] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                        {initials}
+                      </div>
+                    )}
+                    <div className="overflow-hidden">
+                      <p className="text-sm font-bold text-gray-900 leading-none truncate">
+                        {member.name}
+                      </p>
+                      <p className="text-[11px] text-gray-500 font-medium truncate mt-1">
+                        {member.role}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-6 text-center">
+              <p className="text-sm text-gray-500">
+                No team members have been assigned to this project yet.
+              </p>
+            </div>
+          )}
         </section>
 
         <ProjectFeedback
