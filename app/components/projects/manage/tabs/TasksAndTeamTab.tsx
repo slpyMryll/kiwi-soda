@@ -73,17 +73,17 @@ export function TasksAndTeamTab({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-lg font-bold text-gray-900">Task management</h2>
 
           <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
             <DialogTrigger asChild>
-              <button className="flex items-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+              <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2.5 sm:py-2 rounded-lg text-sm font-semibold transition-colors">
                 <Plus className="w-4 h-4" /> Assign Task
               </button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Assign New Task</DialogTitle>
               </DialogHeader>
@@ -117,7 +117,7 @@ export function TasksAndTeamTab({
                     ))}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1">
                       Due Date
@@ -159,7 +159,7 @@ export function TasksAndTeamTab({
 
         <div className="space-y-3">
           {tasks.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200 px-4">
               <p className="text-sm text-gray-500">
                 No tasks assigned yet. Click "Assign Task" to start.
               </p>
@@ -168,23 +168,23 @@ export function TasksAndTeamTab({
             tasks.map((task: any) => (
               <div
                 key={task.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors gap-4 bg-white"
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors gap-3 sm:gap-4 bg-white"
               >
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900 mb-2">
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-bold text-gray-900 mb-2 truncate">
                     {task.title}
                   </h4>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 font-medium">
-                    <span className="flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5" /> {task.assignee}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500 font-medium">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <User className="w-3.5 h-3.5 shrink-0" /> {task.assignee}
                     </span>
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-1.5 shrink-0">
                       <Calendar className="w-3.5 h-3.5" /> Due: {task.dueDate}
                     </span>
                   </div>
                 </div>
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 w-fit capitalize ${getStatusStyles(task.status)}`}
+                  className={`px-3 py-1.5 sm:py-1 rounded-full text-xs font-bold shrink-0 w-fit capitalize text-center ${getStatusStyles(task.status)}`}
                 >
                   {task.status.replace("-", " ")}
                 </span>
@@ -194,17 +194,17 @@ export function TasksAndTeamTab({
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-lg font-bold text-gray-900">Team Members</h2>
 
           <Dialog open={isMemberModalOpen} onOpenChange={setIsMemberModalOpen}>
             <DialogTrigger asChild>
-              <button className="flex items-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+              <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2.5 sm:py-2 rounded-lg text-sm font-semibold transition-colors">
                 <Plus className="w-4 h-4" /> Add Member
               </button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md w-[95vw]">
               <DialogHeader>
                 <DialogTitle>Add Officer to Project</DialogTitle>
               </DialogHeader>
@@ -247,9 +247,9 @@ export function TasksAndTeamTab({
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {members.length === 0 ? (
-            <p className="text-sm text-gray-500 col-span-2 py-4">
+            <p className="text-sm text-gray-500 col-span-1 lg:col-span-2 py-4">
               No members assigned yet.
             </p>
           ) : (
@@ -258,9 +258,9 @@ export function TasksAndTeamTab({
               return (
                 <div
                   key={m.id}
-                  className="p-4 rounded-xl border border-gray-200 flex items-center justify-between bg-white"
+                  className="p-4 rounded-xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 w-full sm:w-auto overflow-hidden">
                     <div className="w-10 h-10 rounded-full bg-red-400 text-white flex items-center justify-center font-bold text-sm shrink-0">
                       {m.name
                         .split(" ")
@@ -269,14 +269,14 @@ export function TasksAndTeamTab({
                         .substring(0, 2)
                         .toUpperCase()}
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-900 leading-tight">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-gray-900 leading-tight truncate">
                         {m.name}
                       </h4>
-                      <p className="text-xs text-gray-500">{m.role}</p>
+                      <p className="text-xs text-gray-500 truncate">{m.role}</p>
                     </div>
                   </div>
-                  <div className="text-right w-32">
+                  <div className="w-full sm:text-right sm:w-32 shrink-0">
                     <p className="text-[10px] font-bold text-gray-500 mb-1.5">
                       Tasks {stats.completed}/{stats.total} completed
                     </p>
