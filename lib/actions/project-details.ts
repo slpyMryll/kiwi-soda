@@ -281,3 +281,24 @@ export async function deleteDocument(
   revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
+
+export async function updateProjectProgress(
+  projectId: string,
+  formData: FormData,
+) {
+  const supabase = await createClient();
+  const progress = parseInt(formData.get("progress") as string);
+
+  if (isNaN(progress) || progress < 0 || progress > 100) {
+    return { error: "Invalid progress value. Must be between 0 and 100." };
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({ progress, updated_at: new Date() })
+    .eq("id", projectId);
+
+  if (error) return { error: error.message };
+  revalidatePath(`/project-manager/projects/${projectId}`);
+  return { success: true };
+}
