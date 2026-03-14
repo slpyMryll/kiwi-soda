@@ -26,6 +26,7 @@ export interface Project {
   managerId?: string;
   title: string;
   description: string;
+  location: string;
   postedAt: string;
   imageUrl?: string;
   tags: string[];
@@ -44,6 +45,8 @@ export interface Project {
   milestones?: ProjectMilestone[];
   budgetUpdates?: ProjectBudgetUpdate[];
 
+  members?: any[]; 
+  tasks?: any[];
   created_at: Date;
   updated_at: Date;
 }
