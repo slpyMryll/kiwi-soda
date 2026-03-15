@@ -10,7 +10,7 @@ export function PmHeader() {
         <p className="text-sm text-gray-500">Welcome to Ontrack</p>
       </div>
 
-      <div className="relative w-full md:w-[400px]">
+      <div className="relative w-full md:w-100">
         <div className="absolute left-4 top-1/2 -translate-y-1/2">
           <Search className="w-5 h-5 text-gray-400" />
         </div>

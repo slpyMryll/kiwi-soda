@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Edit2, Globe, Trash2, Loader2, AlertTriangle, EyeOff, Eye } from "lucide-react";
+import { Edit2, Globe, Trash2, Loader2, AlertTriangle, EyeOff, Eye } from "lucide-react";
 import { Project } from "@/types/projects";
 import { toggleProjectLiveStatus, deleteProject } from "@/lib/actions/project";
 import { updateProjectDetails } from "@/lib/actions/project-details";
@@ -51,10 +51,6 @@ export function ProjectManageHeader({ project }: { project: Project }) {
     <>
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 w-full">
         <div>
-          <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-gray-900 mb-4 transition-colors">
-            <ChevronLeft className="w-4 h-4" /> Back to Projects
-          </button>
-
           <div className="flex flex-wrap items-center gap-3 mb-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-[#153B44]">{project.title}</h1>
             <span className={`px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1.5 ${isLive ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-600"}`}>
@@ -91,10 +87,10 @@ export function ProjectManageHeader({ project }: { project: Project }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
           <button onClick={() => setIsToggleModalOpen(true)} disabled={isPending} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors bg-white shadow-sm disabled:opacity-50">
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4 text-gray-500" />}
-            {isLive ? "Unpublish Project" : "Publish Project"}
+            {isLive ? "Unpublish" : "Publish"}
           </button>
           <button onClick={() => setIsDeleteModalOpen(true)} disabled={isPending} className="flex items-center gap-2 px-4 py-2 border border-red-200 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-colors bg-white shadow-sm disabled:opacity-50">
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
