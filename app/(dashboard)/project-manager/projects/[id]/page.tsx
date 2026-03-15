@@ -23,14 +23,7 @@ export default async function ManageProjectPage({
   try {
     const resolvedSearchParams = await searchParams;
     const tabParam = resolvedSearchParams?.tab;
-    const validTabs = [
-      "Overview",
-      "Tasks & Team",
-      "Budget",
-      "Timeline",
-      "Documents",
-      "Charts",
-    ];
+    const validTabs = ["Overview", "Tasks & Team", "Budget", "Timeline", "Documents", "Charts"];
     if (typeof tabParam === "string" && validTabs.includes(tabParam)) {
       initialTab = tabParam;
     }
@@ -47,75 +40,52 @@ export default async function ManageProjectPage({
     .from("projects")
     .select(
       `
-      id, title, description, location, live_status, image_url, posted_at, created_at, total_budget, spent_budget, progress, deadline,
+      id, manager_id, title, description, location, status, live_status, image_url, posted_at, created_at, total_budget, spent_budget, progress, deadline, tags,
       project_members ( profile_id, project_role, profiles ( full_name, avatar_url ) ),
       tasks ( id, title, assigned_to, due_date, status, cost, profiles ( full_name ) ),
-      budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
+      budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
       project_milestones ( id, title, end_date, status, progress ),
       project_documents ( id, name, file_url, file_size, file_type, created_at, profiles:uploaded_by ( full_name ) )
-    `,
+    `
     )
     .eq("id", id)
     .maybeSingle();
 
   const [{ data: availablePMs }, { data: projectData, error }] =
     await Promise.all([pmsPromise, projectPromise]);
-
+  
   if (error && error.code !== "PGRST116") {
-    console.error(
-      "SUPABASE FETCH ERROR:",
-      error.message,
-      error.details,
-      error.hint,
-    );
+    console.error("SUPABASE FETCH ERROR:", error.message);
   }
+  
+  if (!projectData) return notFound();
 
-  if (!projectData) {
-    return notFound();
-  }
-
-  const safeMembers = Array.isArray(projectData?.project_members)
-    ? projectData.project_members.filter((m: any) => m && typeof m === "object")
-    : [];
-
-  const safeTasks = Array.isArray(projectData?.tasks)
-    ? projectData.tasks.filter((t: any) => t && typeof t === "object")
-    : [];
-
-  const safeMilestones = Array.isArray(projectData?.project_milestones)
-    ? projectData.project_milestones.filter(
-        (m: any) => m && typeof m === "object",
-      )
-    : [];
-
-  const safeBudgetLogs = Array.isArray(projectData?.budget_logs)
-    ? projectData.budget_logs.filter((l: any) => l && typeof l === "object")
-    : [];
-
-  const safeDocuments = Array.isArray(projectData?.project_documents)
-    ? projectData.project_documents.filter(
-        (d: any) => d && typeof d === "object",
-      )
-    : [];
-
-  const safePMs = Array.isArray(availablePMs)
-    ? availablePMs.filter((pm: any) => pm && typeof pm === "object")
-    : [];
+  const { data: { user } } = await supabase.auth.getUser();
+  const isManager = projectData.manager_id === user?.id;
+  
+  const safeMembers = Array.isArray(projectData?.project_members) ? projectData.project_members : [];
+  const safeTasks = Array.isArray(projectData?.tasks) ? projectData.tasks : [];
+  const safeMilestones = Array.isArray(projectData?.project_milestones) ? projectData.project_milestones : [];
+  const safeBudgetLogs = Array.isArray(projectData?.budget_logs) ? projectData.budget_logs : [];
+  const safeDocuments = Array.isArray(projectData?.project_documents) ? projectData.project_documents : [];
+  const safePMs = Array.isArray(availablePMs) ? availablePMs : [];
 
   const project: any = {
     ...projectData,
-    id: projectData?.id || id,
-    title: projectData?.title || "Untitled Project",
-    description: projectData?.description || "",
-    location: projectData?.location || "VSU Campus",
-    liveStatus: projectData?.live_status || "Draft",
-    imageUrl: projectData?.image_url || "/project-card-place.webp",
-    postedAt:
-      projectData?.posted_at ||
-      projectData?.created_at ||
-      new Date().toISOString(),
-    totalBudget: Number(projectData?.total_budget || 0),
-    spentBudget: Number(projectData?.spent_budget || 0),
+    isManager,
+    id: projectData.id,
+    title: projectData.title || "Untitled Project",
+    description: projectData.description || "",
+    location: projectData.location || "VSU Campus",
+    status: projectData.status || "Ongoing",
+    liveStatus: projectData.live_status || "Draft",
+    imageUrl: projectData.image_url || "/project-card-place.webp",
+    postedAt: projectData.posted_at || projectData.created_at,
+    totalBudget: Number(projectData.total_budget || 0),
+    spentBudget: Number(projectData.spent_budget || 0),
+    progress: projectData.progress || 0,
+    deadline: projectData.deadline,
+    tags: projectData.tags || [], 
     membersCount: safeMembers.length,
 
     members: safeMembers.map((m: any) => ({
@@ -138,61 +108,39 @@ export default async function ManageProjectPage({
     milestones: safeMilestones.map((m: any, index: number) => ({
       id: m?.id || `milestone-${index}`,
       title: m?.title || "Untitled Milestone",
-      deadline: m?.end_date
-        ? new Date(m.end_date).toLocaleDateString()
-        : "No deadline",
+      deadline: m?.end_date ? new Date(m.end_date).toLocaleDateString() : "No deadline",
       status: m?.status || "Pending",
       progress: m?.progress || 0,
     })),
 
-    budgetUpdates: safeBudgetLogs
-      .map((log: any, index: number) => {
-        const parts = (log?.budget_change_reason || "").split(":");
-        return {
-          id: log?.id || `log-${index}`,
-          date: log?.changed_at
-            ? new Date(log.changed_at).toLocaleString()
-            : "Unknown Date",
-          amountChange: (log?.new_amount || 0) - (log?.old_amount || 0),
-          category: parts.length > 1 ? parts[0] : "General",
-          description:
-            parts.length > 1
-              ? parts[1].trim()
-              : log?.budget_change_reason || "No description",
-          updatedBy: log?.profiles?.full_name || "System",
-          oldTotal: log?.old_amount || 0,
-          newTotal: log?.new_amount || 0,
-          isInitial: log?.is_initial || false,
-        };
-      })
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime(),
-      ),
+    budgetUpdates: safeBudgetLogs.map((log: any, index: number) => {
+      const parts = (log?.budget_change_reason || "").split(":");
+      return {
+        id: log?.id || `log-${index}`,
+        date: log?.changed_at ? new Date(log.changed_at).toLocaleString() : "Unknown Date",
+        amountChange: (log?.new_amount || 0) - (log?.old_amount || 0),
+        category: parts.length > 1 ? parts[0] : "General",
+        description: parts.length > 1 ? parts[1].trim() : log?.budget_change_reason || "No description",
+        updatedBy: log?.profiles?.full_name || "System",
+        oldTotal: log?.old_amount || 0,
+        newTotal: log?.new_amount || 0,
+        isInitial: log?.is_initial || false,
+        status: log?.status || 'Approved',
+      };
+    }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()),
 
-    documents: safeDocuments
-      .map((d: any, index: number) => ({
-        id: d?.id || `doc-${index}`,
-        name: d?.name || "Untitled Document",
-        url: d?.file_url || "#",
-        size: d?.file_size || 0,
-        type: d?.file_type || "unknown",
-        uploadedBy: d?.profiles?.full_name || "Unknown",
-        date: d?.created_at
-          ? new Date(d.created_at).toLocaleDateString()
-          : "Unknown Date",
-      }))
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime(),
-      ),
+    documents: safeDocuments.map((d: any, index: number) => ({
+      id: d?.id || `doc-${index}`,
+      name: d?.name || "Untitled Document",
+      url: d?.file_url || "#",
+      size: d?.file_size || 0,
+      type: d?.file_type || "unknown",
+      uploadedBy: d?.profiles?.full_name || "Unknown",
+      date: d?.created_at ? new Date(d.created_at).toLocaleDateString() : "Unknown Date",
+    })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   };
 
   return (
-    <ProjectDetailClient
-      project={project}
-      availablePMs={safePMs}
-      initialTab={initialTab}
-    />
+    <ProjectDetailClient project={project} availablePMs={safePMs} initialTab={initialTab} />
   );
 }
