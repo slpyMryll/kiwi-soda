@@ -6,8 +6,21 @@
 
 | Initial Release Code | Date Released |
 | -------------------- | ------------- |
+| KS.010.003           | [2026-03-15]  |
 | KS.010.002           | [2026-03-08]  |
 | KS.010.001           | [2025-05-26]  |
+
+## KS.010.003 Release Notes
+
+**What's New**
+
+* **Core Features**:
+
+  * Public Project Feeds: Introduced a public feed to enable browsing of available projects.
+  * Project Manager Management: Implemented comprehensive management functionalities for Project Managers.
+  * Unified Project Details: Consolidated project detail views into a single, cohesive structure.
+  * Mock Data Type Correction: Resolved inconsistencies related to mock date data types.
+  * Project Manager Workflow: Resolved inconsistencies related to mock date data types.
 
 ## KS.010.002 Release Notes
 
