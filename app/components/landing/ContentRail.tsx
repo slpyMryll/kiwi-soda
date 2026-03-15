@@ -26,7 +26,7 @@ export function ContentRail({
             <Badge 
               key={topic}
               variant="secondary" 
-              className="bg-[#e8f5e9] text-[#2d6a4f] hover:bg-[#d4edda] border-none px-3 py-1.5 cursor-pointer"
+              className="bg-surface-accent text-[#2d6a4f] hover:bg-[#d4edda] border-none px-3 py-1.5 cursor-pointer"
             >
               {topic}
             </Badge>
@@ -55,7 +55,7 @@ export function ContentRail({
         </div>
       </div>
 
-      <div className="p-6 border-t border-gray-200 bg-linear-to-br from-[#e8f5e9] to-[#f1f8f4]">
+      <div className="p-6 border-t border-gray-200 bg-surface-accent">
         <h3 className="text-sm font-semibold text-gray-900 mb-2">Join the Community</h3>
         <p className="text-xs text-gray-600 mb-4">
           Connect with others who care about sustainable projects

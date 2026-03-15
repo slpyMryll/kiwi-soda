@@ -15,7 +15,7 @@ export function getFilteredAndSortedProjects(projects: Project[], params: Filter
 
   let processed = projects.filter((project) => {
     let matchesStatus = true;
-    if (currentFilter === "ongoing") matchesStatus = project.status === "Active";
+    if (currentFilter === "ongoing") matchesStatus = project.status === "Ongoing";
     if (currentFilter === "completed") matchesStatus = project.status === "Completed";
     
     let matchesSearch = true;
