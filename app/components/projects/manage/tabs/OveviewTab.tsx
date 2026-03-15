@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Edit2,
   Globe,
@@ -21,6 +21,7 @@ import {
   updateProjectDescription,
   updateProjectProgress,
 } from "@/lib/actions/project-details";
+import { createClient } from "@/lib/supabase/client";
 
 export function OverviewTab({ project }: { project: any }) {
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -29,33 +30,76 @@ export function OverviewTab({ project }: { project: any }) {
   const [isProgressEditOpen, setIsProgressEditOpen] = useState(false);
   const [isProgressPending, setIsProgressPending] = useState(false);
 
+  const [localProject, setLocalProject] = useState(project);
+
+  useEffect(() => {
+    setLocalProject(project);
+  }, [project]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("realtime-overview")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "projects",
+          filter: `id=eq.${project.id}`,
+        },
+        (payload) => {
+          setLocalProject((prev: any) => ({
+            ...prev,
+            description: payload.new.description ?? prev.description,
+            progress: payload.new.progress ?? prev.progress,
+          }));
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [project.id]);
+
   const handleUpdate = async (formData: FormData) => {
     setIsPending(true);
+    const newDesc = formData.get("description") as string;
+    setLocalProject((prev: any) => ({ ...prev, description: newDesc }));
+
     const res = await updateProjectDescription(project.id, formData);
     setIsPending(false);
-    if (res.error) alert(res.error);
-    else setIsEditOpen(false);
+    if (res.error) {
+      alert(res.error);
+      setLocalProject(project);
+    } else setIsEditOpen(false);
   };
 
   const handleProgressUpdate = async (formData: FormData) => {
     setIsProgressPending(true);
+    const newProg = parseInt(formData.get("progress") as string);
+    setLocalProject((prev: any) => ({ ...prev, progress: newProg }));
+
     const res = await updateProjectProgress(project.id, formData);
     setIsProgressPending(false);
-    if (res?.error) alert(res.error);
-    else setIsProgressEditOpen(false);
+    if (res?.error) {
+      alert(res.error);
+      setLocalProject(project); // Revert on error
+    } else setIsProgressEditOpen(false);
   };
 
   const startDate = new Date(
-    project.created_at || project.postedAt,
+    localProject.created_at || localProject.postedAt,
   ).toLocaleDateString();
-  const endDate = project.deadline
-    ? new Date(project.deadline).toLocaleDateString()
+  const endDate = localProject.deadline
+    ? new Date(localProject.deadline).toLocaleDateString()
     : "No deadline";
 
   const activities: any[] = [];
 
-  if (project.budgetUpdates && Array.isArray(project.budgetUpdates)) {
-    project.budgetUpdates.forEach((b: any) => {
+  if (localProject.budgetUpdates && Array.isArray(localProject.budgetUpdates)) {
+    localProject.budgetUpdates.forEach((b: any) => {
       activities.push({
         id: `budget-${b.id}`,
         icon: Wallet,
@@ -69,8 +113,8 @@ export function OverviewTab({ project }: { project: any }) {
     });
   }
 
-  if (project.documents && Array.isArray(project.documents)) {
-    project.documents.forEach((d: any) => {
+  if (localProject.documents && Array.isArray(localProject.documents)) {
+    localProject.documents.forEach((d: any) => {
       activities.push({
         id: `doc-${d.id}`,
         icon: FileText,
@@ -84,8 +128,8 @@ export function OverviewTab({ project }: { project: any }) {
     });
   }
 
-  if (project.milestones && Array.isArray(project.milestones)) {
-    project.milestones.forEach((m: any) => {
+  if (localProject.milestones && Array.isArray(localProject.milestones)) {
+    localProject.milestones.forEach((m: any) => {
       const isCompleted = m.status === "Completed";
       activities.push({
         id: `milestone-${m.id}`,
@@ -133,7 +177,7 @@ export function OverviewTab({ project }: { project: any }) {
                 <div>
                   <textarea
                     name="description"
-                    defaultValue={project.description}
+                    defaultValue={localProject.description}
                     required
                     rows={6}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] resize-none"
@@ -156,7 +200,7 @@ export function OverviewTab({ project }: { project: any }) {
         </div>
 
         <p className="text-sm text-gray-600 leading-relaxed mb-6 whitespace-pre-wrap wrap-break-word">
-          {project.description}
+          {localProject.description}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm pt-4 border-t border-gray-100">
@@ -181,7 +225,7 @@ export function OverviewTab({ project }: { project: any }) {
               Total Budget
             </span>
             <span className="font-bold text-gray-900 text-right sm:text-left break-all">
-              ₱{project.totalBudget?.toLocaleString() || 0}
+              ₱{localProject.totalBudget?.toLocaleString() || 0}
             </span>
           </div>
         </div>
@@ -225,7 +269,7 @@ export function OverviewTab({ project }: { project: any }) {
                         <input
                           type="number"
                           name="progress"
-                          defaultValue={project.progress || 0}
+                          defaultValue={localProject.progress || 0}
                           required
                           min="0"
                           max="100"
@@ -248,13 +292,13 @@ export function OverviewTab({ project }: { project: any }) {
                 </Dialog>
               </div>
               <span className="text-[#1B4332] text-lg">
-                {project.progress || 0}%
+                {localProject.progress || 0}%
               </span>
             </div>
             <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-[#52B788] rounded-full transition-all duration-500"
-                style={{ width: `${project.progress || 0}%` }}
+                style={{ width: `${localProject.progress || 0}%` }}
               />
             </div>
           </div>
@@ -263,14 +307,15 @@ export function OverviewTab({ project }: { project: any }) {
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600 font-medium">Active Tasks:</span>
               <span className="font-bold text-gray-900">
-                {project.tasks?.length || 0}
+                {localProject.tasks?.length || 0}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm border-t border-gray-50 pt-4">
               <span className="text-gray-600 font-medium">Pending Tasks:</span>
               <span className="font-bold text-gray-900">
-                {project.tasks?.filter((t: any) => t.status !== "Completed")
-                  .length || 0}
+                {localProject.tasks?.filter(
+                  (t: any) => t.status !== "Completed",
+                ).length || 0}
               </span>
             </div>
           </div>
@@ -315,7 +360,7 @@ export function OverviewTab({ project }: { project: any }) {
         </div>
       </div>
 
-      {project.liveStatus === "Live" ? (
+      {localProject.liveStatus === "Live" ? (
         <div className="bg-[#E6F4EA] border border-[#BFFFE3] p-4 sm:p-5 rounded-2xl flex items-start gap-3">
           <Globe className="w-5 h-5 text-[#1B4332] shrink-0 mt-0.5" />
           <div>

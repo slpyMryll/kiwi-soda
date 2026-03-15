@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { Plus, User, Loader2, Calendar } from "lucide-react";
 import {
   Dialog,
@@ -8,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { addProjectMember, assignTask } from "@/lib/actions/project-details";
+import { createClient } from "@/lib/supabase/client";
 
 export function TasksAndTeamTab({
   projectId,
@@ -19,8 +22,98 @@ export function TasksAndTeamTab({
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [localMembers, setLocalMembers] = useState(members);
+  const [localTasks, setLocalTasks] = useState(tasks);
+
+  useEffect(() => {
+    setLocalMembers(members);
+    setLocalTasks(tasks);
+  }, [members, tasks]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const taskChannel = supabase
+      .channel("realtime-tasks")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const pm = availablePMs.find(
+              (p: any) => p.id === payload.new.assigned_to,
+            );
+            const newTask = {
+              id: payload.new.id,
+              title: payload.new.title,
+              assignee: pm ? pm.full_name : "Team Member",
+              dueDate: payload.new.due_date
+                ? new Date(payload.new.due_date).toLocaleDateString()
+                : "N/A",
+              status: payload.new.status,
+              cost: payload.new.cost,
+              assigned_to: payload.new.assigned_to,
+            };
+            setLocalTasks((prev: any) => [...prev, newTask]);
+          } else if (payload.eventType === "UPDATE") {
+            setLocalTasks((prev: any) =>
+              prev.map((t: any) =>
+                t.id === payload.new.id
+                  ? { ...t, status: payload.new.status }
+                  : t,
+              ),
+            );
+          } else if (payload.eventType === "DELETE") {
+            setLocalTasks((prev: any) =>
+              prev.filter((t: any) => t.id !== payload.old.id),
+            );
+          }
+        },
+      )
+      .subscribe();
+
+    const memberChannel = supabase
+      .channel("realtime-members")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "project_members",
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          const pm = availablePMs.find(
+            (p: any) => p.id === payload.new.profile_id,
+          );
+          if (pm) {
+            const newMember = {
+              id: pm.id,
+              name: pm.full_name,
+              role: payload.new.project_role,
+              avatarUrl: pm.avatar_url || null,
+            };
+            setLocalMembers((prev: any) => [...prev, newMember]);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(taskChannel);
+      supabase.removeChannel(memberChannel);
+    };
+  }, [projectId, availablePMs]);
+
   const getMemberStats = (profileId: string) => {
-    const memberTasks = tasks.filter((t: any) => t.assigned_to === profileId);
+    const memberTasks = localTasks.filter(
+      (t: any) => t.assigned_to === profileId,
+    );
     const completed = memberTasks.filter(
       (t: any) => t.status === "Completed",
     ).length;
@@ -52,11 +145,8 @@ export function TasksAndTeamTab({
     const result = await addProjectMember(projectId, formData);
     setIsLoading(false);
 
-    if (result.error) {
-      alert(`Database Error: ${result.error}`);
-    } else {
-      setIsMemberModalOpen(false);
-    }
+    if (result.error) alert(`Database Error: ${result.error}`);
+    else setIsMemberModalOpen(false);
   };
 
   const handleAssignTask = async (formData: FormData) => {
@@ -64,11 +154,8 @@ export function TasksAndTeamTab({
     const result = await assignTask(projectId, formData);
     setIsLoading(false);
 
-    if (result.error) {
-      alert(`Database Error: ${result.error}`);
-    } else {
-      setIsTaskModalOpen(false);
-    }
+    if (result.error) alert(`Database Error: ${result.error}`);
+    else setIsTaskModalOpen(false);
   };
 
   return (
@@ -110,7 +197,7 @@ export function TasksAndTeamTab({
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]"
                   >
                     <option value="">Select a project member...</option>
-                    {members.map((m: any) => (
+                    {localMembers.map((m: any) => (
                       <option key={m.id} value={m.id}>
                         {m.name}
                       </option>
@@ -158,14 +245,14 @@ export function TasksAndTeamTab({
         </div>
 
         <div className="space-y-3">
-          {tasks.length === 0 ? (
+          {localTasks.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200 px-4">
               <p className="text-sm text-gray-500">
                 No tasks assigned yet. Click "Assign Task" to start.
               </p>
             </div>
           ) : (
-            tasks.map((task: any) => (
+            localTasks.map((task: any) => (
               <div
                 key={task.id}
                 className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors gap-3 sm:gap-4 bg-white"
@@ -222,7 +309,8 @@ export function TasksAndTeamTab({
                     <option value="">Select from Council...</option>
                     {availablePMs
                       .filter(
-                        (pm: any) => !members.find((m: any) => m.id === pm.id),
+                        (pm: any) =>
+                          !localMembers.find((m: any) => m.id === pm.id),
                       )
                       .map((pm: any) => (
                         <option key={pm.id} value={pm.id}>
@@ -248,12 +336,12 @@ export function TasksAndTeamTab({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {members.length === 0 ? (
+          {localMembers.length === 0 ? (
             <p className="text-sm text-gray-500 col-span-1 lg:col-span-2 py-4">
               No members assigned yet.
             </p>
           ) : (
-            members.map((m: any) => {
+            localMembers.map((m: any) => {
               const stats = getMemberStats(m.id);
               return (
                 <div

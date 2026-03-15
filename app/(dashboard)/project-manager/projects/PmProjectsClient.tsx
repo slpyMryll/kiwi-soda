@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Inbox, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { PmProjectCard } from "@/app/components/dashboard/PmProjectCard";
@@ -7,6 +8,7 @@ import { CreateProjectModal } from "@/app/components/projects/CreateProjectModal
 import { ProjectStats } from "@/app/components/dashboard/ProjectStats";
 import { ProjectFilters } from "@/app/components/dashboard/ProjectFilters";
 import { Project } from "@/types/projects";
+import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   projects: Project[];
@@ -31,6 +33,133 @@ export default function PmProjectsClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const [localProjects, setLocalProjects] = useState<Project[]>(projects);
+
+  useEffect(() => {
+    setLocalProjects(projects);
+  }, [projects]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let currentUserId = "";
+
+    supabase.auth.getUser().then(({ data }) => {
+      currentUserId = data.user?.id || "";
+    });
+
+    const fetchAndAddProject = async (projectId: string) => {
+      const { data } = await supabase
+        .from("projects")
+        .select(
+          `
+        *,
+        project_members (count),
+        comments (count)
+      `,
+        )
+        .eq("id", projectId)
+        .single();
+
+      if (data) {
+        const newProject: Project = {
+          id: data.id,
+          title: data.title,
+          description: data.description,
+          location: data.location || "VSU Campus",
+          imageUrl: data.image_url,
+          tags: data.tags || [],
+          status:
+            data.status && data.status.toLowerCase() === "completed"
+              ? "Completed"
+              : "Ongoing",
+          liveStatus: data.live_status,
+          totalBudget: Number(data.total_budget),
+          spentBudget: Number(data.spent_budget),
+          progress: data.progress,
+          deadline: data.deadline,
+          postedAt: data.posted_at || data.created_at,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          membersCount: data.project_members?.[0]?.count || 0,
+          commentsCount: data.comments?.[0]?.count || 0,
+          isFollowing: false,
+        };
+
+        setLocalProjects((prev) => {
+          if (prev.some((p) => p.id === newProject.id)) return prev;
+          return [newProject, ...prev];
+        });
+      }
+    };
+
+    const projectChannel = supabase
+      .channel("feed-projects-sync")
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "projects" },
+        (payload) => {
+          setLocalProjects((prev) =>
+            prev.filter((p) => p.id !== payload.old.id),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "projects" },
+        (payload) => {
+          setLocalProjects((prev) =>
+            prev.map((p) =>
+              p.id === payload.new.id
+                ? {
+                    ...p,
+                    progress: payload.new.progress ?? p.progress,
+                    status:
+                      payload.new.status === "Completed"
+                        ? "Completed"
+                        : "Ongoing",
+                    liveStatus: payload.new.live_status ?? p.liveStatus,
+                    totalBudget: payload.new.total_budget ?? p.totalBudget,
+                    spentBudget: payload.new.spent_budget ?? p.spentBudget,
+                    title: payload.new.title ?? p.title,
+                    imageUrl: payload.new.image_url ?? p.imageUrl,
+                  }
+                : p,
+            ),
+          );
+        },
+      )
+      .subscribe();
+
+    const memberChannel = supabase
+      .channel("feed-members-sync")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "project_members" },
+        (payload) => {
+          if (payload.new.profile_id === currentUserId) {
+            fetchAndAddProject(payload.new.project_id);
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "project_members" },
+        (payload) => {
+          if (payload.old.profile_id === currentUserId) {
+            setLocalProjects((prev) =>
+              prev.filter((p) => p.id !== payload.old.project_id),
+            );
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(projectChannel);
+      supabase.removeChannel(memberChannel);
+    };
+  }, []);
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
@@ -67,13 +196,13 @@ export default function PmProjectsClient({
         <ProjectFilters />
       </div>
 
-      {projects.length > 0 ? (
+      {localProjects.length > 0 ? (
         <div className="flex flex-col gap-6">
           <p className="text-sm font-bold text-gray-500">
-            Showing {projects.length} of {totalFiltered} projects
+            Showing {localProjects.length} of {totalFiltered} projects
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {projects.map((project) => (
+            {localProjects.map((project) => (
               <PmProjectCard key={project.id} {...project} />
             ))}
           </div>
