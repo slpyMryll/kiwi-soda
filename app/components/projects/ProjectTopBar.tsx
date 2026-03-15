@@ -7,13 +7,15 @@ interface ProjectTopBarProps {
   tags: string[];
   isGuest: boolean;
   isModal: boolean;
+  isPreview?: boolean;
   onClose?: () => void;
 }
 
-export function ProjectTopBar({ projectId, tags, isGuest, isModal, onClose }: ProjectTopBarProps) {
+export function ProjectTopBar({ projectId, tags, isGuest, isModal, isPreview = false, onClose }: ProjectTopBarProps) {
   const router = useRouter();
 
   const handleFollow = () => {
+    if (isPreview) return; 
     if (isGuest) router.push("/login");
     else console.log("Following project:", projectId);
   };
@@ -40,10 +42,16 @@ export function ProjectTopBar({ projectId, tags, isGuest, isModal, onClose }: Pr
       <div className="flex items-center gap-3">
         <button 
           onClick={handleFollow}
-          className="flex items-center gap-1.5 border border-gray-200 hover:bg-gray-50 px-4 py-1.5 rounded-full text-sm font-semibold text-gray-700 transition-colors"
+          disabled={isPreview}
+          className={`flex items-center gap-1.5 border border-gray-200 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+            isPreview 
+              ? "bg-gray-50 text-gray-400 cursor-not-allowed opacity-70" 
+              : "hover:bg-gray-50 text-gray-700"
+          }`}
         >
           Follow <Plus className="w-4 h-4" />
         </button>
+        
         {isModal && onClose && (
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
             <X className="w-5 h-5" />
