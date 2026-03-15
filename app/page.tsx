@@ -3,13 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { ContentRail } from "./components/landing/ContentRail";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
-
 import { HeroBanner } from "./components/dashboard/HeroBanner";
 import { ProjectFilters } from "./components/dashboard/ProjectFilters";
-import { GuestProjectFeed } from "./components/landing/GuestProjectFeed";
-import { MOCK_PROJECTS } from "@/lib/constants/mock-data";
-import { getFilteredAndSortedProjects } from "@/lib/utils/project-helpers";
+import { InfiniteProjectFeed } from "./components/dashboard/InfiniteProjectFeed";
 import { redirect } from "next/navigation";
+import { getInfiniteProjects } from "@/lib/actions/project-feed";
 
 export default async function LandingPage({
   searchParams,
@@ -22,14 +20,20 @@ export default async function LandingPage({
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect('/dashboard-redirect');
+    redirect("/dashboard-redirect");
   }
 
   const resolvedParams = await searchParams;
-  const processedProjects = getFilteredAndSortedProjects(
-    MOCK_PROJECTS,
-    resolvedParams,
-  );
+  const q = resolvedParams?.q || "";
+  const status = resolvedParams?.status || "all";
+  const sort = resolvedParams?.sort || "newest";
+
+  const { projects: initialProjects } = await getInfiniteProjects({
+    page: 1,
+    q,
+    status,
+    sort,
+  });
 
   return (
     <div className="flex flex-col min-h-screen bg-bg-main">
@@ -46,8 +50,8 @@ export default async function LandingPage({
           />
         </div>
 
-        <main className="flex-1 flex flex-col overflow-x-hidden bg-linear-to-b from-[#153B44] from-0% via-bg-main via-10% to-bg-main">
-          <div className="px-4 lg:px-24 mx-auto w-full flex-1 ">
+        <main className="flex-1 flex flex-col overflow-x-hidden bg-linear-to-b from-[#153B44] from-0% via-bg-main via-[300px] to-bg-main">
+          <div className="px-4 lg:px-24 mx-auto w-full flex-1">
             <HeroBanner />
             <div className="mb-2 mt-8">
               <h2 className="text-2xl font-bold text-[#1B4332]">
@@ -60,7 +64,11 @@ export default async function LandingPage({
 
             <ProjectFilters />
 
-            <GuestProjectFeed projects={processedProjects} />
+            <InfiniteProjectFeed
+              initialProjects={initialProjects}
+              userRole="guest"
+              searchParams={{ q, status, sort }}
+            />
           </div>
           <Footer />
         </main>
