@@ -1,76 +1,43 @@
-import { TrendingUp, TrendingDown, Lock } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { ProjectBudgetUpdate } from "@/types/projects";
+import { CheckCircle2, Receipt, Clock } from "lucide-react";
 
-interface ProjectBudgetHistoryProps {
-  updates?: ProjectBudgetUpdate[];
-  isGuest?: boolean;
-}
-
-export function ProjectBudgetHistory({ updates = [], isGuest = false }: ProjectBudgetHistoryProps) {
-  const router = useRouter();
-
-  if (isGuest) {
-    return (
-      <section>
-        <h2 className="text-lg font-bold text-[#1B4332] mb-6">Budget Update History</h2>
-        <div className="bg-gray-50/50 p-8 rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
-          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-            <Lock className="w-5 h-5 text-gray-500" />
-          </div>
-          <h3 className="text-base font-bold text-gray-900 mb-2">Detailed History Locked</h3>
-          <p className="text-sm text-gray-500 max-w-sm mb-6">
-            Please login to view the complete budget update timeline, including specific transaction amounts and authorizing personnel.
-          </p>
-          <button 
-            onClick={() => router.push('/login')}
-            className="px-6 py-2 bg-[#1B4332] hover:bg-green-900 text-white rounded-lg text-sm font-bold transition-colors shadow-sm"
-          >
-            Login to View History
-          </button>
-        </div>
-      </section>
-    );
-  }
-
+export function ProjectBudgetHistory({ updates, isGuest }: { updates?: any[], isGuest: boolean }) {
   if (!updates || updates.length === 0) return null;
 
   return (
     <section>
-      <h2 className="text-lg font-bold text-[#1B4332] mb-6">Budget Update History</h2>
-      
-      <div className="relative border-l-2 border-gray-200 ml-4 space-y-6 pb-4">
-        {updates.map((update) => {
-          const isPositive = update.amountChange > 0;
-          
-          return (
-            <div key={update.id} className="relative pl-8">
-              <div className={`absolute -left-4.25 top-4 ${update.isInitial ? 'bg-[#E2E8F0]' : (isPositive ? 'bg-[#52B788]' : 'bg-red-500')} w-8 h-8 rounded-full flex items-center justify-center border-4 border-white shadow-sm`}>
-                {!update.isInitial && (
-                  isPositive ? <TrendingUp className="w-4 h-4 text-white" strokeWidth={2.5} /> : <TrendingDown className="w-4 h-4 text-white" strokeWidth={2.5} />
-                )}
+      <h2 className="text-lg font-bold text-[#1B4332] mb-6 flex items-center gap-2">
+        <Clock className="w-5 h-5 text-gray-400" /> Budget Audit Trail
+      </h2>
+      <div className="space-y-6 relative before:absolute before:inset-0 before:ml-3.25 before:h-full before:w-0.5 before:bg-gray-100">
+        {updates.map((log: any) => (
+          <div key={log.id} className={`relative flex items-start gap-4 sm:gap-6 group ${log.status === 'Adjusted' || log.status === 'Rejected' ? 'opacity-50' : ''}`}>
+            <div className={`flex items-center justify-center w-7 h-7 rounded-full border-2 border-white ${log.isInitial ? "bg-blue-100 text-blue-600" : log.status === 'Adjusted' ? "bg-gray-200 text-gray-500" : log.status === 'Rejected' ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"} shrink-0 shadow-sm z-10`}>
+              {log.isInitial ? <CheckCircle2 className="w-4 h-4" /> : <Receipt className="w-3.5 h-3.5" />}
+            </div>
+            
+            <div className="flex-1 bg-white p-3 sm:p-4 rounded-xl border border-gray-100 shadow-sm">
+              <div className="flex flex-col gap-1 mb-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className={`font-bold text-sm ${log.status === 'Adjusted' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                    {log.category !== 'General' ? `${log.category}: ` : ''}{log.description}
+                  </h4>
+                  {log.status === 'Adjusted' && <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">Voided</span>}
+                  {log.status === 'Pending' && <span className="text-[10px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold">Pending</span>}
+                  {log.status === 'Rejected' && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">Rejected</span>}
+                </div>
+                <div className="flex justify-between items-center w-full">
+                  <p className="text-xs text-gray-500 font-medium">Updated by: <span className="font-semibold text-gray-700">{log.updatedBy}</span></p>
+                  <time className="text-[10px] text-gray-400 font-medium whitespace-nowrap">{log.date}</time>
+                </div>
               </div>
               
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                <div className="flex justify-between mb-2">
-                  <span className="text-xs text-gray-400">{update.date}</span> 
-                  {!update.isInitial && (
-                    <span className={`text-xs font-bold ${isPositive ? 'text-[#52B788]' : 'text-red-500'}`}>
-                      {isPositive ? '+' : ''}₱{update.amountChange.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-                
-                <p className="text-sm font-semibold text-gray-800 mb-2">{update.description}</p>
-                
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Updated by {update.updatedBy}</span>
-                  <span>₱{update.oldTotal.toLocaleString()} ➔ ₱{update.newTotal.toLocaleString()}</span>
-                </div>
+              <div className="mt-2 text-[10px] font-bold text-gray-400 flex flex-wrap items-center gap-2">
+                <span>₱{log.oldTotal.toLocaleString()}</span><span>➔</span>
+                <span className={log.status === 'Adjusted' ? 'text-gray-400' : 'text-[#1B4332]'}>₱{log.newTotal.toLocaleString()}</span>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </section>
   );
