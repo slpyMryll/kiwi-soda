@@ -35,7 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Refactored landing page fetching logic to be "Guest-Aware."
 - Modularized navigation and authentication components for better scalability.
 
-## [KS.010.001] - 2025-05-26
+## [KS.010.001] - 2025-02-27
 ### Added
 - Initial project foundation with Next.js and Supabase.
 - Core Authentication system with VSU email validation.
