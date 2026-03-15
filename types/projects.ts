@@ -1,4 +1,4 @@
-export type ProjectStatus = "Active" | "Archived" | "Completed";
+export type ProjectStatus = "Ongoing" | "Completed";
 export type LiveSatus = "Live" | "Draft";
 export type MilestoneStatus = "Proposed" | "Approved" | "In Execution" | "Completed" | "Pending";
 
