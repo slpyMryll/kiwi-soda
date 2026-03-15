@@ -20,32 +20,52 @@ export default async function PmProjectsPage({
   const page = parseInt(resolvedParams?.page || "1");
   const limit = 6;
 
-  const { data: statsData } = await supabase
-    .from("projects")
-    .select("live_status, progress")
-    .eq("manager_id", user?.id);
+  const { data: memberRecords } = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('profile_id', user?.id);
+    
+  const memberProjectIds = memberRecords?.map(r => r.project_id) || [];
+
+  const quotedMemberIds = memberProjectIds.length > 0 
+    ? memberProjectIds.map(id => `"${id}"`).join(',') 
+    : "";
+
+  let statsQuery = supabase.from("projects").select("live_status, progress");
+  if (quotedMemberIds) {
+    statsQuery = statsQuery.or(`manager_id.eq.${user?.id},id.in.(${quotedMemberIds})`);
+  } else {
+    statsQuery = statsQuery.eq("manager_id", user?.id);
+  }
+  const { data: statsData } = await statsQuery;
 
   const totalStats = statsData?.length || 0;
-  const liveStats =
-    statsData?.filter((p) => p.live_status === "Live").length || 0;
-  const draftStats =
-    statsData?.filter((p) => p.live_status === "Draft").length || 0;
-  const avgProgressStats =
-    totalStats > 0
-      ? statsData!.reduce((acc, p) => acc + (p.progress || 0), 0) / totalStats
-      : 0;
+  const liveStats = statsData?.filter((p) => p.live_status === "Live").length || 0;
+  const draftStats = statsData?.filter((p) => p.live_status === "Draft").length || 0;
+  const avgProgressStats = totalStats > 0 ? statsData!.reduce((acc, p) => acc + (p.progress || 0), 0) / totalStats : 0;
 
   let query = supabase
     .from("projects")
-    .select(`*, project_members (count), comments (count)`, { count: "exact" })
-    .eq("manager_id", user?.id);
+    .select(`*, project_members (count), comments (count)`, { count: "exact" });
 
-  if (q) {
-    query = query.ilike("title", `%${q}%`);
+  if (quotedMemberIds) {
+    query = query.or(`manager_id.eq.${user?.id},id.in.(${quotedMemberIds})`);
+  } else {
+    query = query.eq("manager_id", user?.id);
   }
 
+  if (q) query = query.ilike("title", `%${q}%`);
+  
   if (status !== "all") {
-    query = query.eq("status", status === "ongoing" ? "Ongoing" : "Completed");
+    const statusFilter = status.toLowerCase();
+    
+    if (statusFilter === "ongoing") {
+      query = query.or('status.ilike.%ongoing%,status.ilike.%active%,status.is.null,status.eq.""');
+    } else if (statusFilter === "completed") {
+      query = query.ilike("status", "%completed%");
+    } else {
+      query = query.ilike("status", `%${statusFilter}%`); 
+    }
   }
 
   if (dateFilter === "this_month") {
@@ -55,10 +75,8 @@ export default async function PmProjectsPage({
     query = query.gte("created_at", startOfMonth.toISOString());
   }
 
-  if (sort === "newest")
-    query = query.order("created_at", { ascending: false });
-  else if (sort === "oldest")
-    query = query.order("created_at", { ascending: true });
+  if (sort === "newest") query = query.order("created_at", { ascending: false });
+  else if (sort === "oldest") query = query.order("created_at", { ascending: true });
   else if (sort === "a-z") query = query.order("title", { ascending: true });
   else if (sort === "z-a") query = query.order("title", { ascending: false });
 
@@ -77,7 +95,7 @@ export default async function PmProjectsPage({
       location: p.location || "VSU Campus",
       imageUrl: p.image_url,
       tags: p.tags || [],
-      status: p.status,
+      status: (p.status && p.status.toLowerCase() === "completed") ? "Completed" : "Ongoing",
       liveStatus: p.live_status,
       totalBudget: Number(p.total_budget),
       spentBudget: Number(p.spent_budget),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   FileText,
   CloudDownload,
@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { uploadDocument, deleteDocument } from "@/lib/actions/project-details";
+import { createClient } from "@/lib/supabase/client";
 
 export function DocumentsTab({ project }: { project: any }) {
   const [open, setOpen] = useState(false);
@@ -28,7 +29,49 @@ export function DocumentsTab({ project }: { project: any }) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const documents = project.documents || [];
+  const [localDocuments, setLocalDocuments] = useState(project.documents || []);
+
+  useEffect(() => {
+    setLocalDocuments(project.documents || []);
+  }, [project.documents]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("realtime-docs")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "project_documents",
+          filter: `project_id=eq.${project.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const newDoc = {
+              id: payload.new.id,
+              name: payload.new.name,
+              url: payload.new.file_url,
+              size: payload.new.file_size,
+              type: payload.new.file_type,
+              uploadedBy: "Project Team", // Optimistic until hard refresh
+              date: new Date(payload.new.created_at).toLocaleDateString(),
+            };
+            setLocalDocuments((prev: any) => [newDoc, ...prev]);
+          } else if (payload.eventType === "DELETE") {
+            setLocalDocuments((prev: any) =>
+              prev.filter((d: any) => d.id !== payload.old.id),
+            );
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [project.id]);
 
   const handleFileSelection = (file: File | undefined | null) => {
     if (!file) return;
@@ -220,7 +263,7 @@ export function DocumentsTab({ project }: { project: any }) {
       </div>
 
       <div className="flex flex-col gap-3 sm:gap-4">
-        {documents.length === 0 ? (
+        {localDocuments.length === 0 ? (
           <div className="py-10 sm:py-12 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50 px-4">
             <FileBlank className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3" />
             <h3 className="text-sm font-bold text-gray-900">
@@ -231,13 +274,12 @@ export function DocumentsTab({ project }: { project: any }) {
             </p>
           </div>
         ) : (
-          documents.map((doc: any) => (
+          localDocuments.map((doc: any) => (
             <div
               key={doc.id}
               className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl border border-gray-200 bg-white hover:border-[#1B4332] hover:shadow-sm transition-all group gap-3 sm:gap-4"
             >
               <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1 w-full">
-                {/* File Icon */}
                 <div className="shrink-0 p-2 sm:p-2 bg-gray-50 rounded-lg">
                   {getFileIcon(doc.name)}
                 </div>
@@ -259,7 +301,6 @@ export function DocumentsTab({ project }: { project: any }) {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex items-center justify-end gap-2 shrink-0 self-end sm:self-auto w-full sm:w-auto border-t sm:border-0 border-gray-100 pt-3 sm:pt-0 mt-1 sm:mt-0">
                 <button className="p-2 sm:p-2.5 text-gray-400 hover:text-[#1B4332] bg-gray-50 hover:bg-green-50 rounded-lg transition-colors border border-gray-100 sm:border-transparent">
                   <Pin className="w-4 h-4" />

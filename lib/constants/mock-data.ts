@@ -6,7 +6,7 @@ export const MOCK_TRENDING_TOPICS = [
     title: "Protect Project Nature 2026",
     description: "A student-led initiative to reforest the upper campus areas.",
     tags: ["#Nature", "#Sustainability", "#VSU-SSC"],
-    status: "Active",
+    status: "Ongoing",
     progress: 67,
   },
   {
@@ -14,7 +14,7 @@ export const MOCK_TRENDING_TOPICS = [
     title: "Digital Student ID System",
     description: "Modernizing campus access by implementing an encrypted digital ID.",
     tags: ["#Digital", "#Tech", "#Security"],
-    status: "Active",
+    status: "Ongoing",
     progress: 45,
   }
 ];
@@ -37,7 +37,7 @@ export const MOCK_PROJECTS: Project[] = [
     progress: 50,
     commentsCount: 99,
     isFollowing: false,
-    status: "Active",
+    status: "Ongoing",
     liveStatus: "Live",
     totalBudget: 50000,
     spentBudget: 12500,
@@ -74,7 +74,7 @@ export const MOCK_PROJECTS: Project[] = [
     progress: 34,
     commentsCount: 42,
     isFollowing: true,
-    status: "Active",
+    status: "Ongoing",
     liveStatus: "Live",
     totalBudget: 50000,
     spentBudget: 12500,

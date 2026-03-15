@@ -78,7 +78,7 @@ export function PmProjectCard(project: Project) {
               </h3>
               <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${status === "Active" ? "bg-[#153B44] text-white" : "bg-gray-100 text-gray-500"}`}
+                  className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${status === "Ongoing" ? "bg-gray-100 text-gray-500 " : "bg-[#153B44] text-white"}`}
                 >
                   {status}
                 </span>
