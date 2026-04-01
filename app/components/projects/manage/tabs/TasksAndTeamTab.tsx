@@ -41,7 +41,6 @@ export function TasksAndTeamTab({
     setLocalTasks(tasks);
   }, [members, tasks]);
 
-  // Smooth Auto-Scroll (No visual color changes)
   useEffect(() => {
     if (highlightTaskId) {
       setTimeout(() => {
@@ -55,24 +54,37 @@ export function TasksAndTeamTab({
 
   useEffect(() => {
     const supabase = createClient();
+    
     const taskChannel = supabase
-      .channel("realtime-tasks")
+      .channel(`project-tasks-${projectId}`)
       .on('postgres_changes', { event: "*", schema: "public", table: "tasks", filter: `project_id=eq.${projectId}` }, (payload) => {
         if (payload.eventType === "INSERT") {
           const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
           const newTask = {
-            id: payload.new.id, title: payload.new.title, assignee: pm ? pm.full_name : "Team Member",
-            dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A", rawDueDate: payload.new.due_date,
-            status: payload.new.status, cost: payload.new.cost, assigned_to: payload.new.assigned_to,
+            id: payload.new.id, 
+            title: payload.new.title, 
+            assignee: pm ? pm.full_name : "Team Member",
+            dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A", 
+            rawDueDate: payload.new.due_date,
+            status: payload.new.status, 
+            cost: payload.new.cost, 
+            assigned_to: payload.new.assigned_to,
           };
           setLocalTasks((prev: any) => [...prev, newTask]);
         } else if (payload.eventType === "UPDATE") {
+          // A member changed a status, or lead edited a task
           setLocalTasks((prev: any) => prev.map((t: any) => {
             if (t.id === payload.new.id) {
               const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
-              return { ...t, title: payload.new.title, status: payload.new.status,
-                dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A", rawDueDate: payload.new.due_date,
-                cost: payload.new.cost, assigned_to: payload.new.assigned_to, assignee: pm ? pm.full_name : t.assignee,
+              return { 
+                ...t, 
+                title: payload.new.title, 
+                status: payload.new.status,
+                dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A", 
+                rawDueDate: payload.new.due_date,
+                cost: payload.new.cost, 
+                assigned_to: payload.new.assigned_to, 
+                assignee: pm ? pm.full_name : t.assignee,
               };
             }
             return t;
@@ -83,16 +95,26 @@ export function TasksAndTeamTab({
       }).subscribe();
 
     const memberChannel = supabase
-      .channel("realtime-members")
+      .channel(`project-members-${projectId}`)
       .on('postgres_changes', { event: "INSERT", schema: "public", table: "project_members", filter: `project_id=eq.${projectId}` }, (payload) => {
         const pm = availablePMs.find((p: any) => p.id === payload.new.profile_id);
         if (pm) {
           const newMember = { id: pm.id, name: pm.full_name, role: payload.new.project_role, avatarUrl: pm.avatar_url || null };
-          setLocalMembers((prev: any) => [...prev, newMember]);
+          setLocalMembers((prev: any) => {
+             if (prev.find((m: any) => m.id === newMember.id)) return prev;
+             return [...prev, newMember];
+          });
         }
-      }).subscribe();
+      })
+      .on('postgres_changes', { event: "DELETE", schema: "public", table: "project_members", filter: `project_id=eq.${projectId}` }, (payload) => {
+        setLocalMembers((prev: any) => prev.filter((m: any) => m.id !== payload.old.profile_id));
+      })
+      .subscribe();
 
-    return () => { supabase.removeChannel(taskChannel); supabase.removeChannel(memberChannel); };
+    return () => { 
+      supabase.removeChannel(taskChannel); 
+      supabase.removeChannel(memberChannel); 
+    };
   }, [projectId, availablePMs]);
 
   const handleApproveTask = async (taskId: string) => {
@@ -160,8 +182,10 @@ export function TasksAndTeamTab({
 
   const openEditModal = (task: any) => { setEditingTask(task); setIsEditModalOpen(true); };
 
-  const navigateToMyTasks = (taskId: string) => {
-    router.push(`/project-manager/tasks?taskId=${taskId}`);
+  const navigateToMyTasks = (taskId: string, isMyTask: boolean) => {
+    if (isMyTask || isProjectLead) {
+      router.push(`/project-manager/tasks?taskId=${taskId}`);
+    }
   };
 
   return (
@@ -251,7 +275,6 @@ export function TasksAndTeamTab({
             </div>
           ) : (
             localTasks.map((task: any) => {
-              // Determine interaction state based on ownership
               const isMyTask = task.assigned_to === currentUserId;
               const isInteractable = isMyTask || isProjectLead;
               
@@ -259,7 +282,7 @@ export function TasksAndTeamTab({
                 <div
                   key={task.id}
                   id={`project-task-${task.id}`}
-                  onClick={() => isInteractable && navigateToMyTasks(task.id)}
+                  onClick={() => navigateToMyTasks(task.id, isMyTask)}
                   title={!isInteractable ? "This task is not assigned to you." : "Click to view in My Tasks"}
                   className={cn(
                     "flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all gap-3 sm:gap-4 group bg-white",
