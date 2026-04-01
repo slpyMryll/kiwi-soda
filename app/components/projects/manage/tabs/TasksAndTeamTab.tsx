@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, User, Loader2, Calendar, Edit2, Trash2 } from "lucide-react";
+import { Plus, User, Loader2, Calendar, Edit2, Trash2, Lock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ export function TasksAndTeamTab({
   tasks = [],
   availablePMs = [],
   isProjectLead = false,
+  currentUserId = "",
 }: any) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,7 +41,7 @@ export function TasksAndTeamTab({
     setLocalTasks(tasks);
   }, [members, tasks]);
 
-  // Scroll to highlight
+  // Smooth Auto-Scroll (No visual color changes)
   useEffect(() => {
     if (highlightTaskId) {
       setTimeout(() => {
@@ -177,9 +178,7 @@ export function TasksAndTeamTab({
                 </button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Assign New Task</DialogTitle>
-                </DialogHeader>
+                <DialogHeader><DialogTitle>Assign New Task</DialogTitle></DialogHeader>
                 <form onSubmit={handleAssignTask} className="space-y-4 mt-4">
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1">Task Title</label>
@@ -252,24 +251,44 @@ export function TasksAndTeamTab({
             </div>
           ) : (
             localTasks.map((task: any) => {
+              // Determine interaction state based on ownership
+              const isMyTask = task.assigned_to === currentUserId;
+              const isInteractable = isMyTask || isProjectLead;
+              
               return (
                 <div
                   key={task.id}
                   id={`project-task-${task.id}`}
-                  onClick={() => navigateToMyTasks(task.id)}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border bg-white border-gray-200 hover:border-[#153B44]/30 hover:shadow-sm transition-all gap-3 sm:gap-4 cursor-pointer group"
+                  onClick={() => isInteractable && navigateToMyTasks(task.id)}
+                  title={!isInteractable ? "This task is not assigned to you." : "Click to view in My Tasks"}
+                  className={cn(
+                    "flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all gap-3 sm:gap-4 group bg-white",
+                    isInteractable 
+                      ? "cursor-pointer border-gray-200 hover:border-[#153B44]/30 hover:shadow-sm" 
+                      : "cursor-not-allowed opacity-75 border-gray-200 hover:bg-gray-50"
+                  )}
                 >
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold mb-2 truncate text-gray-900 group-hover:text-[#153B44] transition-colors">
-                      {task.title}
-                    </h4>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500 font-medium">
-                      <span className="flex items-center gap-1.5 truncate">
-                        <User className="w-3.5 h-3.5 shrink-0" /> {task.assignee}
-                      </span>
-                      <span className="flex items-center gap-1.5 shrink-0">
-                        <Calendar className="w-3.5 h-3.5" /> Due: {task.dueDate}
-                      </span>
+                  <div className="flex-1 min-w-0 flex items-center gap-3">
+                    {!isInteractable && (
+                       <div className="shrink-0 p-1.5 bg-gray-100 rounded-md">
+                         <Lock className="w-3.5 h-3.5 text-gray-400" />
+                       </div>
+                    )}
+                    <div>
+                      <h4 className={cn("text-sm font-bold mb-2 truncate transition-colors", 
+                        "text-gray-900",
+                        isInteractable ? "group-hover:text-[#153B44]" : ""
+                      )}>
+                        {task.title}
+                      </h4>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500 font-medium">
+                        <span className="flex items-center gap-1.5 truncate">
+                          <User className="w-3.5 h-3.5 shrink-0" /> {task.assignee}
+                        </span>
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <Calendar className="w-3.5 h-3.5" /> Due: {task.dueDate}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   
