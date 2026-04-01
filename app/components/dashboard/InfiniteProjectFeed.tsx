@@ -4,7 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ProjectCard } from "./ProjectCard";
 import { ProjectDetailView } from "../projects/ProjectDetailView";
 import { Project } from "@/types/projects";
-import { getInfiniteProjects } from "@/lib/actions/project-feed";
+import {
+  getInfiniteProjects,
+  getSingleProjectForFeed,
+} from "@/lib/actions/project-feed";
+import { createClient } from "@/lib/supabase/client";
 import { Loader2, Inbox } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
@@ -32,6 +36,54 @@ export function InfiniteProjectFeed({
     setPage(1);
     setHasMore(initialProjects.length >= 5);
   }, [initialProjects, searchParams]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel("public-project-feed")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "projects",
+        },
+        async (payload) => {
+          if (payload.eventType === "DELETE") {
+            setProjects((prev) => prev.filter((p) => p.id !== payload.old.id));
+            return;
+          }
+
+          const record = payload.new;
+
+          if (record.live_status !== "Live") {
+            setProjects((prev) => prev.filter((p) => p.id !== record.id));
+            return;
+          }
+
+          const fullProject = await getSingleProjectForFeed(record.id);
+
+          if (fullProject) {
+            setProjects((prev) => {
+              const exists = prev.some((p) => p.id === fullProject.id);
+              if (exists) {
+                return prev.map((p) =>
+                  p.id === fullProject.id ? fullProject : p,
+                );
+              } else {
+                return [fullProject, ...prev];
+              }
+            });
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const lastProjectElementRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -99,6 +151,7 @@ export function InfiniteProjectFeed({
             <div
               key={`${project.id}-${index}`}
               ref={isLastElement ? lastProjectElementRef : null}
+              className="animate-in fade-in slide-in-from-top-4 duration-500"
             >
               <ProjectCard
                 userRole={userRole}
