@@ -22,9 +22,10 @@ export interface Task {
 
 interface PmTasksClientProps {
   initialTasks: Task[];
+  currentUserId: string;
 }
 
-export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
+export function PmTasksClient({ initialTasks, currentUserId }: PmTasksClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightTaskId = searchParams.get("taskId");
@@ -45,17 +46,53 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
     }
   }, [highlightTaskId, viewMode]);
 
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase.channel('my-tasks-realtime')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'tasks', 
+        filter: `assigned_to=eq.${currentUserId}` 
+      }, async (payload) => {
+        if (payload.eventType === 'DELETE') {
+          setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+        } else {
+          const { data: fullTask } = await supabase
+            .from('tasks')
+            .select('id, title, due_date, status, projects (id, title, manager_id)')
+            .eq('id', payload.new.id)
+            .single();
+
+          if (fullTask) {
+            const projectData = Array.isArray(fullTask.projects) ? fullTask.projects[0] : fullTask.projects;
+            const formatted: Task = {
+              id: fullTask.id,
+              title: fullTask.title,
+              dueDate: fullTask.due_date || "",
+              status: fullTask.status,
+              projectId: projectData?.id || "",
+              projectName: projectData?.title || "Unknown Project",
+              isProjectLead: projectData?.manager_id === currentUserId
+            };
+
+            setTasks(prev => {
+              const exists = prev.find(t => t.id === formatted.id);
+              if (exists) return prev.map(t => t.id === formatted.id ? formatted : t);
+              return [...prev, formatted];
+            });
+          }
+        }
+      }).subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUserId]);
+
   const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-
-    const { error } = await supabase
-      .from('tasks')
-      .update({ status: newStatus })
-      .eq('id', taskId);
-
-    if (error) {
-      console.error("Error updating task:", error);
-    }
+    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+    if (error) console.error("Error updating task:", error);
   };
 
   const handleAction = (task: Task) => {
@@ -190,7 +227,7 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
                       <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
                         <span className="flex items-center gap-1 group-hover:text-gray-600 transition-colors"><FolderKanban className="w-3 h-3"/> {task.projectName}</span>
                         <span className={cn("flex items-center gap-1", isOverdue && !isDone && "text-red-500")}>
-                          <Calendar className="w-3 h-3"/> {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <Calendar className="w-3 h-3"/> {task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "No Date"}
                         </span>
                       </div>
                     </td>
@@ -221,7 +258,7 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
                 onClick={() => navigateToProject(task.projectId, task.id)}
                 className={cn(
                   "bg-white rounded-xl p-5 border shadow-sm transition-all flex flex-col h-full cursor-pointer group", 
-                  isDone ? "bg-gray-50/50" : "hover:border-[#153B44]/30 hover:shadow-md",
+                  isDone ? "bg-gray-50/50 border-transparent" : "border-gray-200 hover:border-[#153B44]/30 hover:shadow-md",
                   isOverdue && !isDone ? "border-red-200 bg-red-50/10" : ""
                 )}
               >
@@ -236,7 +273,7 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
                 <h3 className={cn("text-base font-semibold leading-snug mb-3", isDone && "text-gray-400 line-through", isOverdue && !isDone && "text-red-700")}>{task.title}</h3>
                 <div className="space-y-2 pt-4 border-t border-gray-100 mt-auto text-xs text-gray-500">
                   <div className="flex items-center gap-2 group-hover:text-gray-700 transition-colors"><FolderKanban className="w-4 h-4 text-gray-400" /><span className="truncate">{task.projectName}</span></div>
-                  <div className={cn("flex items-center gap-2", isOverdue && !isDone && "text-red-500")}><Calendar className="w-4 h-4" /><span>{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></div>
+                  <div className={cn("flex items-center gap-2", isOverdue && !isDone && "text-red-500")}><Calendar className="w-4 h-4" /><span>{task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "No Date"}</span></div>
                 </div>
               </div>
             );
