@@ -79,6 +79,17 @@ export async function addMilestone(projectId: string, formData: FormData) {
   const progress = parseInt(formData.get("progress") as string);
   const status = formData.get("status") as string;
 
+  const { data: existingMilestone } = await supabase
+    .from("project_milestones")
+    .select("id")
+    .eq("project_id", projectId)
+    .ilike("title", title) 
+    .single();
+
+  if (existingMilestone) {
+    return { error: "A milestone with this title already exists." };
+  }
+
   const { error } = await supabase.from("project_milestones").insert({
     project_id: projectId,
     title,
