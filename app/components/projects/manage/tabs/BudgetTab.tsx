@@ -86,8 +86,10 @@ export function BudgetTab({ project }: any) {
   const pendingExpenses = budgetUpdates.filter((u: any) => u.status === 'Pending');
   const lastEditor = budgetUpdates[0]?.updatedBy || "Manager";
 
-  const handleAddExpense = async (formData: FormData) => {
+  const handleAddExpense = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsLoading(true); setFormError("");
+    const formData = new FormData(e.currentTarget);
     const res = await addExpense(project.id, formData);
     setIsLoading(false);
     if (res?.error) setFormError(res.error);
@@ -103,8 +105,10 @@ export function BudgetTab({ project }: any) {
     }
   };
 
-  const handleBudgetUpdate = async (formData: FormData) => {
+  const handleBudgetUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsLoading(true); setFormError("");
+    const formData = new FormData(e.currentTarget);
     const res = await updateProjectBudget(project.id, totalBudget, formData);
     setIsLoading(false);
     if (res?.error) setFormError(res.error);
@@ -228,7 +232,7 @@ export function BudgetTab({ project }: any) {
             </DialogTrigger>
             <DialogContent className="sm:max-w-md w-[95vw]">
               <DialogHeader><DialogTitle>{project.isManager ? "Adjust Total Budget" : "Request Budget Adjustment"}</DialogTitle></DialogHeader>
-              <form action={handleBudgetUpdate} className="space-y-4 mt-4">
+              <form onSubmit={handleBudgetUpdate} className="space-y-4 mt-4">
                 <p className="text-xs text-orange-600 font-medium bg-orange-50 p-3 rounded-lg border border-orange-100">
                   ⚠️ {project.isManager ? "Adjusting the total budget will be recorded in the public audit trail." : "Your request will be submitted to the Project Manager for approval."}
                 </p>
@@ -273,7 +277,7 @@ export function BudgetTab({ project }: any) {
             </DialogTrigger>
             <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{project.isManager ? "Record New Expense" : "Request Expense Approval"}</DialogTitle></DialogHeader>
-              <form action={handleAddExpense} className="space-y-4 mt-4">
+              <form onSubmit={handleAddExpense} className="space-y-4 mt-4">
                 {formError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">{formError}</div>}
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1">Category</label>

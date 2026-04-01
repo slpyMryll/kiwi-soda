@@ -140,8 +140,10 @@ export function TasksAndTeamTab({
     }
   };
 
-  const handleAddMember = async (formData: FormData) => {
+  const handleAddMember = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsLoading(true);
+    const formData = new FormData(e.currentTarget);
     const result = await addProjectMember(projectId, formData);
     setIsLoading(false);
 
@@ -149,12 +151,14 @@ export function TasksAndTeamTab({
     else setIsMemberModalOpen(false);
   };
 
-  const handleAssignTask = async (formData: FormData) => {
+  const handleAssignTask = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsLoading(true);
+    const formData = new FormData(e.currentTarget);
     const result = await assignTask(projectId, formData);
     setIsLoading(false);
 
-    if (result.error) alert(`Database Error: ${result.error}`);
+    if (result.error) alert(`Error: ${result.error}`);
     else setIsTaskModalOpen(false);
   };
 
@@ -175,7 +179,7 @@ export function TasksAndTeamTab({
                 <DialogTitle>Assign New Task</DialogTitle>
               </DialogHeader>
 
-              <form action={handleAssignTask} className="space-y-4 mt-4">
+              <form onSubmit={handleAssignTask} className="space-y-4 mt-4">
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1">
                     Task Title
@@ -296,7 +300,7 @@ export function TasksAndTeamTab({
                 <DialogTitle>Add Officer to Project</DialogTitle>
               </DialogHeader>
 
-              <form action={handleAddMember} className="space-y-4 mt-4">
+              <form onSubmit={handleAddMember} className="space-y-4 mt-4">
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1">
                     Select Officer
