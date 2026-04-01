@@ -15,6 +15,7 @@ export interface Task {
   projectName: string;
   dueDate: string;
   status: TaskStatus;
+  isProjectLead: boolean;
 }
 
 interface PmTasksClientProps {
@@ -46,7 +47,8 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
     if (task.status === "Pending") {
       updateTaskStatus(task.id, "In Progress");
     } else if (task.status === "In Progress") {
-      updateTaskStatus(task.id, "Awaiting Review");
+      const nextStatus = task.isProjectLead ? "Completed" : "Awaiting Review";
+      updateTaskStatus(task.id, nextStatus);
     } else if (task.status === "Awaiting Review") {
       updateTaskStatus(task.id, "In Progress");
     }
@@ -60,7 +62,6 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
   const getEffectiveStatus = (task: Task): TaskStatus => {
     const now = new Date();
     const deadline = new Date(task.dueDate);
-    
     deadline.setHours(23, 59, 59, 999);
 
     if (task.status === 'Completed') return 'Completed';
@@ -139,7 +140,11 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
                         ) : isPendingReal ? (
                           <Play className="w-5 h-5 text-gray-400 hover:text-blue-500 transition-colors" />
                         ) : (
-                          <Circle className={cn("w-5 h-5 transition-colors", isOverdue ? "text-red-300 hover:text-red-500" : "text-gray-300 hover:text-[#153B44]")} />
+                          <Circle className={cn(
+                            "w-5 h-5 transition-colors", 
+                            isOverdue ? "text-red-300 hover:text-red-500" : 
+                            task.isProjectLead ? "text-gray-300 hover:text-[#4A7C5F]" : "text-gray-300 hover:text-amber-500"
+                          )} />
                         )}
                       </button>
                     </td>
@@ -181,7 +186,7 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
                     {effectiveStatus}
                   </span>
                   <button onClick={() => handleAction(task)} disabled={isDone}>
-                    {isDone ? <CheckCircle2 className="w-6 h-6 text-[#4A7C5F]" /> : isReviewReal ? <Clock className="w-6 h-6 text-amber-500 hover:text-amber-600" /> : isPendingReal ? <Play className="w-6 h-6 text-gray-400 hover:text-blue-500" /> : <Circle className={cn("w-6 h-6", isOverdue ? "text-red-300 hover:text-red-500" : "text-gray-300 hover:text-[#153B44]")} />}
+                    {isDone ? <CheckCircle2 className="w-6 h-6 text-[#4A7C5F]" /> : isReviewReal ? <Clock className="w-6 h-6 text-amber-500 hover:text-amber-600" /> : isPendingReal ? <Play className="w-6 h-6 text-gray-400 hover:text-blue-500" /> : <Circle className={cn("w-6 h-6 transition-colors", isOverdue ? "text-red-300 hover:text-red-500" : task.isProjectLead ? "text-gray-300 hover:text-[#4A7C5F]" : "text-gray-300 hover:text-amber-500")} />}
                   </button>
                 </div>
                 <h3 className={cn("text-base font-semibold leading-snug mb-3", isDone && "text-gray-400 line-through", isOverdue && "text-red-700")}>{task.title}</h3>
