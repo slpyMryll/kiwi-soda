@@ -20,7 +20,7 @@ export default async function PmTasksPage() {
       title,
       due_date,
       status,
-      projects ( title, manager_id )
+      projects ( id, title, manager_id )
     `)
     .eq('assigned_to', user.id)
     .order('due_date', { ascending: true });
@@ -34,6 +34,7 @@ export default async function PmTasksPage() {
     title: t.title,
     dueDate: t.due_date,
     status: t.status,
+    projectId: t.projects?.id || "",
     projectName: t.projects?.title || "Unknown Project",
     isProjectLead: t.projects?.manager_id === user.id 
   }));
