@@ -29,15 +29,19 @@ export default async function PmTasksPage() {
     console.error("Error fetching tasks:", error);
   }
 
-  const formattedTasks: Task[] = (rawTasks || []).map((t: any) => ({
-    id: t.id,
-    title: t.title,
-    dueDate: t.due_date,
-    status: t.status,
-    projectId: t.projects?.id || "",
-    projectName: t.projects?.title || "Unknown Project",
-    isProjectLead: t.projects?.manager_id === user.id 
-  }));
+  const formattedTasks: Task[] = (rawTasks || []).map((t: any) => {
+    const projectData = Array.isArray(t.projects) ? t.projects[0] : t.projects;
 
-  return <PmTasksClient initialTasks={formattedTasks} />;
+    return {
+      id: t.id,
+      title: t.title,
+      dueDate: t.due_date || "",
+      status: t.status,
+      projectId: projectData?.id || "",
+      projectName: projectData?.title || "Unknown Project",
+      isProjectLead: projectData?.manager_id === user.id 
+    };
+  });
+
+  return <PmTasksClient initialTasks={formattedTasks} currentUserId={user.id} />;
 }
