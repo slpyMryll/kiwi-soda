@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Search, LayoutGrid, List as ListIcon, Calendar, 
   FolderKanban, CheckCircle2, Circle, Clock, Play
@@ -8,10 +8,12 @@ import {
 import { cn } from "@/lib/utils";
 import { TaskStatus } from "@/types/pm";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export interface Task {
   id: string;
   title: string;
+  projectId: string;
   projectName: string;
   dueDate: string;
   status: TaskStatus;
@@ -23,10 +25,25 @@ interface PmTasksClientProps {
 }
 
 export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const highlightTaskId = searchParams.get("taskId");
+
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const supabase = createClient();
+
+  useEffect(() => {
+    if (highlightTaskId) {
+      setTimeout(() => {
+        const el = document.getElementById(`task-${highlightTaskId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+    }
+  }, [highlightTaskId, viewMode]);
 
   const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
@@ -52,6 +69,11 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
     } else if (task.status === "Awaiting Review") {
       updateTaskStatus(task.id, "In Progress");
     }
+  };
+
+  const navigateToProject = (projectId: string, taskId: string) => {
+    if (!projectId) return;
+    router.push(`/project-manager/projects/${projectId}?tab=Tasks+%26+Team&taskId=${taskId}`);
   };
 
   const filteredTasks = tasks.filter(task => 
@@ -130,9 +152,22 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
                 const isOverdue = effectiveStatus === "Overdue";
                 
                 return (
-                  <tr key={task.id} className={cn("hover:bg-gray-50/50 transition-colors", isDone && "bg-gray-50/30", isOverdue && "bg-red-50/20")}>
+                  <tr 
+                    key={task.id} 
+                    id={`task-${task.id}`}
+                    onClick={() => navigateToProject(task.projectId, task.id)}
+                    className={cn(
+                      "transition-colors cursor-pointer group", 
+                      isDone ? "bg-gray-50/30 hover:bg-gray-50/80" : "hover:bg-gray-50/50",
+                      isOverdue && !isDone ? "bg-red-50/20 hover:bg-red-50/40" : ""
+                    )}
+                  >
                     <td className="p-4 text-center">
-                      <button onClick={() => handleAction(task)} disabled={isDone}>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleAction(task); }} 
+                        disabled={isDone}
+                        className="outline-none"
+                      >
                         {isDone ? (
                           <CheckCircle2 className="w-5 h-5 text-[#4A7C5F]" />
                         ) : isReviewReal ? (
@@ -149,12 +184,12 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
                       </button>
                     </td>
                     <td className="p-4">
-                      <p className={cn("text-sm font-medium", isDone && "text-gray-400 line-through", isOverdue && "text-red-700")}>
+                      <p className={cn("text-sm font-medium", isDone && "text-gray-400 line-through", isOverdue && !isDone && "text-red-700")}>
                         {task.title}
                       </p>
                       <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
-                        <span className="flex items-center gap-1"><FolderKanban className="w-3 h-3"/> {task.projectName}</span>
-                        <span className={cn("flex items-center gap-1", isOverdue && "text-red-500")}>
+                        <span className="flex items-center gap-1 group-hover:text-gray-600 transition-colors"><FolderKanban className="w-3 h-3"/> {task.projectName}</span>
+                        <span className={cn("flex items-center gap-1", isOverdue && !isDone && "text-red-500")}>
                           <Calendar className="w-3 h-3"/> {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </div>
@@ -180,19 +215,28 @@ export function PmTasksClient({ initialTasks }: PmTasksClientProps) {
             const isOverdue = effectiveStatus === "Overdue";
             
             return (
-              <div key={task.id} className={cn("bg-white rounded-xl p-5 border shadow-sm transition-all flex flex-col h-full", isDone ? "bg-gray-50/50" : "hover:border-[#153B44]/30", isOverdue && "border-red-200 bg-red-50/10")}>
+              <div 
+                key={task.id} 
+                id={`task-${task.id}`}
+                onClick={() => navigateToProject(task.projectId, task.id)}
+                className={cn(
+                  "bg-white rounded-xl p-5 border shadow-sm transition-all flex flex-col h-full cursor-pointer group", 
+                  isDone ? "bg-gray-50/50" : "hover:border-[#153B44]/30 hover:shadow-md",
+                  isOverdue && !isDone ? "border-red-200 bg-red-50/10" : ""
+                )}
+              >
                 <div className="flex items-start justify-between mb-3">
                   <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium shadow-sm", getStatusBadge(effectiveStatus))}>
                     {effectiveStatus}
                   </span>
-                  <button onClick={() => handleAction(task)} disabled={isDone}>
+                  <button onClick={(e) => { e.stopPropagation(); handleAction(task); }} disabled={isDone} className="outline-none">
                     {isDone ? <CheckCircle2 className="w-6 h-6 text-[#4A7C5F]" /> : isReviewReal ? <Clock className="w-6 h-6 text-amber-500 hover:text-amber-600" /> : isPendingReal ? <Play className="w-6 h-6 text-gray-400 hover:text-blue-500" /> : <Circle className={cn("w-6 h-6 transition-colors", isOverdue ? "text-red-300 hover:text-red-500" : task.isProjectLead ? "text-gray-300 hover:text-[#4A7C5F]" : "text-gray-300 hover:text-amber-500")} />}
                   </button>
                 </div>
-                <h3 className={cn("text-base font-semibold leading-snug mb-3", isDone && "text-gray-400 line-through", isOverdue && "text-red-700")}>{task.title}</h3>
+                <h3 className={cn("text-base font-semibold leading-snug mb-3", isDone && "text-gray-400 line-through", isOverdue && !isDone && "text-red-700")}>{task.title}</h3>
                 <div className="space-y-2 pt-4 border-t border-gray-100 mt-auto text-xs text-gray-500">
-                  <div className="flex items-center gap-2"><FolderKanban className="w-4 h-4 text-gray-400" /><span className="truncate">{task.projectName}</span></div>
-                  <div className={cn("flex items-center gap-2", isOverdue && "text-red-500")}><Calendar className="w-4 h-4" /><span>{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></div>
+                  <div className="flex items-center gap-2 group-hover:text-gray-700 transition-colors"><FolderKanban className="w-4 h-4 text-gray-400" /><span className="truncate">{task.projectName}</span></div>
+                  <div className={cn("flex items-center gap-2", isOverdue && !isDone && "text-red-500")}><Calendar className="w-4 h-4" /><span>{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></div>
                 </div>
               </div>
             );
