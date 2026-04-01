@@ -238,8 +238,8 @@ export function TasksAndTeamTab({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200 shadow-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col h-[450px] sm:h-[500px] lg:h-[550px]">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 shrink-0">
           <h2 className="text-lg font-bold text-gray-900">Task management</h2>
 
           {isProjectLead && (
@@ -403,10 +403,10 @@ export function TasksAndTeamTab({
             </DialogContent>
           </Dialog>
         </div>
-
-        <div className="space-y-3">
+        
+        <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-3 custom-scrollbar">
           {localTasks.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200 px-4">
+            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200 px-4 mt-2">
               <p className="text-sm text-gray-500">
                 No tasks assigned yet. {isProjectLead && 'Click "Assign Task" to start.'}
               </p>
