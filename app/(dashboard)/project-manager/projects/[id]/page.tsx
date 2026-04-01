@@ -73,6 +73,7 @@ export default async function ManageProjectPage({
   const project: any = {
     ...projectData,
     isManager,
+    currentUserId: user?.id,
     id: projectData.id,
     title: projectData.title || "Untitled Project",
     description: projectData.description || "",
@@ -101,7 +102,7 @@ export default async function ManageProjectPage({
       assignee: t?.profiles?.full_name || "Unassigned",
       assigned_to: t?.assigned_to || null,
       dueDate: t?.due_date ? new Date(t.due_date).toLocaleDateString() : "N/A",
-      rawDueDate: t?.due_date || "", // <-- ADDED THIS FIELD FOR THE EDIT MODAL
+      rawDueDate: t?.due_date || "", 
       status: t?.status || "Pending",
       cost: t?.cost || 0,
     })),
