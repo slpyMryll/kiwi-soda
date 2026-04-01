@@ -62,38 +62,39 @@ export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
   };
 
   return (
-    <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-8 h-full flex flex-col">
+    // Note the p-3 for smallest screens, scaling up gracefully
+    <div className="bg-white p-3 min-[400px]:p-4 sm:p-6 lg:p-8 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 space-y-5 sm:space-y-8 h-full flex flex-col w-full">
       <div className="flex flex-col">
-        <h2 className="text-2xl sm:text-[26px] font-bold text-[#153B44] mb-1 sm:mb-2 tracking-tight">Task Timeline</h2>
-        <p className="text-xs sm:text-[15px] text-gray-500 mb-6 sm:mb-8">Keep every council task on schedule</p>
+        <h2 className="text-xl sm:text-2xl lg:text-[26px] font-bold text-[#153B44] mb-1 tracking-tight">Task Timeline</h2>
+        <p className="text-[11px] sm:text-xs lg:text-[15px] text-gray-500 mb-4 sm:mb-8">Keep every council task on schedule</p>
         
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4 sm:mb-6">
           <div className="flex items-center gap-1 bg-[#153B44] text-white px-2 py-1 rounded-md shadow-sm">
             <button onClick={handlePrevMonth} className="hover:bg-white/20 rounded p-0.5 transition-colors">
-              <ChevronLeft className="w-4 h-4" strokeWidth={3} />
+              <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={3} />
             </button>
-            <span className="text-[12px] sm:text-[13px] font-medium min-w-20 text-center tracking-wide">
-              {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+            <span className="text-[11px] sm:text-[13px] font-medium min-w-[75px] sm:min-w-[85px] text-center tracking-wide">
+              {currentMonth.toLocaleString('default', { month: 'short', year: 'numeric' })}
             </span>
             <button onClick={handleNextMonth} className="hover:bg-white/20 rounded p-0.5 transition-colors">
-              <ChevronRight className="w-4 h-4" strokeWidth={3} />
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={3} />
             </button>
           </div>
         </div>
         
-        <div className="grid grid-cols-8 gap-y-3 sm:gap-y-4 gap-x-1 sm:gap-x-2 items-center justify-items-center w-full">
-          <span className="text-[11px] sm:text-[13px] font-medium text-[#153B44]">
+        <div className="grid grid-cols-8 gap-y-2 min-[400px]:gap-y-3 sm:gap-y-4 gap-x-0.5 min-[400px]:gap-x-1 sm:gap-x-2 items-center justify-items-center w-full">
+          <span className="text-[10px] min-[400px]:text-[11px] sm:text-[13px] font-medium text-[#153B44]">
             {String(month + 1).padStart(2, '0')}
           </span>
           {["Mo", "Tu", "We", "Th", "Fr"].map(day => (
-            <span key={day} className="text-[11px] sm:text-[13px] font-medium text-gray-600">{day}</span>
+            <span key={day} className="text-[10px] min-[400px]:text-[11px] sm:text-[13px] font-medium text-gray-600">{day}</span>
           ))}
-          <span className="text-[11px] sm:text-[13px] font-medium text-[#3B82F6]">Sa</span>
-          <span className="text-[11px] sm:text-[13px] font-medium text-[#3B82F6]">Su</span>
+          <span className="text-[10px] min-[400px]:text-[11px] sm:text-[13px] font-medium text-[#3B82F6]">Sa</span>
+          <span className="text-[10px] min-[400px]:text-[11px] sm:text-[13px] font-medium text-[#3B82F6]">Su</span>
 
           {weeks.map((week, wIdx) => (
             <React.Fragment key={wIdx}>
-              <div className="w-6 h-6 min-[375px]:w-7 min-[375px]:h-7 sm:w-8 sm:h-8 rounded-md bg-[#153B44] text-white flex items-center justify-center text-[9px] min-[375px]:text-[10px] sm:text-xs font-medium">
+              <div className="w-5 h-5 min-[400px]:w-6 min-[400px]:h-6 sm:w-8 sm:h-8 rounded-[4px] sm:rounded-md bg-[#153B44] text-white flex items-center justify-center text-[8px] min-[400px]:text-[9px] sm:text-xs font-medium">
                 {week.weekNum}
               </div>
 
@@ -109,15 +110,15 @@ export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
                   <button
                     key={dIdx}
                     onClick={() => setSelectedDate(day)}
-                    className="relative w-6 h-6 min-[375px]:w-7 min-[375px]:h-7 sm:w-10 sm:h-10 flex items-center justify-center outline-none group"
+                    className="relative w-5 h-5 min-[400px]:w-6 min-[400px]:h-6 sm:w-10 sm:h-10 flex items-center justify-center outline-none group"
                   >
                     <div className={cn(
-                      "w-full h-full flex items-center justify-center rounded-full text-[11px] sm:text-[14px] transition-all duration-200",
-                      hasTasks ? "bg-[#C4E7D4] text-[#153B44] font-medium shadow-sm" :
-                      isSelected ? "border-2 border-[#153B44] font-bold text-[#153B44]" :
-                      "hover:bg-gray-100",
-                      !hasTasks && !isSelected && isWeekend ? "text-[#3B82F6]" : 
-                      !hasTasks && !isSelected ? "text-gray-500" : ""
+                      "w-full h-full flex items-center justify-center rounded-full text-[10px] min-[400px]:text-[11px] sm:text-[14px] transition-all duration-200 border min-[400px]:border-2 border-transparent",
+                      hasTasks ? "bg-[#C4E7D4] text-[#153B44] font-medium shadow-sm hover:bg-[#A3D9B8]" : "",
+                      isSelected ? "border-[#153B44] font-bold text-[#153B44]" : "",
+                      !hasTasks && !isSelected ? "hover:bg-gray-100" : "",
+                      !hasTasks && !isSelected && isWeekend ? "text-[#3B82F6]" : "",
+                      !hasTasks && !isSelected && !isWeekend ? "text-gray-500" : ""
                     )}>
                       {day.getDate()}
                     </div>
@@ -129,28 +130,28 @@ export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col pt-4 border-t border-gray-100">
-        <h2 className="text-[20px] sm:text-[22px] font-bold text-[#153B44] mb-4 sm:mb-6 tracking-tight">Task Assignments</h2>
+      <div className="flex-1 flex flex-col pt-3 sm:pt-4 border-t border-gray-100 min-h-[180px] sm:min-h-0">
+        <h2 className="text-[18px] sm:text-[20px] lg:text-[22px] font-bold text-[#153B44] mb-3 sm:mb-6 tracking-tight">Task Assignments</h2>
         
-        <div className="flex justify-between items-center px-1 mb-3 sm:mb-4">
-          <span className="text-[13px] sm:text-[15px] font-bold text-[#153B44]">Task</span>
-          <span className="text-[13px] sm:text-[15px] font-bold text-[#153B44]">Status</span>
+        <div className="flex justify-between items-center px-1 mb-2 sm:mb-4 shrink-0">
+          <span className="text-[12px] sm:text-[13px] lg:text-[15px] font-bold text-[#153B44]">Task</span>
+          <span className="text-[12px] sm:text-[13px] lg:text-[15px] font-bold text-[#153B44]">Status</span>
         </div>
 
-        <div className="space-y-3 sm:space-y-4 flex-1 overflow-y-auto pr-1">
+        <div className="space-y-2.5 sm:space-y-4 flex-1 overflow-y-auto pr-1">
           {selectedDateTasks.length > 0 ? (
             selectedDateTasks.map((task) => (
               <div key={task.id} className="flex justify-between items-center group px-1 gap-2">
-                <span className="text-[12px] sm:text-[14px] text-gray-500 truncate flex-1">{task.name}</span>
-                <span className={cn("text-[9px] sm:text-[11px] px-2 sm:px-3.5 py-1 sm:py-1.5 rounded-full font-medium shadow-sm shrink-0", getStatusColor(task.status))}>
+                <span className="text-[11px] sm:text-[12px] lg:text-[14px] text-gray-500 truncate flex-1">{task.name}</span>
+                <span className={cn("text-[8px] sm:text-[9px] lg:text-[11px] px-2 sm:px-3.5 py-1 sm:py-1.5 rounded-full font-medium shadow-sm shrink-0", getStatusColor(task.status))}>
                   {task.status}
                 </span>
               </div>
             ))
           ) : (
-            <div className="flex flex-col items-center justify-center h-24 text-center space-y-2 opacity-60">
-              <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
-              <p className="text-[11px] sm:text-[12px] text-gray-400 font-medium">No tasks assigned<br/>for this date.</p>
+            <div className="flex flex-col items-center justify-center h-20 sm:h-24 text-center space-y-2 opacity-60">
+              <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-300" />
+              <p className="text-[10px] sm:text-[11px] lg:text-[12px] text-gray-400 font-medium">No tasks assigned<br/>for this date.</p>
             </div>
           )}
         </div>

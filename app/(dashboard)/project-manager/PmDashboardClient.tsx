@@ -177,29 +177,29 @@ export function PmDashboardClient({
 
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-3 lg:gap-6 w-full">
+    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-4 sm:gap-5 lg:gap-6 w-full">
       <PmHeader />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="md:col-span-2 lg:col-span-2">
+      <div className="grid grid-cols-2 md:grid-cols-6 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="col-span-2 md:col-span-6 lg:col-span-2">
           <ProjectsWorkedCard data={projectsWorkedStats.data} totalCount={projectsWorkedStats.totalCount} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="col-span-2 md:col-span-2 lg:col-span-1">
           <StatCard 
             label="Completed Projects" 
             value={completedProjectsCount} 
-            badge={`${activeProjectsCount} ongoing`} 
+            badge={`${activeProjectsCount} ongoing`}
             badgeClassName="bg-gray-100 text-gray-500" 
           />
         </div>
-        <div className="lg:col-span-1">
+        <div className="col-span-1 md:col-span-2 lg:col-span-1">
           <StatCard 
             label="Live Projects" 
             value={projects.filter(p => p.liveStatus === 'Live').length} 
             subtext="Publicly visible" 
           />
         </div>
-        <div className="lg:col-span-1">
+        <div className="col-span-1 md:col-span-2 lg:col-span-1">
           <StatCard 
             label="Council Members" 
             value={councilMembersCount} 
@@ -208,20 +208,20 @@ export function PmDashboardClient({
         </div>
       </div>
 
-     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-6 h-[600px] lg:h-[850px]">
-        <div className="lg:col-span-3 bg-white p-4 sm:p-6 lg:p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-full overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 shrink-0 mb-6">
+      <div className="flex flex-col lg:grid lg:grid-cols-5 gap-4 sm:gap-6 lg:h-[850px]">
+        <div className="lg:col-span-3 bg-white p-4 sm:p-6 lg:p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[400px] sm:h-[500px] lg:h-full overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 shrink-0 mb-4 sm:mb-6">
             <div>
-              <h2 className="text-2xl sm:text-[26px] font-bold text-[#153B44] tracking-tight">
+              <h2 className="text-xl sm:text-2xl lg:text-[26px] font-bold text-[#153B44] tracking-tight">
                 Recent Projects
               </h2>
-              <p className="text-sm sm:text-[15px] text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm lg:text-[15px] text-gray-500 mt-1">
                 Manage and track your latest council projects
               </p>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-4 pb-2 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-3 sm:space-y-4 pb-2 custom-scrollbar">
             {projects.length > 0 ? (
               projects.map((project) => (
                 <div key={project.id} className="animate-in fade-in slide-in-from-top-2 duration-300">
@@ -230,11 +230,11 @@ export function PmDashboardClient({
               ))
             ) : (
               <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex flex-col items-center mt-4 h-full justify-center">
-                <Inbox className="w-10 h-10 text-gray-300 mb-3" />
-                <p className="text-gray-500 font-medium">
+                <Inbox className="w-8 h-8 sm:w-10 sm:h-10 text-gray-300 mb-2 sm:mb-3" />
+                <p className="text-sm sm:text-base text-gray-500 font-medium">
                   No active projects found.
                 </p>
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">
                   Head over to the Projects tab to create one.
                 </p>
               </div>
@@ -242,7 +242,7 @@ export function PmDashboardClient({
           </div>
         </div>
 
-        <div className="lg:col-span-2 h-full overflow-hidden">
+        <div className="lg:col-span-2 min-h-[550px] sm:min-h-[650px] lg:min-h-0 lg:h-full overflow-hidden">
           <TaskSidebar tasks={combinedSidebarTasks} />
         </div>
       </div>
