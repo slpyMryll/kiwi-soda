@@ -128,9 +128,7 @@ export function PmDashboardClient({
     const COLORS = ["#8B5CF6", "#FCA5A5", "#67E8F9", "#FDBA74"];
     const LIMIT = 4;
 
-    const sortedActive = [...active].sort((a, b) => 
-      new Date(b.updated_at || "").getTime() - new Date(a.updated_at || "").getTime()
-    );
+    const sortedActive = [...active].sort((a, b) => b.progress - a.progress);
 
     const displayData = sortedActive.slice(0, LIMIT).map((p, index) => ({
       name: p.title,
@@ -191,7 +189,7 @@ export function PmDashboardClient({
             label="Completed Projects" 
             value={completedProjectsCount} 
             badge={`${activeProjectsCount} ongoing`} 
-            badgeClassName="bg-gray-100 text-gray-500"
+            badgeClassName="bg-gray-100 text-gray-500" 
           />
         </div>
         <div className="lg:col-span-1">
