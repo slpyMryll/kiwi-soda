@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Project } from "@/types/projects";
 import { SidebarTask } from "@/types/pm";
 
-import { PmHeader } from "@/app/components/dashboard/PmHeader";
+import { PmHeader, SortOption } from "@/app/components/dashboard/PmHeader";
 import { ProjectsWorkedCard } from "@/app/components/ui/ProjectsWorkedCard";
 import { StatCard } from "@/app/components/ui/StatCard";
 import { PmProjectCard } from "@/app/components/dashboard/PmProjectCard";
@@ -19,109 +19,139 @@ interface PmDashboardClientProps {
   userId: string;
 }
 
-export function PmDashboardClient({ 
-  initialProjects, 
+export function PmDashboardClient({
+  initialProjects,
   initialTasks,
   councilMembersCount,
-  userId 
+  userId,
 }: PmDashboardClientProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [tasks, setTasks] = useState(initialTasks);
   const [onlineUsers, setOnlineUsers] = useState(1);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+
   useEffect(() => {
     if (!userId) return;
-    
+
     const supabase = createClient();
-    
-    const dataChannel = supabase.channel('pm-dashboard-data')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'projects',
-        filter: `manager_id=eq.${userId}`
-      }, async (payload) => {
-        if (payload.eventType === 'DELETE') {
-          setProjects(prev => prev.filter(p => p.id !== payload.old.id));
-          return;
-        }
 
-        const record = payload.new;
-        const { count: membersCount } = await supabase.from('project_members').select('*', { count: 'exact', head: true }).eq('project_id', record.id);
-        const { count: commentsCount } = await supabase.from('comments').select('*', { count: 'exact', head: true }).eq('project_id', record.id);
-
-        const updatedProject: Project = {
-          id: record.id,
-          title: record.title,
-          description: record.description,
-          location: record.location || "VSU Campus",
-          imageUrl: record.image_url,
-          tags: record.tags || [],
-          status: record.status,
-          liveStatus: record.live_status,
-          totalBudget: Number(record.total_budget || 0),
-          spentBudget: Number(record.spent_budget || 0),
-          progress: record.progress || 0,
-          deadline: record.deadline ? new Date(record.deadline) : new Date(),
-          postedAt: record.posted_at || record.created_at,
-          created_at: record.created_at,
-          updated_at: record.updated_at,
-          membersCount: membersCount || 0,
-          commentsCount: commentsCount || 0,
-          isFollowing: false,
-        };
-
-        setProjects(prev => {
-          const exists = prev.some(p => p.id === updatedProject.id);
-          if (exists) {
-            return prev.map(p => p.id === updatedProject.id ? updatedProject : p)
-              .sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
-          } else {
-            return [updatedProject, ...prev];
+    const dataChannel = supabase
+      .channel("pm-dashboard-data")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "projects",
+          filter: `manager_id=eq.${userId}`,
+        },
+        async (payload) => {
+          if (payload.eventType === "DELETE") {
+            setProjects((prev) => prev.filter((p) => p.id !== payload.old.id));
+            return;
           }
-        });
-      })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'tasks',
-        filter: `assigned_to=eq.${userId}`
-      }, (payload) => {
-        if (payload.eventType === 'INSERT') setTasks(prev => [...prev, payload.new]);
-        else if (payload.eventType === 'UPDATE') setTasks(prev => prev.map(t => t.id === payload.new.id ? payload.new : t));
-        else if (payload.eventType === 'DELETE') setTasks(prev => prev.filter(t => t.id !== payload.old.id));
-      })
+
+          const record = payload.new;
+          const { count: membersCount } = await supabase
+            .from("project_members")
+            .select("*", { count: "exact", head: true })
+            .eq("project_id", record.id);
+          const { count: commentsCount } = await supabase
+            .from("comments")
+            .select("*", { count: "exact", head: true })
+            .eq("project_id", record.id);
+
+          const updatedProject: Project = {
+            id: record.id,
+            title: record.title,
+            description: record.description,
+            location: record.location || "VSU Campus",
+            imageUrl: record.image_url,
+            tags: record.tags || [],
+            status: record.status,
+            liveStatus: record.live_status,
+            totalBudget: Number(record.total_budget || 0),
+            spentBudget: Number(record.spent_budget || 0),
+            progress: record.progress || 0,
+            deadline: record.deadline ? new Date(record.deadline) : new Date(),
+            postedAt: record.posted_at || record.created_at,
+            created_at: record.created_at,
+            updated_at: record.updated_at,
+            membersCount: membersCount || 0,
+            commentsCount: commentsCount || 0,
+            isFollowing: false,
+          };
+
+          setProjects((prev) => {
+            const exists = prev.some((p) => p.id === updatedProject.id);
+            if (exists) {
+              return prev.map((p) =>
+                p.id === updatedProject.id ? updatedProject : p,
+              );
+            } else {
+              return [updatedProject, ...prev];
+            }
+          });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `assigned_to=eq.${userId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT")
+            setTasks((prev) => [...prev, payload.new]);
+          else if (payload.eventType === "UPDATE")
+            setTasks((prev) =>
+              prev.map((t) => (t.id === payload.new.id ? payload.new : t)),
+            );
+          else if (payload.eventType === "DELETE")
+            setTasks((prev) => prev.filter((t) => t.id !== payload.old.id));
+        },
+      )
       .subscribe();
 
-    const presenceChannel = supabase.channel('online-council')
-      .on('presence', { event: 'sync' }, () => {
+    const presenceChannel = supabase
+      .channel("online-council")
+      .on("presence", { event: "sync" }, () => {
         const state = presenceChannel.presenceState();
-        const uniqueUsers = new Set(Object.values(state).flat().map((p: any) => p.user));
-        setOnlineUsers(Math.max(1, uniqueUsers.size)); 
+        const uniqueUsers = new Set(
+          Object.values(state)
+            .flat()
+            .map((p: any) => p.user),
+        );
+        setOnlineUsers(Math.max(1, uniqueUsers.size));
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
+        if (status === "SUBSCRIBED") {
           await presenceChannel.track({ user: userId });
         }
       });
 
-    return () => { 
-      supabase.removeChannel(dataChannel); 
+    return () => {
+      supabase.removeChannel(dataChannel);
       supabase.removeChannel(presenceChannel);
     };
   }, [userId]);
 
-
-  const activeProjectsCount = projects.filter(p => p.progress < 100).length;
-  const completedProjectsCount = projects.filter(p => p.progress === 100).length;
+  const activeProjectsCount = projects.filter((p) => p.progress < 100).length;
+  const completedProjectsCount = projects.filter(
+    (p) => p.progress === 100,
+  ).length;
 
   const projectsWorkedStats = useMemo(() => {
-    const active = projects.filter(p => p.progress > 0);
-    
+    const active = projects.filter((p) => p.progress > 0);
+
     if (active.length === 0) {
       return {
         data: [{ name: "No Active Progress", value: 100, color: "#E5E7EB" }],
-        totalCount: 0
+        totalCount: 0,
       };
     }
 
@@ -133,25 +163,25 @@ export function PmDashboardClient({
     const displayData = sortedActive.slice(0, LIMIT).map((p, index) => ({
       name: p.title,
       value: p.progress,
-      color: COLORS[index]
+      color: COLORS[index],
     }));
 
     if (active.length > LIMIT) {
       const others = sortedActive.slice(LIMIT);
       const avgProgress = Math.round(
-        others.reduce((acc, curr) => acc + curr.progress, 0) / others.length
+        others.reduce((acc, curr) => acc + curr.progress, 0) / others.length,
       );
 
       displayData.push({
         name: `${others.length} Others`,
         value: avgProgress,
-        color: "#94A3B8"
+        color: "#94A3B8",
       });
     }
 
     return {
       data: displayData,
-      totalCount: active.length
+      totalCount: active.length,
     };
   }, [projects]);
 
@@ -160,50 +190,105 @@ export function PmDashboardClient({
       id: t.id,
       name: t.title,
       status: t.status,
-      dueDate: t.due_date
+      dueDate: t.due_date,
     }));
 
     const projectDeadlines: SidebarTask[] = projects
-      .filter(p => p.deadline)
-      .map(p => ({
+      .filter((p) => p.deadline)
+      .map((p) => ({
         id: `deadline-${p.id}`,
         name: `Deadline: ${p.title}`,
         status: p.progress === 100 ? "Completed" : "Pending",
-        dueDate: p.deadline!.toISOString()
+        dueDate: p.deadline!.toISOString(),
       }));
 
     return [...formattedTasks, ...projectDeadlines];
   }, [tasks, projects]);
 
+  const displayedProjects = useMemo(() => {
+    let result = [...projects];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter((p) => {
+        const safeTitle = (p.title || "").toLowerCase();
+        const safeDesc = (p.description || "").toLowerCase();
+        const safeTags = p.tags ? p.tags.join(" ").toLowerCase() : "";
+
+        return (
+          safeTitle.includes(query) ||
+          safeDesc.includes(query) ||
+          safeTags.includes(query)
+        );
+      });
+    }
+
+    const getSafeTime = (dateValue: any) => {
+      if (!dateValue) return 0;
+      const time = new Date(dateValue).getTime();
+      return isNaN(time) ? 0 : time;
+    };
+
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return (
+            getSafeTime(b.postedAt || b.created_at) -
+            getSafeTime(a.postedAt || a.created_at)
+          );
+        case "oldest":
+          return (
+            getSafeTime(a.postedAt || a.created_at) -
+            getSafeTime(b.postedAt || b.created_at)
+          );
+        case "progress-high":
+          return (b.progress || 0) - (a.progress || 0);
+        case "progress-low":
+          return (a.progress || 0) - (b.progress || 0);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [projects, searchQuery, sortBy]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-4 sm:gap-5 lg:gap-6 w-full">
-      <PmHeader />
+      <PmHeader
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-6 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="col-span-2 md:col-span-6 lg:col-span-2">
-          <ProjectsWorkedCard data={projectsWorkedStats.data} totalCount={projectsWorkedStats.totalCount} />
+          <ProjectsWorkedCard
+            data={projectsWorkedStats.data}
+            totalCount={projectsWorkedStats.totalCount}
+          />
         </div>
         <div className="col-span-2 md:col-span-2 lg:col-span-1">
-          <StatCard 
-            label="Completed Projects" 
-            value={completedProjectsCount} 
+          <StatCard
+            label="Completed Projects"
+            value={completedProjectsCount}
             badge={`${activeProjectsCount} ongoing`}
-            badgeClassName="bg-gray-100 text-gray-500" 
+            badgeClassName="bg-gray-100 text-gray-500"
           />
         </div>
         <div className="col-span-1 md:col-span-2 lg:col-span-1">
-          <StatCard 
-            label="Live Projects" 
-            value={projects.filter(p => p.liveStatus === 'Live').length} 
-            subtext="Publicly visible" 
+          <StatCard
+            label="Live Projects"
+            value={projects.filter((p) => p.liveStatus === "Live").length}
+            subtext="Publicly visible"
           />
         </div>
         <div className="col-span-1 md:col-span-2 lg:col-span-1">
-          <StatCard 
-            label="Council Members" 
-            value={councilMembersCount} 
-            subtext={`${onlineUsers} online`} 
+          <StatCard
+            label="Council Members"
+            value={councilMembersCount}
+            subtext={`${onlineUsers} online`}
           />
         </div>
       </div>
@@ -222,9 +307,12 @@ export function PmDashboardClient({
           </div>
 
           <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-3 sm:space-y-4 pb-2 custom-scrollbar">
-            {projects.length > 0 ? (
-              projects.map((project) => (
-                <div key={project.id} className="animate-in fade-in slide-in-from-top-2 duration-300">
+            {displayedProjects.length > 0 ? (
+              displayedProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className="animate-in fade-in slide-in-from-top-2 duration-300"
+                >
                   <PmProjectCard {...project} />
                 </div>
               ))
@@ -232,11 +320,15 @@ export function PmDashboardClient({
               <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex flex-col items-center mt-4 h-full justify-center">
                 <Inbox className="w-8 h-8 sm:w-10 sm:h-10 text-gray-300 mb-2 sm:mb-3" />
                 <p className="text-sm sm:text-base text-gray-500 font-medium">
-                  No active projects found.
+                  {searchQuery
+                    ? "No projects match your search."
+                    : "No active projects found."}
                 </p>
-                <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                  Head over to the Projects tab to create one.
-                </p>
+                {!searchQuery && (
+                  <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                    Head over to the Projects tab to create one.
+                  </p>
+                )}
               </div>
             )}
           </div>
