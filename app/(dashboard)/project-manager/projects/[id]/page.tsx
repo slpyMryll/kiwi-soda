@@ -101,6 +101,7 @@ export default async function ManageProjectPage({
       assignee: t?.profiles?.full_name || "Unassigned",
       assigned_to: t?.assigned_to || null,
       dueDate: t?.due_date ? new Date(t.due_date).toLocaleDateString() : "N/A",
+      rawDueDate: t?.due_date || "", // <-- ADDED THIS FIELD FOR THE EDIT MODAL
       status: t?.status || "Pending",
       cost: t?.cost || 0,
     })),
