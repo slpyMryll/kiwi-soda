@@ -260,6 +260,7 @@ export default function ProjectDetailClient({
             members={project.members}
             tasks={project.tasks}
             availablePMs={availablePMs}
+            isProjectLead={project.isManager} 
           />
         )}
         {activeTab === "Budget" && <BudgetTab project={project} />}
