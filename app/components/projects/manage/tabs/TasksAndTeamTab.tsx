@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, User, Loader2, Calendar, Edit2, Trash2, Lock } from "lucide-react";
+import { Plus, User, Loader2, Calendar, Edit2, Trash2, Lock, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,11 @@ export function TasksAndTeamTab({
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null);
+  
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
 
   const [localMembers, setLocalMembers] = useState(members);
@@ -57,42 +62,43 @@ export function TasksAndTeamTab({
     
     const taskChannel = supabase
       .channel(`project-tasks-${projectId}`)
-      .on('postgres_changes', { event: "*", schema: "public", table: "tasks", filter: `project_id=eq.${projectId}` }, (payload) => {
-        if (payload.eventType === "INSERT") {
-          const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
-          const newTask = {
-            id: payload.new.id, 
-            title: payload.new.title, 
-            assignee: pm ? pm.full_name : "Team Member",
-            dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A", 
-            rawDueDate: payload.new.due_date,
-            status: payload.new.status, 
-            cost: payload.new.cost, 
-            assigned_to: payload.new.assigned_to,
-          };
-          setLocalTasks((prev: any) => [...prev, newTask]);
-        } else if (payload.eventType === "UPDATE") {
-          // A member changed a status, or lead edited a task
-          setLocalTasks((prev: any) => prev.map((t: any) => {
-            if (t.id === payload.new.id) {
-              const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
-              return { 
-                ...t, 
-                title: payload.new.title, 
-                status: payload.new.status,
-                dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A", 
-                rawDueDate: payload.new.due_date,
-                cost: payload.new.cost, 
-                assigned_to: payload.new.assigned_to, 
-                assignee: pm ? pm.full_name : t.assignee,
-              };
-            }
-            return t;
-          }));
-        } else if (payload.eventType === "DELETE") {
-          setLocalTasks((prev: any) => prev.filter((t: any) => t.id !== payload.old.id));
-        }
-      }).subscribe();
+      // Filtered INSERT & UPDATE events
+      .on('postgres_changes', { event: "INSERT", schema: "public", table: "tasks", filter: `project_id=eq.${projectId}` }, (payload) => {
+        const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
+        const newTask = {
+          id: payload.new.id, 
+          title: payload.new.title, 
+          assignee: pm ? pm.full_name : "Team Member",
+          dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A", 
+          rawDueDate: payload.new.due_date,
+          status: payload.new.status, 
+          cost: payload.new.cost, 
+          assigned_to: payload.new.assigned_to,
+        };
+        setLocalTasks((prev: any) => [...prev, newTask]);
+      })
+      .on('postgres_changes', { event: "UPDATE", schema: "public", table: "tasks", filter: `project_id=eq.${projectId}` }, (payload) => {
+        setLocalTasks((prev: any) => prev.map((t: any) => {
+          if (t.id === payload.new.id) {
+            const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
+            return { 
+              ...t, 
+              title: payload.new.title, 
+              status: payload.new.status,
+              dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A", 
+              rawDueDate: payload.new.due_date,
+              cost: payload.new.cost, 
+              assigned_to: payload.new.assigned_to, 
+              assignee: pm ? pm.full_name : t.assignee,
+            };
+          }
+          return t;
+        }));
+      })
+      .on('postgres_changes', { event: "DELETE", schema: "public", table: "tasks" }, (payload) => {
+        setLocalTasks((prev: any) => prev.filter((t: any) => t.id !== payload.old.id));
+      })
+      .subscribe();
 
     const memberChannel = supabase
       .channel(`project-members-${projectId}`)
@@ -123,11 +129,24 @@ export function TasksAndTeamTab({
     if (error) alert("Failed to approve task.");
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!window.confirm("Are you sure you want to delete this task? This action cannot be undone.")) return;
+  const confirmDelete = (taskId: string) => {
+    setTaskToDelete(taskId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const executeDelete = async () => {
+    if (!taskToDelete) return;
+    setIsDeleting(true);
     const supabase = createClient();
-    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-    if (error) alert("Failed to delete task.");
+    const { error } = await supabase.from('tasks').delete().eq('id', taskToDelete);
+    
+    setIsDeleting(false);
+    if (error) {
+      alert("Failed to delete task.");
+    } else {
+      setIsDeleteModalOpen(false);
+      setTaskToDelete(null);
+    }
   };
 
   const getMemberStats = (profileId: string) => {
@@ -266,6 +285,38 @@ export function TasksAndTeamTab({
               )}
             </DialogContent>
           </Dialog>
+
+          <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+            <DialogContent className="sm:max-w-md w-[95vw] p-6">
+              <DialogHeader>
+                <DialogTitle className="text-red-600 flex items-center gap-2 text-xl">
+                  <AlertTriangle className="w-6 h-6" />
+                  Confirm Deletion
+                </DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <p className="text-[15px] text-gray-600 leading-relaxed">
+                  Are you sure you want to delete this task? This action cannot be undone and will permanently remove the record from the project tracking.
+                </p>
+              </div>
+              <div className="flex justify-end gap-3 mt-2">
+                <button 
+                  onClick={() => setIsDeleteModalOpen(false)} 
+                  className="px-5 py-2.5 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={executeDelete} 
+                  disabled={isDeleting} 
+                  className="px-5 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors flex items-center gap-2 shadow-sm disabled:opacity-70"
+                >
+                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  Yes, Delete Task
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-3 custom-scrollbar">
@@ -282,7 +333,7 @@ export function TasksAndTeamTab({
                 <div
                   key={task.id}
                   id={`project-task-${task.id}`}
-                  onClick={() => navigateToMyTasks(task.id, isMyTask)}
+                  onClick={() => isInteractable && navigateToMyTasks(task.id, isMyTask)}
                   title={!isInteractable ? "This task is not assigned to you." : "Click to view in My Tasks"}
                   className={cn(
                     "flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all gap-3 sm:gap-4 group bg-white",
@@ -338,7 +389,7 @@ export function TasksAndTeamTab({
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                          onClick={(e) => { e.stopPropagation(); confirmDelete(task.id); }}
                           title="Delete Task"
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
                         >
