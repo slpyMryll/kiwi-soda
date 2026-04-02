@@ -128,31 +128,49 @@ export function PmBudgetClient({ initialProjects }: { initialProjects: ProjectBu
             const status = getBudgetStatus(project.spentBudget, project.totalBudget);
             return (
               <div key={project.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:border-[#153B44]/20 transition-colors">
-                <div className="px-4 sm:px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                
+                <div className="px-4 md:px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <h3 className="font-bold text-[#153B44] text-base truncate">{project.title}</h3>
                   <Link 
                     href={`/project-manager/projects/${project.id}?tab=Budget`}
-                    className="text-xs font-bold text-white bg-[#153B44] hover:bg-[#1B4B57] px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-fit shadow-sm"
+                    className="text-xs font-bold text-white bg-[#153B44] hover:bg-[#1B4B57] px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors w-full sm:w-fit shadow-sm"
                   >
                     Manage Budget <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left whitespace-nowrap">
-                    <thead className="bg-white text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">
-                      <tr>
-                        <th className="px-6 py-4">Total Allocation</th>
-                        <th className="px-6 py-4">Amount Spent</th>
-                        <th className="px-6 py-4">Balance</th>
+
+                <div className="w-full">
+                  <table className="w-full block md:table">
+                    
+                    <thead className="hidden md:table-header-group bg-white text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                      <tr className="md:table-row">
+                        <th className="px-6 py-4 text-left">Total Allocation</th>
+                        <th className="px-6 py-4 text-left">Amount Spent</th>
+                        <th className="px-6 py-4 text-left">Balance</th>
                         <th className="px-6 py-4 text-right">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      <tr className="text-sm font-medium text-gray-700 hover:bg-gray-50/50 transition-colors">
-                        <td className="px-6 py-4">{formatPHP(project.totalBudget)}</td>
-                        <td className="px-6 py-4">{formatPHP(project.spentBudget)}</td>
-                        <td className="px-6 py-4">{formatPHP(project.totalBudget - project.spentBudget)}</td>
-                        <td className="px-6 py-4 text-right">
+                    
+                    <tbody className="block md:table-row-group divide-y divide-gray-100 md:divide-gray-50">
+                      <tr className="block md:table-row text-sm font-medium text-gray-700 hover:bg-gray-50/50 transition-colors">
+                        
+                        <td className="block md:table-cell px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:items-start border-b md:border-none border-gray-50">
+                          <span className="md:hidden text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Allocation</span>
+                          <span className="text-gray-900 font-semibold">{formatPHP(project.totalBudget)}</span>
+                        </td>
+                        
+                        <td className="block md:table-cell px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:items-start border-b md:border-none border-gray-50">
+                          <span className="md:hidden text-[11px] font-bold text-gray-400 uppercase tracking-wider">Amount Spent</span>
+                          <span className="text-gray-900 font-semibold">{formatPHP(project.spentBudget)}</span>
+                        </td>
+                        
+                        <td className="block md:table-cell px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:items-start border-b md:border-none border-gray-50">
+                          <span className="md:hidden text-[11px] font-bold text-gray-400 uppercase tracking-wider">Balance</span>
+                          <span className="text-gray-900 font-semibold">{formatPHP(project.totalBudget - project.spentBudget)}</span>
+                        </td>
+                        
+                        <td className="block md:table-cell px-4 py-3 md:px-6 md:py-4 flex justify-between items-center md:text-right">
+                          <span className="md:hidden text-[11px] font-bold text-gray-400 uppercase tracking-wider">Status</span>
                           <span className={cn("px-2.5 py-1.5 rounded-full text-[10px] font-bold tracking-wide", status.color)}>
                             {status.label}
                           </span>
