@@ -9,8 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -38,7 +36,10 @@ export function NotificationBell({ userId }: { userId?: string }) {
         )}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80 sm:w-96 p-0 bg-white rounded-xl shadow-xl border border-gray-200 mt-2 overflow-hidden">
+      <DropdownMenuContent 
+        align="end" 
+        className="w-[calc(100vw-2rem)] sm:w-96 p-0 bg-white rounded-xl shadow-xl border border-gray-200 mt-2 overflow-hidden mx-4 sm:mx-0"
+      >
         <div className="flex items-center justify-between p-4 bg-gray-50/80 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <BellRing className="w-4 h-4 text-[#153B44]" />
@@ -62,7 +63,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
           )}
         </div>
 
-        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+        <div className="max-h-[50vh] sm:max-h-[400px] overflow-y-auto custom-scrollbar">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
               <div className="bg-gray-50 p-3 rounded-full mb-3">
@@ -91,7 +92,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={cn("text-sm leading-snug", notification.is_read ? "text-gray-600" : "text-gray-900 font-medium")}>
+                      <p className={cn("text-sm leading-snug break-words", notification.is_read ? "text-gray-600" : "text-gray-900 font-medium")}>
                         {notification.message}
                       </p>
                       <p className="text-[10px] text-gray-400 mt-1.5 font-medium uppercase tracking-wider">
