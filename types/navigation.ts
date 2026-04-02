@@ -1,7 +1,6 @@
 import { 
   Compass, 
   Heart, 
-  Map, 
   LifeBuoy, 
   Settings, 
   LayoutDashboard, 
@@ -22,7 +21,6 @@ export const NAV_CONFIG: Record<string, NavItem[]> = {
   viewer: [
     { name: "Explore Feed", href: "/viewer", icon: Compass },
     { name: "My Following", href: "/viewer/following", icon: Heart },
-    { name: "Project Map", href: "/viewer/project-map", icon: Map },
     { divider: true },
     { name: "Support", href: "/viewer/support", icon: LifeBuoy },
     { name: "Settings", href: "/viewer/settings", icon: Settings },
