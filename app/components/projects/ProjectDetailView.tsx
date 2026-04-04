@@ -145,7 +145,8 @@ export function ProjectDetailView({
           </section>
 
           <ProjectFeedback
-            commentsCount={project.commentsCount}
+            comments={project.comments || []}
+            projectId={project.id}
             isGuest={isGuest}
           />
         </div>
