@@ -59,12 +59,13 @@ export async function getAdminDashboardData() {
     .from("profiles")
     .select("id, full_name, role")
     .gte("updated_at", fiveMinutesAgo)
+    .neq("role", "admin")
     .order("updated_at", { ascending: false });
 
   const activeUsers = (onlineProfiles || []).map((u) => ({
     id: u.id,
     name: u.full_name || "Unknown User",
-    status: u.role === "admin" ? "Admin" : u.role === "project-manager" ? "Project Manager" : "Viewer",
+    status: u.role === "project-manager" ? "Project Manager" : "Viewer",
   }));
 
   return {
