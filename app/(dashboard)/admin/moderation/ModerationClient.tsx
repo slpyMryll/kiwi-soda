@@ -58,7 +58,7 @@ export function ModerationClient({ initialComments }: { initialComments: any[] }
           </p>
         </div>
 
-        <div className="relative w-full sm:w-72">
+        <div className="relative w-full sm:w-72 shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input 
             type="text"
@@ -70,10 +70,10 @@ export function ModerationClient({ initialComments }: { initialComments: any[] }
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap sm:whitespace-normal">
-            <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+        <div className="overflow-auto max-h-[60vh] md:max-h-[65vh] lg:max-h-[70vh]">
+          <table className="w-full text-left text-sm whitespace-nowrap sm:whitespace-normal relative">
+            <thead className="bg-gray-50 text-gray-500 font-semibold text-xs uppercase tracking-wider sticky top-0 z-10 shadow-[0_1px_0_#e5e7eb]">
               <tr>
                 <th className="px-6 py-4">Author</th>
                 <th className="px-6 py-4">Project</th>
