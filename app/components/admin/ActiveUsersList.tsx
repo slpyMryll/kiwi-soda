@@ -22,6 +22,7 @@ export function ActiveUsersList({ initialUsers }: ActiveUsersListProps) {
         .from("profiles")
         .select("id, full_name, role")
         .gte("updated_at", fiveMinutesAgo)
+        .neq("role", "admin")
         .order("updated_at", { ascending: false });
 
       if (data) {
@@ -29,7 +30,7 @@ export function ActiveUsersList({ initialUsers }: ActiveUsersListProps) {
           data.map((u) => ({
             id: u.id,
             name: u.full_name || "Unknown User",
-            status: u.role === "admin" ? "Admin" : u.role === "project-manager" ? "Project Manager" : "Viewer",
+            status: u.role === "project-manager" ? "Project Manager" : "Viewer",
           }))
         );
       }
@@ -70,9 +71,7 @@ export function ActiveUsersList({ initialUsers }: ActiveUsersListProps) {
               </div>
               <span className={cn(
                 "text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider shrink-0",
-                user.status === "Admin" ? "bg-purple-50 text-purple-600" :
-                user.status === "Project Manager" ? "bg-blue-50 text-blue-600" :
-                "bg-green-50 text-[#10b981]"
+                user.status === "Project Manager" ? "bg-blue-50 text-blue-600" : "bg-green-50 text-[#10b981]"
               )}>
                 {user.status}
               </span>
