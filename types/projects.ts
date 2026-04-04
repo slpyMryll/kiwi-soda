@@ -34,6 +34,7 @@ export interface Project {
   commentsCount: number;
   isFollowing: boolean;
   isGuest?: boolean;
+  comments?: ProjectComment[];
   //Project Manager Role
   status: ProjectStatus;
   liveStatus: LiveSatus;
@@ -55,4 +56,15 @@ export interface ProjectCardProps {
     project: Project;
     userRole?: 'admin' | 'project-manager' | 'viewer' | 'guest';
     onReadMore?: () => void;
+}
+
+export interface ProjectComment {
+  id: string;
+  content: string;
+  created_at: string | Date;
+  parent_id: string | null;
+  profiles?: {
+    full_name?: string;
+    avatar_url?: string;
+  } | null;
 }
