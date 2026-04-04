@@ -19,6 +19,7 @@ export function ProjectFeedback({ comments, projectId, isGuest }: ProjectFeedbac
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [activeComments, setActiveComments] = useState<any[]>(Array.isArray(comments) ? comments : []);
+  const [realtimeCount, setRealtimeCount] = useState(activeComments.length);
 
   useEffect(() => {
     if (isGuest) {
@@ -31,11 +32,14 @@ export function ProjectFeedback({ comments, projectId, isGuest }: ProjectFeedbac
 
         if (data && !error) {
           setActiveComments(data);
+          setRealtimeCount(data.length);
         }
       };
       fetchGuestComments();
     } else {
-      setActiveComments(Array.isArray(comments) ? comments : []);
+      const safeComments = Array.isArray(comments) ? comments : [];
+      setActiveComments(safeComments);
+      setRealtimeCount(safeComments.length);
     }
   }, [isGuest, projectId, comments]);
 
@@ -52,7 +56,7 @@ export function ProjectFeedback({ comments, projectId, isGuest }: ProjectFeedbac
   return (
     <section>
       <h2 className="text-lg font-bold text-[#1B4332] mb-4">
-        Student Feedback ({activeComments.length})
+        Student Feedback ({realtimeCount})
       </h2>
       
       <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100">
@@ -101,7 +105,12 @@ export function ProjectFeedback({ comments, projectId, isGuest }: ProjectFeedbac
         )}
       </div>
 
-      <CommentList initialComments={activeComments} projectId={projectId} isGuest={isGuest} />
+      <CommentList 
+        initialComments={activeComments} 
+        projectId={projectId} 
+        isGuest={isGuest} 
+        onCountChange={setRealtimeCount} 
+      />
     </section>
   );
 }
