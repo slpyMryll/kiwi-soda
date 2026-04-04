@@ -22,6 +22,7 @@ import { BudgetTab } from "@/app/components/projects/manage/tabs/BudgetTab";
 import { TimelineTab } from "@/app/components/projects/manage/tabs/TimelineTab";
 import { DocumentsTab } from "@/app/components/projects/manage/tabs/DocumentsTab";
 import { ChartsTab } from "@/app/components/projects/manage/tabs/ChartsTab";
+import { FeedbackTab } from "@/app/components/projects/manage/tabs/FeedbackTab";
 import { ProjectDetailView } from "@/app/components/projects/ProjectDetailView";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
@@ -32,6 +33,7 @@ const TABS = [
   "Timeline",
   "Documents",
   "Charts",
+  "Feedback",
 ];
 
 export default function ProjectDetailClient({
@@ -270,6 +272,12 @@ export default function ProjectDetailClient({
         )}
         {activeTab === "Documents" && <DocumentsTab project={project} />}
         {activeTab === "Charts" && <ChartsTab project={project} />}
+        {activeTab === "Feedback" && (
+          <FeedbackTab 
+            projectId={project.id} 
+            initialComments={project.comments || []} 
+          />
+        )}
       </div>
 
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
