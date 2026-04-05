@@ -9,7 +9,8 @@ export async function getInfiniteProjects({
   page = 1,
   q = "",
   status = "all",
-  sort = "newest"
+  sort = "newest",
+  termId = "" 
 }) {
   const supabase = await createClient();
 
@@ -17,14 +18,23 @@ export async function getInfiniteProjects({
     .from("projects")
     .select(`
       id, title, description, location, status, live_status, image_url, posted_at, created_at, updated_at,
-      total_budget, spent_budget, progress, deadline, tags, manager_id,
-      project_members ( profile_id, project_role, profiles ( full_name, avatar_url ) ),
+      total_budget, spent_budget, progress, deadline, tags, manager_id, term_id,
+      project_members ( 
+        profile_id, 
+        project_role, 
+        profiles ( 
+          full_name, 
+          avatar_url,
+          officers ( term_id, position ) 
+        ) 
+      ),
       project_milestones ( id, title, end_date, status, progress ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
       comments ( count )
     `)
     .eq('live_status', 'Live');
 
+  if (termId) query = query.eq('term_id', termId);
   if (q) query = query.ilike("title", `%${q}%`);
   if (status !== "all") query = query.eq("status", status === "ongoing" ? "Ongoing" : "Completed");
 
@@ -37,39 +47,24 @@ export async function getInfiniteProjects({
   const to = from + LIMIT - 1;
 
   const { data: rawProjects, error } = await query.range(from, to);
-
   if (error || !rawProjects) return { projects: [], hasMore: false };
 
-  const managerIds = Array.from(new Set(rawProjects.map((p: any) => p.manager_id).filter(Boolean)));
-  const { data: managers } = await supabase
-    .from('profiles')
-    .select('id, full_name, avatar_url')
-    .in('id', managerIds);
-  const managerMap = new Map(managers?.map((m: any) => [m.id, m]));
-
   const processedProjects: Project[] = rawProjects.map((projectData: any) => {
-    const teamMembers: any[] = [];
-    const managerProfile = managerMap.get(projectData.manager_id);
-    
-    if (managerProfile) {
-      teamMembers.push({
-        id: projectData.manager_id,
-        name: managerProfile.full_name || "Unknown Manager",
-        role: "Project Manager",
-        avatarUrl: managerProfile.avatar_url || null
-      });
-    }
-
     const safeMembers = Array.isArray(projectData.project_members) ? projectData.project_members : [];
-    safeMembers.forEach((m: any) => {
-      if (m.profile_id !== projectData.manager_id) {
-        teamMembers.push({
-          id: m.profile_id || Math.random().toString(),
-          name: m.profiles?.full_name || "Unknown Officer",
-          role: m.project_role || "Member",
-          avatarUrl: m.profiles?.avatar_url || null
-        });
-      }
+    const teamMembers = safeMembers.map((m: any) => {
+      const officerRecord = m.profiles?.officers?.find((o: any) => o.term_id === projectData.term_id);
+      const officerPosition = officerRecord ? officerRecord.position : "USSC Member";
+      
+      const displayRole = m.project_role === "Project Lead" 
+        ? `Project Lead / ${officerPosition}` 
+        : officerPosition;
+
+      return {
+        id: m.profile_id || Math.random().toString(),
+        name: m.profiles?.full_name || "Unknown Officer",
+        role: displayRole,
+        avatarUrl: m.profiles?.avatar_url || null
+      };
     });
 
     return {
@@ -104,10 +99,7 @@ export async function getInfiniteProjects({
     };
   });
 
-  return {
-    projects: processedProjects,
-    hasMore: rawProjects.length === LIMIT
-  };
+  return { projects: processedProjects, hasMore: rawProjects.length === LIMIT };
 }
 
 export async function getSingleProjectForFeed(projectId: string): Promise<Project | null> {
@@ -117,8 +109,16 @@ export async function getSingleProjectForFeed(projectId: string): Promise<Projec
     .from("projects")
     .select(`
       id, title, description, location, status, live_status, image_url, posted_at, created_at, updated_at,
-      total_budget, spent_budget, progress, deadline, tags, manager_id,
-      project_members ( profile_id, project_role, profiles ( full_name, avatar_url ) ),
+      total_budget, spent_budget, progress, deadline, tags, manager_id, term_id,
+      project_members ( 
+        profile_id, 
+        project_role, 
+        profiles ( 
+          full_name, 
+          avatar_url,
+          officers ( term_id, position )
+        ) 
+      ),
       project_milestones ( id, title, end_date, status, progress ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
       comments ( count )
@@ -128,36 +128,18 @@ export async function getSingleProjectForFeed(projectId: string): Promise<Projec
 
   if (error || !projectData) return null;
 
-  let managerProfile = null;
-  if (projectData.manager_id) {
-    const { data: manager } = await supabase
-      .from('profiles')
-      .select('id, full_name, avatar_url')
-      .eq('id', projectData.manager_id)
-      .single();
-    managerProfile = manager;
-  }
-
-  const teamMembers: any[] = [];
-  if (managerProfile) {
-    teamMembers.push({
-      id: projectData.manager_id,
-      name: managerProfile.full_name || "Unknown Manager",
-      role: "Project Manager",
-      avatarUrl: managerProfile.avatar_url || null
-    });
-  }
-
   const safeMembers = Array.isArray(projectData.project_members) ? projectData.project_members : [];
-  safeMembers.forEach((m: any) => {
-    if (m.profile_id !== projectData.manager_id) {
-      teamMembers.push({
-        id: m.profile_id || Math.random().toString(),
-        name: m.profiles?.full_name || "Unknown Officer",
-        role: m.project_role || "Member",
-        avatarUrl: m.profiles?.avatar_url || null
-      });
-    }
+  const teamMembers = safeMembers.map((m: any) => {
+    const officerRecord = m.profiles?.officers?.find((o: any) => o.term_id === projectData.term_id);
+    const officerPosition = officerRecord ? officerRecord.position : "USSC Member";
+    const displayRole = m.project_role === "Project Lead" ? `Project Lead / ${officerPosition}` : officerPosition;
+
+    return {
+      id: m.profile_id || Math.random().toString(),
+      name: m.profiles?.full_name || "Unknown Officer",
+      role: displayRole,
+      avatarUrl: m.profiles?.avatar_url || null
+    };
   });
 
   return {
