@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Plus, CheckCircle2, Users, Search, Filter, X, Trash2, UserPlus, Edit } from "lucide-react";
-import { createTermWithOfficers, setActiveTerm, assignOfficer, removeOfficer } from "@/lib/actions/admin-management";
+import { CalendarDays, Plus, CheckCircle2, Users, Search, Filter, X, Trash2, Edit, ImageIcon, Loader2 } from "lucide-react";
+import { createTermWithOfficers, setActiveTerm, assignOfficer, removeOfficer, updateTermCover } from "@/lib/actions/admin-management";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[], availablePMs: any[] }) {
@@ -12,6 +13,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -30,6 +32,15 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
   const handleCreateTerm = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
+
+    const selectedIds = officers.map(o => o.profile_id).filter(Boolean);
+    const uniqueIds = new Set(selectedIds);
+    if (selectedIds.length !== uniqueIds.size) {
+      alert("You cannot assign the same officer multiple times. Please remove duplicates.");
+      setIsProcessing(false);
+      return;
+    }
+
     const result = await createTermWithOfficers({ name, start_date: startDate, end_date: endDate }, officers);
     if (result.success) window.location.reload(); 
     else { alert(`Error: ${result.error}`); setIsProcessing(false); }
@@ -45,6 +56,13 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
   const handleAddSingleOfficer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTerm || !newOfficerProfile || !newOfficerPosition) return;
+
+    const isDuplicate = editingTerm.officers?.some((o: any) => o.profiles?.id === newOfficerProfile);
+    if (isDuplicate) {
+      alert("This user is already an officer for this term!");
+      return;
+    }
+
     setIsProcessing(true);
     const result = await assignOfficer(editingTerm.id, newOfficerProfile, newOfficerPosition);
     if (result.success) window.location.reload();
@@ -57,6 +75,43 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     const result = await removeOfficer(officerId);
     if (result.success) window.location.reload();
     else { alert(`Error: ${result.error}`); setIsProcessing(false); }
+  };
+
+  const handleCoverPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingTerm) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Please select an image smaller than 5MB");
+      return;
+    }
+
+    setIsUploadingCover(true);
+    const supabase = createClient();
+    
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `terms/${editingTerm.id}-${Math.random()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("project-images")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from("project-images").getPublicUrl(fileName);
+
+      const result = await updateTermCover(editingTerm.id, publicUrl);
+      if (result.success) {
+        window.location.reload();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err: any) {
+      alert("Upload failed: " + err.message);
+    } finally {
+      setIsUploadingCover(false);
+    }
   };
 
   const addOfficerRow = () => setOfficers([...officers, { profile_id: "", position: "" }]);
@@ -106,14 +161,24 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
           <div key={term.id} className={cn("bg-white rounded-2xl p-5 border shadow-sm flex flex-col transition-all relative group", term.is_current ? "border-green-300 ring-4 ring-green-50" : "border-gray-200 hover:border-gray-300")}>
             
             <button 
-              onClick={() => setEditingTerm(term)}
-              className="absolute top-4 right-4 p-2 bg-gray-50 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors border border-transparent hover:border-blue-100"
-              title="Manage Officers"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setEditingTerm(term);
+              }}
+              className="absolute top-4 right-4 p-2 bg-white shadow-md hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg transition-all border border-gray-200 hover:border-blue-200 z-[50]"
+              title="Manage Term"
             >
               <Edit className="w-4 h-4" />
             </button>
 
-            <div className="flex justify-between items-start mb-3 pr-10">
+            {term.cover_url && (
+               <div className="absolute top-0 left-0 w-full h-16 bg-gray-100 rounded-t-2xl overflow-hidden opacity-30 pointer-events-none z-0">
+                 <img src={term.cover_url} alt="" className="w-full h-full object-cover" />
+               </div>
+            )}
+
+            <div className="flex justify-between items-start mb-3 pr-12 relative z-10 pt-2">
               <h3 className="text-lg font-bold text-gray-900 truncate pr-2">{term.name}</h3>
               {term.is_current ? (
                 <span className="flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shrink-0"><CheckCircle2 className="w-3 h-3" /> Active</span>
@@ -122,12 +187,12 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
               )}
             </div>
             
-            <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-4 font-medium">
+            <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-4 font-medium relative z-10">
               <CalendarDays className="w-3.5 h-3.5 text-gray-400" />
               {new Date(term.start_date).toLocaleDateString()} to {new Date(term.end_date).toLocaleDateString()}
             </p>
 
-            <div className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100">
+            <div className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100 relative z-10">
               <h4 className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Council Officers</h4>
               {term.officers?.length > 0 ? (
                 <div className="space-y-2">
@@ -145,7 +210,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
             </div>
 
             {!term.is_current && (
-              <button disabled={isProcessing} onClick={() => handleActivateTerm(term.id)} className="mt-4 w-full py-2 bg-gray-50 hover:bg-green-50 text-gray-600 hover:text-green-700 border border-gray-200 hover:border-green-200 rounded-xl text-xs font-bold transition-colors disabled:opacity-50">
+              <button disabled={isProcessing} onClick={() => handleActivateTerm(term.id)} className="mt-4 w-full py-2 bg-gray-50 hover:bg-green-50 text-gray-600 hover:text-green-700 border border-gray-200 hover:border-green-200 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 relative z-10">
                 Set as Active Term
               </button>
             )}
@@ -158,7 +223,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95">
             <div className="p-5 border-b border-gray-100 flex justify-between items-center shrink-0">
               <div>
-                <h2 className="text-xl font-bold text-[#153B44]">Manage Officers</h2>
+                <h2 className="text-xl font-bold text-[#153B44]">Manage Term</h2>
                 <p className="text-sm text-gray-500">{editingTerm.name}</p>
               </div>
               <button onClick={() => setEditingTerm(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400"><X className="w-5 h-5" /></button>
@@ -166,12 +231,29 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
 
             <div className="overflow-y-auto flex-1 p-5 space-y-6">
               
+              <div className="relative w-full h-32 md:h-40 bg-gray-200 rounded-xl overflow-hidden group shadow-inner">
+                <img 
+                  src={editingTerm.cover_url || "/hero-section-place.jpg"} 
+                  alt="Term Cover" 
+                  className={`w-full h-full object-cover transition-transform ${isUploadingCover ? 'scale-105 opacity-50' : ''}`}
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <label className="cursor-pointer px-4 py-2 bg-white rounded-lg text-sm font-bold shadow-md hover:bg-gray-50 text-gray-900 flex items-center gap-2">
+                    {isUploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                    {isUploadingCover ? "Uploading..." : "Change Cover Photo"}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleCoverPhotoChange} disabled={isUploadingCover} />
+                  </label>
+                </div>
+              </div>
+
               <form onSubmit={handleAddSingleOfficer} className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col md:flex-row gap-3 items-end">
                 <div className="w-full md:w-1/2">
                   <label className="block text-xs font-bold text-gray-500 mb-1">Select Project Manager</label>
                   <select required value={newOfficerProfile} onChange={e => setNewOfficerProfile(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
                     <option value="">Select user...</option>
-                    {availablePMs.map(pm => <option key={pm.id} value={pm.id}>{pm.full_name} {pm.email ? `(${pm.email})` : ''}</option>)}
+                    {availablePMs
+                      .filter(pm => !editingTerm.officers?.some((o: any) => o.profiles?.id === pm.id))
+                      .map(pm => <option key={pm.id} value={pm.id}>{pm.full_name} {pm.email ? `(${pm.email})` : ''}</option>)}
                   </select>
                 </div>
                 <div className="w-full md:w-[40%]">
@@ -250,7 +332,15 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
                       <div className="w-full md:w-[50%]">
                         <select value={officer.profile_id} onChange={e => updateOfficer(idx, 'profile_id', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
                           <option value="">Select Project Manager...</option>
-                          {availablePMs.map(pm => <option key={pm.id} value={pm.id}>{pm.full_name} {pm.email ? `(${pm.email})` : ''}</option>)}
+                          {availablePMs.map(pm => {
+                            const isSelectedElsewhere = officers.some((o, i) => i !== idx && o.profile_id === pm.id);
+                            return (
+                              <option key={pm.id} value={pm.id} disabled={isSelectedElsewhere}>
+                                {pm.full_name} {pm.email ? `(${pm.email})` : ''}
+                                {isSelectedElsewhere ? " (Already Selected)" : ""}
+                              </option>
+                            );
+                          })}
                         </select>
                       </div>
                       <div className="w-full md:w-[40%]">
