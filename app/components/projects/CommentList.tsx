@@ -8,46 +8,60 @@ interface CommentListProps {
   initialComments?: any[];
   projectId: string;
   isGuest: boolean;
-  onCountChange?: (count: number) => void;
+  onCountChange?: (count: number) => void; 
 }
 
 export function CommentList({ initialComments = [], projectId, isGuest, onCountChange }: CommentListProps) {
   const safeInitial = Array.isArray(initialComments) ? initialComments : [];
-  
   const [allComments, setAllComments] = useState<any[]>(safeInitial);
-  const supabase = createClient();
 
   useEffect(() => {
     setAllComments(Array.isArray(initialComments) ? initialComments : []);
   }, [initialComments]);
 
   useEffect(() => {
+    const supabase = createClient();
+    
     const channel = supabase
       .channel(`realtime-comments-${projectId}`)
       .on('postgres_changes', { 
-        event: 'INSERT', 
+        event: '*',
         schema: 'public', 
         table: 'comments', 
         filter: `project_id=eq.${projectId}` 
       }, async (payload) => {
-        const { data: newWithProfile } = await supabase
-          .from('comments')
-          .select('*, profiles(full_name, avatar_url)')
-          .eq('id', payload.new.id)
-          .single();
+        
+        if (payload.eventType === 'INSERT') {
+          const { data: newWithProfile } = await supabase
+            .from('comments')
+            .select('*, profiles(full_name, avatar_url)')
+            .eq('id', payload.new.id)
+            .single();
 
-        if (newWithProfile) {
+          if (newWithProfile) {
+            setAllComments((prev) => {
+              const safePrev = Array.isArray(prev) ? prev : [];
+              if (safePrev.some(c => c.id === newWithProfile.id)) return safePrev;
+              return [newWithProfile, ...safePrev];
+            });
+          }
+        } 
+        
+        else if (payload.eventType === 'UPDATE') {
           setAllComments((prev) => {
             const safePrev = Array.isArray(prev) ? prev : [];
-            if (safePrev.some(c => c.id === newWithProfile.id)) return safePrev;
-            return [newWithProfile, ...safePrev];
+            return safePrev.map(c => 
+              c.id === payload.new.id 
+                ? { ...c, is_hidden: payload.new.is_hidden, content: payload.new.content } 
+                : c
+            );
           });
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [projectId, supabase]);
+  }, [projectId]);
 
   const safeComments = Array.isArray(allComments) ? allComments : [];
 

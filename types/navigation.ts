@@ -8,6 +8,8 @@ import {
   CheckSquare, 
   Wallet,
   PhilippinePeso, 
+  ShieldAlert,
+  Users
 } from "lucide-react";
 
 export type NavItem = {
@@ -36,8 +38,10 @@ export const NAV_CONFIG: Record<string, NavItem[]> = {
   ],
   admin: [
     { name: "Admin Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "User", href: "/admin/users", icon: FolderKanban },
+    { name: "User Management", href: "/admin/users", icon: Users },
+    { name: "Content Moderation", href: "/admin/moderation", icon: ShieldAlert },
     { name: "Reports & Reviews", href: "/admin/reports", icon: PhilippinePeso },
-    { name: "System Settings", href: "admin/settings", icon: Settings},
+    { divider: true },
+    { name: "System Settings", href: "/admin/settings", icon: Settings },
   ],
 };
