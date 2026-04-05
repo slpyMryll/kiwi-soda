@@ -4,7 +4,14 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CommentItem } from "./CommentItem";
 
-export function CommentList({ initialComments = [], projectId, isGuest }: { initialComments?: any[], projectId: string, isGuest: boolean }) {
+interface CommentListProps {
+  initialComments?: any[];
+  projectId: string;
+  isGuest: boolean;
+  onCountChange?: (count: number) => void;
+}
+
+export function CommentList({ initialComments = [], projectId, isGuest, onCountChange }: CommentListProps) {
   const safeInitial = Array.isArray(initialComments) ? initialComments : [];
   
   const [allComments, setAllComments] = useState<any[]>(safeInitial);
@@ -43,6 +50,12 @@ export function CommentList({ initialComments = [], projectId, isGuest }: { init
   }, [projectId, supabase]);
 
   const safeComments = Array.isArray(allComments) ? allComments : [];
+
+  useEffect(() => {
+    if (onCountChange) {
+      onCountChange(safeComments.length);
+    }
+  }, [safeComments.length, onCountChange]);
 
   const topLevel = safeComments
     .filter((c: any) => !c.parent_id)

@@ -23,7 +23,7 @@ export default async function ManageProjectPage({
   try {
     const resolvedSearchParams = await searchParams;
     const tabParam = resolvedSearchParams?.tab;
-    const validTabs = ["Overview", "Tasks & Team", "Budget", "Timeline", "Documents", "Charts"];
+    const validTabs = ["Overview", "Tasks & Team", "Budget", "Timeline", "Documents", "Charts", "Feedback"];
     if (typeof tabParam === "string" && validTabs.includes(tabParam)) {
       initialTab = tabParam;
     }
@@ -45,7 +45,8 @@ export default async function ManageProjectPage({
       tasks ( id, title, assigned_to, due_date, status, cost, profiles ( full_name ) ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
       project_milestones ( id, title, end_date, status, progress ),
-      project_documents ( id, name, file_url, file_size, file_type, created_at, profiles:uploaded_by ( full_name ) )
+      project_documents ( id, name, file_url, file_size, file_type, created_at, profiles:uploaded_by ( full_name ) ),
+      comments ( id, content, created_at, parent_id, profiles ( full_name, avatar_url ) )
     `
     )
     .eq("id", id)
@@ -87,6 +88,15 @@ export default async function ManageProjectPage({
     progress: projectData.progress || 0,
     deadline: projectData.deadline,
     tags: projectData.tags || [], 
+    
+    comments: (projectData.comments || []).map((c: any) => ({
+      id: c.id,
+      content: c.content,
+      created_at: c.created_at,
+      parent_id: c.parent_id,
+      profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
+    })),
+
     membersCount: safeMembers.length,
 
     members: safeMembers.map((m: any) => ({
