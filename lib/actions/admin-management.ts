@@ -125,3 +125,17 @@ export async function assignOfficer(termId: string, profileId: string, position:
   revalidatePath("/admin/terms");
   return { success: true };
 }
+
+export async function updateTermCover(termId: string, coverUrl: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("terms")
+    .update({ cover_url: coverUrl })
+    .eq("id", termId);
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath("/admin/terms");
+  revalidatePath("/viewer");
+  revalidatePath("/");
+  return { success: true };
+}
