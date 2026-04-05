@@ -114,3 +114,14 @@ export async function removeOfficer(officerId: string) {
   revalidatePath("/admin/terms");
   return { success: true };
 }
+
+export async function assignOfficer(termId: string, profileId: string, position: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("officers")
+    .insert([{ term_id: termId, profile_id: profileId, position }]); // Removed committee
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath("/admin/terms");
+  return { success: true };
+}
