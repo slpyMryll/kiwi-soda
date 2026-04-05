@@ -119,7 +119,7 @@ export async function assignOfficer(termId: string, profileId: string, position:
   const supabase = await createClient();
   const { error } = await supabase
     .from("officers")
-    .insert([{ term_id: termId, profile_id: profileId, position }]); // Removed committee
+    .insert([{ term_id: termId, profile_id: profileId, position }]);
 
   if (error) return { success: false, error: error.message };
   revalidatePath("/admin/terms");
