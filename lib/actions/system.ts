@@ -34,9 +34,15 @@ export async function recordActivity({
 export async function getSystemSettings() {
   const supabase = await createClient();
   const { data } = await supabase.from("system_settings").select("*");
-
+  
   return (data || []).reduce((acc: any, curr) => {
-    acc[curr.key] = typeof curr.value === 'string' ? curr.value.replace(/^"|"$/g, '') : curr.value;
+    let val = curr.value?.content !== undefined ? curr.value.content : curr.value;
+    
+    if (typeof val === 'string') {
+      val = val.replace(/^"|"$/g, '');
+    }
+    
+    acc[curr.key] = val;
     return acc;
   }, {});
 }
@@ -47,11 +53,23 @@ export async function updateSystemSetting(key: string, value: string) {
 
   const { error } = await supabase
     .from("system_settings")
-    .upsert({ key, value: `"${value}"`, updated_by: user?.id, updated_at: new Date().toISOString() });
+    .upsert({ 
+      key, 
+      value: { content: value }, 
+      updated_by: user?.id, 
+      updated_at: new Date().toISOString() 
+    });
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    console.error("Settings Update Error:", error);
+    return { success: false, error: error.message };
+  }
 
   revalidatePath("/", "layout");
+  revalidatePath("/privacy");
+  revalidatePath("/terms");
+  revalidatePath("/cookies");
+  
   return { success: true };
 }
 
