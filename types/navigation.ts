@@ -9,7 +9,8 @@ import {
   Wallet,
   PhilippinePeso, 
   ShieldAlert,
-  Users
+  Users,
+  CalendarDays
 } from "lucide-react";
 
 export type NavItem = {
@@ -39,6 +40,7 @@ export const NAV_CONFIG: Record<string, NavItem[]> = {
   admin: [
     { name: "Admin Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "User Management", href: "/admin/users", icon: Users },
+    { name: "Term Management", href: "/admin/terms", icon: CalendarDays },
     { name: "Content Moderation", href: "/admin/moderation", icon: ShieldAlert },
     { name: "Reports & Reviews", href: "/admin/reports", icon: PhilippinePeso },
     { divider: true },

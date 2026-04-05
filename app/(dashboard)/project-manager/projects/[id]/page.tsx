@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import ProjectDetailClient from "./ProjectDetailClient";
+import { getProjectTeamWithOfficerRoles } from "@/lib/actions/project";
 
 export default async function ManageProjectPage({
   params,
@@ -40,8 +41,7 @@ export default async function ManageProjectPage({
     .from("projects")
     .select(
       `
-      id, manager_id, title, description, location, status, live_status, image_url, posted_at, created_at, total_budget, spent_budget, progress, deadline, tags,
-      project_members ( profile_id, project_role, profiles ( full_name, avatar_url ) ),
+      id, manager_id, term_id, title, description, location, status, live_status, image_url, posted_at, created_at, total_budget, spent_budget, progress, deadline, tags,
       tasks ( id, title, assigned_to, due_date, status, cost, profiles ( full_name ) ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
       project_milestones ( id, title, end_date, status, progress ),
@@ -64,7 +64,8 @@ export default async function ManageProjectPage({
   const { data: { user } } = await supabase.auth.getUser();
   const isManager = projectData.manager_id === user?.id;
   
-  const safeMembers = Array.isArray(projectData?.project_members) ? projectData.project_members : [];
+  const teamMembers = await getProjectTeamWithOfficerRoles(projectData.id, projectData.term_id);
+  
   const safeTasks = Array.isArray(projectData?.tasks) ? projectData.tasks : [];
   const safeMilestones = Array.isArray(projectData?.project_milestones) ? projectData.project_milestones : [];
   const safeBudgetLogs = Array.isArray(projectData?.budget_logs) ? projectData.budget_logs : [];
@@ -97,14 +98,8 @@ export default async function ManageProjectPage({
       profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
     })),
 
-    membersCount: safeMembers.length,
-
-    members: safeMembers.map((m: any) => ({
-      id: m?.profile_id || "unknown",
-      name: m?.profiles?.full_name || "Unknown Officer",
-      role: m?.project_role || "Member",
-      avatarUrl: m?.profiles?.avatar_url || null,
-    })),
+    membersCount: teamMembers.length,
+    members: teamMembers,
 
     tasks: safeTasks.map((t: any, index: number) => ({
       id: t?.id || `task-${index}`,

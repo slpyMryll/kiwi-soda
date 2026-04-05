@@ -62,7 +62,6 @@ export function TasksAndTeamTab({
     
     const taskChannel = supabase
       .channel(`project-tasks-${projectId}`)
-      // Filtered INSERT & UPDATE events
       .on('postgres_changes', { event: "INSERT", schema: "public", table: "tasks", filter: `project_id=eq.${projectId}` }, (payload) => {
         const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
         const newTask = {
@@ -105,7 +104,7 @@ export function TasksAndTeamTab({
       .on('postgres_changes', { event: "INSERT", schema: "public", table: "project_members", filter: `project_id=eq.${projectId}` }, (payload) => {
         const pm = availablePMs.find((p: any) => p.id === payload.new.profile_id);
         if (pm) {
-          const newMember = { id: pm.id, name: pm.full_name, role: payload.new.project_role, avatarUrl: pm.avatar_url || null };
+          const newMember = { id: pm.id, name: pm.full_name, role: payload.new.project_role, display_role: payload.new.project_role, avatarUrl: pm.avatar_url || null };
           setLocalMembers((prev: any) => {
              if (prev.find((m: any) => m.id === newMember.id)) return prev;
              return [...prev, newMember];
@@ -441,12 +440,23 @@ export function TasksAndTeamTab({
               return (
                 <div key={m.id} className="p-4 rounded-xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
                   <div className="flex items-center gap-3 w-full sm:w-auto overflow-hidden">
-                    <div className="w-10 h-10 rounded-full bg-red-400 text-white flex items-center justify-center font-bold text-sm shrink-0">{m.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase()}</div>
-                    <div className="flex-1 min-w-0"><h4 className="text-sm font-bold text-gray-900 leading-tight truncate">{m.name}</h4><p className="text-xs text-gray-500 truncate">{m.role}</p></div>
+                    <div className="w-10 h-10 rounded-full bg-[#1B4332] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                      {m.avatarUrl ? (
+                        <img src={m.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        m.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-gray-900 leading-tight truncate">{m.name}</h4>
+                      <p className="text-xs text-[#1B4332] font-medium truncate mt-0.5">{m.display_role || m.role}</p>
+                    </div>
                   </div>
                   <div className="w-full sm:text-right sm:w-32 shrink-0">
                     <p className="text-[10px] font-bold text-gray-500 mb-1.5">Tasks {stats.completed}/{stats.total} completed</p>
-                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-[#52B788] rounded-full transition-all" style={{ width: `${stats.percentage}%` }}/></div>
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#52B788] rounded-full transition-all" style={{ width: `${stats.percentage}%` }}/>
+                    </div>
                   </div>
                 </div>
               );

@@ -126,8 +126,8 @@ export function ProjectDetailView({
                         <p className="text-xs sm:text-sm font-bold text-gray-900 leading-none truncate">
                           {member.name}
                         </p>
-                        <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium truncate mt-1 sm:mt-1.5">
-                          {member.role}
+                        <p className="text-[10px] sm:text-[11px] text-[#1B4332] font-semibold truncate mt-1 sm:mt-1.5">
+                          {member.display_role || member.role}
                         </p>
                       </div>
                     </div>

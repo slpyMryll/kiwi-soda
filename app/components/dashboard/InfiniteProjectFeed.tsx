@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 interface InfiniteProjectFeedProps {
   initialProjects: Project[];
   userRole: "guest" | "viewer";
-  searchParams: { q?: string; status?: string; sort?: string };
+  searchParams: { q?: string; status?: string; sort?: string; termId?: string };
 }
 
 export function InfiniteProjectFeed({
@@ -104,7 +104,7 @@ export function InfiniteProjectFeed({
     [isLoading, hasMore],
   );
 
-  const loadMoreProjects = async () => {
+ const loadMoreProjects = async () => {
     setIsLoading(true);
     const nextPage = page + 1;
 
@@ -114,6 +114,7 @@ export function InfiniteProjectFeed({
         q: searchParams.q,
         status: searchParams.status,
         sort: searchParams.sort,
+        termId: searchParams.termId
       });
 
       setProjects((prev) => [...prev, ...res.projects]);

@@ -11,6 +11,22 @@ export async function createProject(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized" };
 
+  const { data: officerRecord, error: officerError } = await supabase
+    .from("officers")
+    .select("term_id, terms!inner(is_current)")
+    .eq("profile_id", user.id)
+    .eq("terms.is_current", true)
+    .single();
+
+  if (officerError || !officerRecord) {
+    return {
+      error:
+        "You are not assigned as an officer for the current active term. Contact an Administrator.",
+    };
+  }
+
+  const derivedTermId = officerRecord.term_id;
+
   const title = formData.get("title") as string;
   const description = formData.get("description") as string;
   const totalBudget = parseFloat(formData.get("totalBudget") as string);
@@ -61,6 +77,7 @@ export async function createProject(formData: FormData) {
       spent_budget: 0,
       deadline,
       manager_id: user.id,
+      term_id: derivedTermId,
       status: "Active",
       live_status: "Draft",
       progress: 0,
@@ -111,7 +128,6 @@ export async function toggleProjectLiveStatus(
     .from("projects")
     .update({ live_status: newStatus })
     .eq("id", projectId);
-
   if (error) return { error: error.message };
 
   revalidatePath("/project-manager/projects", "layout");
@@ -133,7 +149,6 @@ export async function deleteProject(projectId: string) {
     .eq("project_id", projectId);
   await supabase.from("tasks").delete().eq("project_id", projectId);
   await supabase.from("project_members").delete().eq("project_id", projectId);
-
   const { error } = await supabase
     .from("projects")
     .delete()
@@ -147,24 +162,103 @@ export async function deleteProject(projectId: string) {
 }
 
 export async function postComment(
-  projectId: string, 
-  content: string, 
-  parentId: string | null = null
+  projectId: string,
+  content: string,
+  parentId: string | null = null,
 ) {
-  const supabase = await createClient(); //
-  const { data: { user } } = await supabase.auth.getUser();
-
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { error: "Authentication required" };
 
-  const { error } = await supabase.from('comments').insert({
-    project_id: projectId,
-    user_id: user.id,
-    content,
-    parent_id: parentId
-  });
-
+  const { error } = await supabase
+    .from("comments")
+    .insert({
+      project_id: projectId,
+      user_id: user.id,
+      content,
+      parent_id: parentId,
+    });
   if (error) return { error: error.message };
-  
+
   revalidatePath(`/viewer/projects/${projectId}`);
   return { success: true };
+}
+
+export async function getProjectTeamWithOfficerRoles(projectId: string, termId: string | null) {
+  const supabase = await createClient();
+  
+  const { data: members, error } = await supabase
+    .from("project_members")
+    .select(`
+      id,
+      project_role,
+      profile_id,
+      profiles ( full_name, avatar_url )
+    `)
+    .eq("project_id", projectId);
+
+  if (error || !members) {
+    console.error("Error fetching team:", error);
+    return [];
+  }
+
+  const profileIds = members.map(m => m.profile_id);
+  const officerMap = new Map();
+
+  if (termId && profileIds.length > 0) {
+    const { data: officers } = await supabase
+      .from("officers")
+      .select("profile_id, position")
+      .eq("term_id", termId)
+      .in("profile_id", profileIds);
+
+    if (officers) {
+      officers.forEach(o => officerMap.set(o.profile_id, o.position));
+    }
+  }
+
+  return members.map((member: any) => {
+    const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+    
+    const officerPosition = officerMap.get(member.profile_id) || "USSC Member";
+
+    const displayRole = member.project_role === "Project Lead" 
+      ? `Project Lead / ${officerPosition}` 
+      : officerPosition;
+
+    return {
+      id: member.id || Math.random().toString(),
+      profile_id: member.profile_id,
+      name: profile?.full_name || "Unknown Officer",
+      avatarUrl: profile?.avatar_url || null,
+      avatar_url: profile?.avatar_url || null, 
+      role: member.project_role || "Member",
+      display_role: displayRole,
+      is_lead: member.project_role === "Project Lead"
+    };
+  });
+}
+
+export async function getActiveTerm() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("terms")
+    .select("id, name, is_current, cover_url")
+    .eq("is_current", true)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+export async function getAllTerms() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("terms")
+    .select("id, name, is_current, cover_url")
+    .order("start_date", { ascending: false });
+
+  return data || [];
 }
