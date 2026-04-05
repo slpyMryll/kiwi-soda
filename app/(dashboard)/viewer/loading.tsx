@@ -1,9 +1,7 @@
-import { HeroBanner } from "@/app/components/dashboard/HeroBanner";
-
 export default function ViewerDashboardLoading() {
   return (
     <main className="mx-auto px-4 lg:px-24 w-full flex-1 relative animate-pulse">
-      <HeroBanner />
+      <div className="relative w-full h-48 md:h-64 rounded-b-2xl bg-gray-200 mb-8 shadow-sm" />
 
       <div className="mb-2 mt-4 space-y-2">
         <div className="h-8 w-64 bg-gray-200 rounded-lg" />
