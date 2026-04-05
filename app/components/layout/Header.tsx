@@ -1,15 +1,14 @@
 "use client";
 
-import Link from 'next/link'
-import { ChevronDown, Menu, User as UserIcon, Settings, LogOut, X } from 'lucide-react'
-import { logout } from '@/lib/actions/auth'
-import { Button } from '@/components/ui/button'
-
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ChevronDown, Menu, User as UserIcon, Settings, LogOut, X } from 'lucide-react';
+import { logout } from '@/lib/actions/auth';
+import { Button } from '@/components/ui/button';
 import { ContentRail } from '../landing/ContentRail';
 import { NAV_CONFIG } from '@/types/navigation';
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-
 import { NotificationBell } from './NotificationBell';
 
 import {
@@ -19,14 +18,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetTrigger,
   SheetClose,
-} from "@/components/ui/sheet"
+} from "@/components/ui/sheet";
 
 interface HeaderProps {
   user?: any;
@@ -40,6 +39,30 @@ interface HeaderProps {
 export function Header({ user, profile, role = "viewer" }: HeaderProps) {
   const pathname = usePathname();
   const navItems = NAV_CONFIG[role] || NAV_CONFIG.viewer;
+  
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <header className="w-full bg-surface-brand text-white h-18 sticky top-0 z-50 border-b border-white/10 shadow-md">
+        <div className="h-full mx-auto px-4 lg:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+             <div className="w-6 h-6 lg:hidden" /> 
+             <div className="flex items-center gap-2 group">
+              <div className="bg-white rounded-full p-0.5 shrink-0 hidden sm:block">
+                <img src="/logov3.png" alt="OnTrack Logo" className="w-8 h-8 rounded-full" />
+              </div>
+              <span className="text-xl font-bold tracking-tight text-white">OnTrack</span>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="w-full bg-surface-brand text-white h-18 sticky top-0 z-50 border-b border-white/10 shadow-md">
@@ -131,7 +154,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
             <>
               <NotificationBell userId={user.id} />
 
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger className="flex items-center gap-2 hover:bg-white/10 p-1 md:pr-3 rounded-full transition-all border border-transparent hover:border-white/20 focus:outline-none">
                   {profile?.full_name && (
                     <span className="hidden md:block text-sm font-medium text-white/90 pl-2">
