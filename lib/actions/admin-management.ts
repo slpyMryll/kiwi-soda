@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { recordActivity } from "./system";
 
 export async function getAdminUsers() {
   const supabase = await createClient();
@@ -13,6 +14,7 @@ export async function getAdminUsers() {
   if (error) console.error("Error fetching users:", error);
   return data || [];
 }
+
 export async function updateUserRole(userId: string, newRole: string) {
   const supabase = await createClient();
   
@@ -26,6 +28,12 @@ export async function updateUserRole(userId: string, newRole: string) {
     return { success: false, error: error.message };
   }
   
+  await recordActivity({
+    action_type: "USER_ROLE_CHANGED",
+    entity_id: userId,
+    description: `Updated user role to ${newRole}`,
+  });
+
   revalidatePath("/admin/users");
   return { success: true };
 }
@@ -35,6 +43,13 @@ export async function removeUser(userId: string) {
   const { error } = await supabase.from("profiles").delete().eq("id", userId);
   
   if (error) return { success: false, error: error.message };
+
+  await recordActivity({
+    action_type: "USER_DELETED",
+    entity_id: userId,
+    description: `Deleted user profile from the system`,
+  });
+
   revalidatePath("/admin/users");
   return { success: true };
 }
@@ -95,6 +110,13 @@ export async function createTermWithOfficers(
     }
   }
 
+  await recordActivity({
+    action_type: "TERM_CREATED",
+    entity_id: termData.id,
+    entity_name: term.name,
+    description: `Created new academic term: ${term.name} with ${officers.length} initial officers`,
+  });
+
   revalidatePath("/admin/terms");
   return { success: true };
 }
@@ -103,6 +125,13 @@ export async function setActiveTerm(termId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("terms").update({ is_current: true }).eq("id", termId);
   if (error) return { success: false, error: error.message };
+
+  await recordActivity({
+    action_type: "TERM_ACTIVATED",
+    entity_id: termId,
+    description: `An academic term was set as the active organization term`,
+  });
+
   revalidatePath("/admin/terms");
   return { success: true };
 }
@@ -111,6 +140,7 @@ export async function removeOfficer(officerId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("officers").delete().eq("id", officerId);
   if (error) return { success: false, error: error.message };
+  
   revalidatePath("/admin/terms");
   return { success: true };
 }
@@ -122,6 +152,7 @@ export async function assignOfficer(termId: string, profileId: string, position:
     .insert([{ term_id: termId, profile_id: profileId, position }]);
 
   if (error) return { success: false, error: error.message };
+
   revalidatePath("/admin/terms");
   return { success: true };
 }
@@ -134,6 +165,13 @@ export async function updateTermCover(termId: string, coverUrl: string) {
     .eq("id", termId);
 
   if (error) return { success: false, error: error.message };
+
+  await recordActivity({
+    action_type: "TERM_COVER_UPDATED",
+    entity_id: termId,
+    description: `Updated the cover photo for an academic term`,
+  });
+
   revalidatePath("/admin/terms");
   revalidatePath("/viewer");
   revalidatePath("/");
