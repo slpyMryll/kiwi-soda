@@ -145,3 +145,26 @@ export async function deleteProject(projectId: string) {
   revalidatePath("/project-manager/projects", "layout");
   return { success: true };
 }
+
+export async function postComment(
+  projectId: string, 
+  content: string, 
+  parentId: string | null = null
+) {
+  const supabase = await createClient(); //
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Authentication required" };
+
+  const { error } = await supabase.from('comments').insert({
+    project_id: projectId,
+    user_id: user.id,
+    content,
+    parent_id: parentId
+  });
+
+  if (error) return { error: error.message };
+  
+  revalidatePath(`/viewer/projects/${projectId}`);
+  return { success: true };
+}

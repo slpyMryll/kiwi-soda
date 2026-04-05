@@ -158,7 +158,14 @@ export function InfiniteProjectFeed({
                 project={project}
                 onReadMore={
                   userRole === "guest"
-                    ? () => setSelectedProject(project)
+                    ? () => setSelectedProject({
+                        ...project,
+                        comments: project.comments || [],
+                        milestones: project.milestones || [],
+                        budgetUpdates: project.budgetUpdates || [],
+                        members: project.members || [],
+                        tags: project.tags || []
+                      })
                     : undefined
                 }
               />

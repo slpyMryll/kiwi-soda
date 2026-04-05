@@ -23,7 +23,7 @@ export default async function ViewerProjectDetailPage({
       project_members ( profile_id, project_role, profiles ( full_name, avatar_url ) ),
       project_milestones ( id, title, end_date, status, progress ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
-      comments ( count )
+      comments ( id, content, created_at, parent_id, profiles ( full_name, avatar_url ) )
     `,
     )
     .eq("id", id)
@@ -98,7 +98,14 @@ export default async function ViewerProjectDetailPage({
     spentBudget: Number(projectData.spent_budget || 0),
     progress: projectData.progress || 0,
     tags: projectData.tags || [],
-    commentsCount: projectData.comments?.[0]?.count || 0,
+    comments: (projectData.comments || []).map((c: any) => ({
+      id: c.id,
+      content: c.content,
+      created_at: c.created_at,
+      parent_id: c.parent_id,
+      profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
+    })),
+    commentsCount: projectData.comments?.length || 0,
     membersCount: teamMembers.length,
     isFollowing: false,
     deadline: new Date(projectData.deadline),
