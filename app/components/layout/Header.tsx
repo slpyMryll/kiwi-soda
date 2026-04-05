@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link'
-import { Bell, ChevronDown, Menu, User as UserIcon, Settings, LogOut, X } from 'lucide-react'
+import { ChevronDown, Menu, User as UserIcon, Settings, LogOut, X } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/button'
 
@@ -9,6 +9,8 @@ import { ContentRail } from '../landing/ContentRail';
 import { NAV_CONFIG } from '@/types/navigation';
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+
+import { NotificationBell } from './NotificationBell';
 
 import {
   DropdownMenu,
@@ -127,10 +129,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
         <div className="flex items-center gap-2 md:gap-4">
           {user ? (
             <>
-              <button className="p-2 rounded-full hover:bg-white/10 transition-colors relative">
-                <Bell className="w-5 h-5 text-white" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-[#1B4332]"></span>
-              </button>
+              <NotificationBell userId={user.id} />
 
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 hover:bg-white/10 p-1 md:pr-3 rounded-full transition-all border border-transparent hover:border-white/20 focus:outline-none">
