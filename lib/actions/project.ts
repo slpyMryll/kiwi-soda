@@ -185,3 +185,80 @@ export async function postComment(
   revalidatePath(`/viewer/projects/${projectId}`);
   return { success: true };
 }
+
+export async function getProjectTeamWithOfficerRoles(projectId: string, termId: string | null) {
+  const supabase = await createClient();
+  
+  const { data: members, error } = await supabase
+    .from("project_members")
+    .select(`
+      id,
+      project_role,
+      profile_id,
+      profiles ( full_name, avatar_url )
+    `)
+    .eq("project_id", projectId);
+
+  if (error || !members) {
+    console.error("Error fetching team:", error);
+    return [];
+  }
+
+  const profileIds = members.map(m => m.profile_id);
+  const officerMap = new Map();
+
+  if (termId && profileIds.length > 0) {
+    const { data: officers } = await supabase
+      .from("officers")
+      .select("profile_id, position")
+      .eq("term_id", termId)
+      .in("profile_id", profileIds);
+
+    if (officers) {
+      officers.forEach(o => officerMap.set(o.profile_id, o.position));
+    }
+  }
+
+  return members.map((member: any) => {
+    const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+    
+    const officerPosition = officerMap.get(member.profile_id) || "USSC Member";
+
+    const displayRole = member.project_role === "Project Lead" 
+      ? `Project Lead / ${officerPosition}` 
+      : officerPosition;
+
+    return {
+      id: member.id || Math.random().toString(),
+      profile_id: member.profile_id,
+      name: profile?.full_name || "Unknown Officer",
+      avatarUrl: profile?.avatar_url || null,
+      avatar_url: profile?.avatar_url || null, 
+      role: member.project_role || "Member",
+      display_role: displayRole,
+      is_lead: member.project_role === "Project Lead"
+    };
+  });
+}
+
+export async function getActiveTerm() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("terms")
+    .select("id, name, is_current, cover_url")
+    .eq("is_current", true)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+export async function getAllTerms() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("terms")
+    .select("id, name, is_current, cover_url")
+    .order("start_date", { ascending: false });
+
+  return data || [];
+}
