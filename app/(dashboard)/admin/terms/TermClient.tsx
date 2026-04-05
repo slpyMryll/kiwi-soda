@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Plus, CheckCircle2, Users, Search, Filter, X, Trash2 } from "lucide-react";
-import { createTermWithOfficers, setActiveTerm } from "@/lib/actions/admin-management";
+import { CalendarDays, Plus, CheckCircle2, Users, Search, Filter, X, Trash2, UserPlus, Edit } from "lucide-react";
+import { createTermWithOfficers, setActiveTerm, assignOfficer, removeOfficer } from "@/lib/actions/admin-management";
 import { cn } from "@/lib/utils";
 
 export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[], availablePMs: any[] }) {
@@ -17,6 +17,10 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
   const [endDate, setEndDate] = useState("");
   const [officers, setOfficers] = useState([{ profile_id: "", position: "" }]);
 
+  const [editingTerm, setEditingTerm] = useState<any>(null);
+  const [newOfficerProfile, setNewOfficerProfile] = useState("");
+  const [newOfficerPosition, setNewOfficerPosition] = useState("");
+
   const filteredTerms = terms.filter(t => {
     const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === "all" || (filterStatus === "active" ? t.is_current : !t.is_current);
@@ -26,14 +30,9 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
   const handleCreateTerm = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
-    
     const result = await createTermWithOfficers({ name, start_date: startDate, end_date: endDate }, officers);
-    if (result.success) {
-      window.location.reload(); 
-    } else {
-      alert(`Error creating term: ${result.error}`);
-      setIsProcessing(false);
-    }
+    if (result.success) window.location.reload(); 
+    else { alert(`Error: ${result.error}`); setIsProcessing(false); }
   };
 
   const handleActivateTerm = async (id: string) => {
@@ -41,6 +40,23 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     setIsProcessing(true);
     await setActiveTerm(id);
     window.location.reload(); 
+  };
+
+  const handleAddSingleOfficer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTerm || !newOfficerProfile || !newOfficerPosition) return;
+    setIsProcessing(true);
+    const result = await assignOfficer(editingTerm.id, newOfficerProfile, newOfficerPosition);
+    if (result.success) window.location.reload();
+    else { alert(`Error: ${result.error}`); setIsProcessing(false); }
+  };
+
+  const handleRemoveOfficer = async (officerId: string) => {
+    if(!confirm("Remove this officer?")) return;
+    setIsProcessing(true);
+    const result = await removeOfficer(officerId);
+    if (result.success) window.location.reload();
+    else { alert(`Error: ${result.error}`); setIsProcessing(false); }
   };
 
   const addOfficerRow = () => setOfficers([...officers, { profile_id: "", position: "" }]);
@@ -65,17 +81,11 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input 
-              type="text" placeholder="Search terms..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1B4332] shadow-sm bg-white"
-            />
+            <input type="text" placeholder="Search terms..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1B4332] shadow-sm bg-white" />
           </div>
           <div className="relative w-full sm:w-40">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <select 
-              value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1B4332] shadow-sm bg-white appearance-none cursor-pointer"
-            >
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1B4332] shadow-sm bg-white appearance-none cursor-pointer">
               <option value="all">All Terms</option>
               <option value="active">Active Only</option>
               <option value="archived">Archived</option>
@@ -93,8 +103,17 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTerms.map((term) => (
-          <div key={term.id} className={cn("bg-white rounded-2xl p-5 border shadow-sm flex flex-col transition-all", term.is_current ? "border-green-300 ring-4 ring-green-50" : "border-gray-200 hover:border-gray-300")}>
-            <div className="flex justify-between items-start mb-3">
+          <div key={term.id} className={cn("bg-white rounded-2xl p-5 border shadow-sm flex flex-col transition-all relative group", term.is_current ? "border-green-300 ring-4 ring-green-50" : "border-gray-200 hover:border-gray-300")}>
+            
+            <button 
+              onClick={() => setEditingTerm(term)}
+              className="absolute top-4 right-4 p-2 bg-gray-50 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded-lg transition-colors border border-transparent hover:border-blue-100"
+              title="Manage Officers"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+
+            <div className="flex justify-between items-start mb-3 pr-10">
               <h3 className="text-lg font-bold text-gray-900 truncate pr-2">{term.name}</h3>
               {term.is_current ? (
                 <span className="flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shrink-0"><CheckCircle2 className="w-3 h-3" /> Active</span>
@@ -132,8 +151,63 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
             )}
           </div>
         ))}
-        {filteredTerms.length === 0 && <div className="col-span-full py-20 text-center text-gray-500 bg-white border border-gray-200 rounded-2xl border-dashed">No terms found matching your filters.</div>}
       </div>
+
+      {editingTerm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95">
+            <div className="p-5 border-b border-gray-100 flex justify-between items-center shrink-0">
+              <div>
+                <h2 className="text-xl font-bold text-[#153B44]">Manage Officers</h2>
+                <p className="text-sm text-gray-500">{editingTerm.name}</p>
+              </div>
+              <button onClick={() => setEditingTerm(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-5 space-y-6">
+              
+              <form onSubmit={handleAddSingleOfficer} className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col md:flex-row gap-3 items-end">
+                <div className="w-full md:w-1/2">
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Select Project Manager</label>
+                  <select required value={newOfficerProfile} onChange={e => setNewOfficerProfile(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                    <option value="">Select user...</option>
+                    {availablePMs.map(pm => <option key={pm.id} value={pm.id}>{pm.full_name} {pm.email ? `(${pm.email})` : ''}</option>)}
+                  </select>
+                </div>
+                <div className="w-full md:w-[40%]">
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Position</label>
+                  <input required type="text" placeholder="e.g. Secretary" value={newOfficerPosition} onChange={e => setNewOfficerPosition(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                </div>
+                <button disabled={isProcessing} type="submit" className="w-full md:w-auto px-4 py-2 bg-[#1B4332] text-white rounded-lg text-sm font-bold hover:bg-green-900 shrink-0">
+                  {isProcessing ? "..." : "Add"}
+                </button>
+              </form>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2"><Users className="w-4 h-4 text-[#1B4332]" /> Current Roster</h3>
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                      <tr><th className="px-4 py-3">Officer</th><th className="px-4 py-3">Position</th><th className="px-4 py-3 text-right">Action</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {editingTerm.officers?.length > 0 ? editingTerm.officers.map((off: any) => (
+                        <tr key={off.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-bold text-gray-900">{off.profiles?.full_name}</td>
+                          <td className="px-4 py-3 text-gray-600">{off.position}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button disabled={isProcessing} onClick={() => handleRemoveOfficer(off.id)} className="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"><Trash2 className="w-4 h-4" /></button>
+                          </td>
+                        </tr>
+                      )) : <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-500">No officers found.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
@@ -144,7 +218,6 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
             </div>
             
             <form onSubmit={handleCreateTerm} className="overflow-y-auto flex-1 p-5 space-y-8">
-              
               <section>
                 <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-[#1B4332]" /> Term Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -177,25 +250,19 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
                       <div className="w-full md:w-[50%]">
                         <select value={officer.profile_id} onChange={e => updateOfficer(idx, 'profile_id', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
                           <option value="">Select Project Manager...</option>
-                          {availablePMs.map(pm => (
-                            <option key={pm.id} value={pm.id}>
-                              {pm.full_name} {pm.email ? `(${pm.email})` : ''}
-                            </option>
-                          ))}
+                          {availablePMs.map(pm => <option key={pm.id} value={pm.id}>{pm.full_name} {pm.email ? `(${pm.email})` : ''}</option>)}
                         </select>
                       </div>
                       <div className="w-full md:w-[40%]">
-                        <input type="text" placeholder="Position (e.g. President, Treasurer)" value={officer.position} onChange={e => updateOfficer(idx, 'position', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                        <input type="text" placeholder="Position (e.g. President)" value={officer.position} onChange={e => updateOfficer(idx, 'position', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" />
                       </div>
                       <div className="w-full md:w-[10%] flex justify-end">
                         <button type="button" onClick={() => removeOfficerRow(idx)} className="p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 rounded-lg shrink-0"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
                   ))}
-                  {officers.length === 0 && <p className="text-xs text-gray-400 italic">No officers assigned. You can add them later.</p>}
                 </div>
               </section>
-
             </form>
             <div className="p-5 border-t border-gray-100 flex justify-end gap-3 shrink-0 bg-gray-50 rounded-b-2xl">
               <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl">Cancel</button>
