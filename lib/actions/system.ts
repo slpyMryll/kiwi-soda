@@ -21,7 +21,7 @@ export async function recordActivity({
 
   if (!user) return;
 
-  await supabase.from("activity_logs").insert({
+  const { error } = await supabase.from("activity_logs").insert({
     actor_id: user.id,
     action_type,
     entity_id,
@@ -29,6 +29,11 @@ export async function recordActivity({
     description,
     metadata,
   });
+
+  // Explicitly surface any database errors to your terminal
+  if (error) {
+    console.error("CRITICAL: Failed to record activity log:", error.message);
+  }
 }
 
 export async function getSystemSettings() {
@@ -37,11 +42,9 @@ export async function getSystemSettings() {
   
   return (data || []).reduce((acc: any, curr) => {
     let val = curr.value?.content !== undefined ? curr.value.content : curr.value;
-    
     if (typeof val === 'string') {
       val = val.replace(/^"|"$/g, '');
     }
-    
     acc[curr.key] = val;
     return acc;
   }, {});
@@ -60,10 +63,7 @@ export async function updateSystemSetting(key: string, value: string) {
       updated_at: new Date().toISOString() 
     });
 
-  if (error) {
-    console.error("Settings Update Error:", error);
-    return { success: false, error: error.message };
-  }
+  if (error) return { success: false, error: error.message };
 
   revalidatePath("/", "layout");
   revalidatePath("/privacy");
@@ -73,16 +73,21 @@ export async function updateSystemSetting(key: string, value: string) {
   return { success: true };
 }
 
-export async function getActivityLogs() {
+export async function getActivityLogs(actorId?: string) {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("activity_logs")
     .select(`
       *,
       profiles:actor_id ( full_name, role )
     `)
-    .order("created_at", { ascending: false })
-    .limit(100);
+    .order("created_at", { ascending: false });
+
+  if (actorId) {
+    query = query.eq("actor_id", actorId);
+  }
+
+  const { data, error } = await query.limit(100);
 
   if (error) console.error("Error fetching logs:", error);
   return data || [];
