@@ -30,7 +30,6 @@ export async function recordActivity({
     metadata,
   });
 
-  // Explicitly surface any database errors to your terminal
   if (error) {
     console.error("CRITICAL: Failed to record activity log:", error.message);
   }
@@ -75,6 +74,7 @@ export async function updateSystemSetting(key: string, value: string) {
 
 export async function getActivityLogs(actorId?: string) {
   const supabase = await createClient();
+  
   let query = supabase
     .from("activity_logs")
     .select(`
@@ -89,6 +89,10 @@ export async function getActivityLogs(actorId?: string) {
 
   const { data, error } = await query.limit(100);
 
-  if (error) console.error("Error fetching logs:", error);
+  if (error) {
+    console.error("Error fetching logs:", error);
+    return [];
+  }
+  
   return data || [];
 }
