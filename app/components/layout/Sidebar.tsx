@@ -11,7 +11,7 @@ interface SidebarProps {
 
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
-  
+
   const navItems = NAV_CONFIG[role] || NAV_CONFIG.viewer;
 
   return (
@@ -19,14 +19,20 @@ export function Sidebar({ role }: SidebarProps) {
       <nav className="flex-1 py-6 px-4 space-y-1.5">
         {navItems.map((item, index) => {
           if (item.divider) {
-            return <div key={`divider-${index}`} className="h-px bg-gray-200/80 my-4 ml-4 mr-4" />;
+            return (
+              <div
+                key={`divider-${index}`}
+                className="h-px bg-gray-200/80 my-4 ml-4 mr-4"
+              />
+            );
           }
 
           const Icon = item.icon;
-          const isActive = 
-          item.href === "/project-manager" 
-            ? pathname === item.href 
-            : pathname.startsWith(item.href || ""); 
+
+          const isRootPath = item.href === `/${role}`;
+          const isActive = isRootPath
+            ? pathname === item.href
+            : pathname.startsWith(item.href || "");
 
           return (
             <Link
@@ -36,10 +42,15 @@ export function Sidebar({ role }: SidebarProps) {
                 "flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm",
                 isActive
                   ? "bg-surface-accent text-green-dark shadow-sm"
-                  : "text-gray-500 hover:bg-white hover:shadow-sm hover:text-gray-900"
+                  : "text-gray-500 hover:bg-white hover:shadow-sm hover:text-gray-900",
               )}
             >
-              <Icon className={cn("w-5 h-5", isActive ? "text-[#1B4332]" : "text-gray-400")} />
+              <Icon
+                className={cn(
+                  "w-5 h-5",
+                  isActive ? "text-[#1B4332]" : "text-gray-400",
+                )}
+              />
               <span>{item.name}</span>
             </Link>
           );

@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
 
 export async function addProjectMember(projectId: string, formData: FormData) {
   const supabase = await createClient();
@@ -28,7 +27,6 @@ export async function addProjectMember(projectId: string, formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -44,6 +42,18 @@ export async function assignTask(projectId: string, formData: FormData) {
   const dueDate = formData.get("dueDate") as string;
   const cost = parseFloat((formData.get("cost") as string) || "0");
 
+  const { data: existingTask } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("project_id", projectId)
+    .eq("assigned_to", assignedTo)
+    .ilike("title", title)
+    .single();
+
+  if (existingTask) {
+    return { error: "This exact task is already assigned to this officer." };
+  }
+
   const { error } = await supabase.from("tasks").insert({
     project_id: projectId,
     assigned_to: assignedTo,
@@ -54,7 +64,6 @@ export async function assignTask(projectId: string, formData: FormData) {
   });
 
   if (error) return { error: error.message };
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -70,6 +79,17 @@ export async function addMilestone(projectId: string, formData: FormData) {
   const progress = parseInt(formData.get("progress") as string);
   const status = formData.get("status") as string;
 
+  const { data: existingMilestone } = await supabase
+    .from("project_milestones")
+    .select("id")
+    .eq("project_id", projectId)
+    .ilike("title", title) 
+    .single();
+
+  if (existingMilestone) {
+    return { error: "A milestone with this title already exists." };
+  }
+
   const { error } = await supabase.from("project_milestones").insert({
     project_id: projectId,
     title,
@@ -79,7 +99,6 @@ export async function addMilestone(projectId: string, formData: FormData) {
   });
 
   if (error) return { error: error.message };
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -106,8 +125,6 @@ export async function updateProjectDetails(
     .eq("id", projectId);
 
   if (error) return { error: error.message };
-
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -124,7 +141,6 @@ export async function updateProjectDescription(
     .eq("id", projectId);
 
   if (error) return { error: error.message };
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -146,7 +162,6 @@ export async function updateMilestone(
     .eq("id", milestoneId);
 
   if (error) return { error: error.message };
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -159,7 +174,6 @@ export async function deleteMilestone(projectId: string, milestoneId: string) {
     .eq("id", milestoneId);
 
   if (error) return { error: error.message };
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -196,7 +210,6 @@ export async function uploadDocument(projectId: string, formData: FormData) {
   });
 
   if (dbError) return { error: dbError.message };
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -219,7 +232,6 @@ export async function deleteDocument(
     .eq("id", documentId);
 
   if (error) return { error: error.message };
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -240,7 +252,6 @@ export async function updateProjectProgress(
     .eq("id", projectId);
 
   if (error) return { error: error.message };
-  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -285,7 +296,6 @@ export async function updateProjectBudget(
     .single();
 
   if (logError) return { error: logError.message };
-  revalidatePath("/", "layout");
   return { success: true, log };
 }
 
@@ -371,7 +381,6 @@ export async function approveExpense(logId: string, projectId: string) {
       .from("projects")
       .update({ total_budget: log.new_amount })
       .eq("id", projectId);
-    revalidatePath("/", "layout");
     return { success: true, log: updatedLog };
   } else {
     const amountToApprove = log!.new_amount - log!.old_amount;
@@ -396,7 +405,6 @@ export async function approveExpense(logId: string, projectId: string) {
       .from("projects")
       .update({ spent_budget: newSpent })
       .eq("id", projectId);
-    revalidatePath("/", "layout");
     return { success: true, log: updatedLog };
   }
 }
@@ -422,7 +430,6 @@ export async function rejectExpense(logId: string, projectId: string) {
     .single();
   if (error) return { error: error.message };
 
-  revalidatePath("/", "layout");
   return { success: true, log: updatedLog };
 }
 
@@ -505,8 +512,6 @@ export async function adjustExpense(logId: string, projectId: string) {
     })
     .select("*, profiles:changed_by(full_name)")
     .single();
-
-  revalidatePath("/", "layout");
 
   return {
     success: true,

@@ -1,7 +1,6 @@
 import { 
   Compass, 
   Heart, 
-  Map, 
   LifeBuoy, 
   Settings, 
   LayoutDashboard, 
@@ -9,6 +8,9 @@ import {
   CheckSquare, 
   Wallet,
   PhilippinePeso, 
+  ShieldAlert,
+  Users,
+  CalendarDays
 } from "lucide-react";
 
 export type NavItem = {
@@ -22,7 +24,6 @@ export const NAV_CONFIG: Record<string, NavItem[]> = {
   viewer: [
     { name: "Explore Feed", href: "/viewer", icon: Compass },
     { name: "My Following", href: "/viewer/following", icon: Heart },
-    { name: "Project Map", href: "/viewer/project-map", icon: Map },
     { divider: true },
     { name: "Support", href: "/viewer/support", icon: LifeBuoy },
     { name: "Settings", href: "/viewer/settings", icon: Settings },
@@ -38,8 +39,11 @@ export const NAV_CONFIG: Record<string, NavItem[]> = {
   ],
   admin: [
     { name: "Admin Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "User", href: "/admin/users", icon: FolderKanban },
+    { name: "User Management", href: "/admin/users", icon: Users },
+    { name: "Term Management", href: "/admin/terms", icon: CalendarDays },
+    { name: "Content Moderation", href: "/admin/moderation", icon: ShieldAlert },
     { name: "Reports & Reviews", href: "/admin/reports", icon: PhilippinePeso },
-    { name: "System Settings", href: "admin/settings", icon: Settings},
+    { divider: true },
+    { name: "System Settings", href: "/admin/settings", icon: Settings },
   ],
 };

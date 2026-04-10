@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import ProjectDetailClient from "./ProjectDetailClient";
+import { getProjectTeamWithOfficerRoles } from "@/lib/actions/project";
 
 export default async function ManageProjectPage({
   params,
@@ -23,7 +24,7 @@ export default async function ManageProjectPage({
   try {
     const resolvedSearchParams = await searchParams;
     const tabParam = resolvedSearchParams?.tab;
-    const validTabs = ["Overview", "Tasks & Team", "Budget", "Timeline", "Documents", "Charts"];
+    const validTabs = ["Overview", "Tasks & Team", "Budget", "Timeline", "Documents", "Charts", "Feedback"];
     if (typeof tabParam === "string" && validTabs.includes(tabParam)) {
       initialTab = tabParam;
     }
@@ -40,12 +41,12 @@ export default async function ManageProjectPage({
     .from("projects")
     .select(
       `
-      id, manager_id, title, description, location, status, live_status, image_url, posted_at, created_at, total_budget, spent_budget, progress, deadline, tags,
-      project_members ( profile_id, project_role, profiles ( full_name, avatar_url ) ),
+      id, manager_id, term_id, title, description, location, status, live_status, image_url, posted_at, created_at, total_budget, spent_budget, progress, deadline, tags,
       tasks ( id, title, assigned_to, due_date, status, cost, profiles ( full_name ) ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
       project_milestones ( id, title, end_date, status, progress ),
-      project_documents ( id, name, file_url, file_size, file_type, created_at, profiles:uploaded_by ( full_name ) )
+      project_documents ( id, name, file_url, file_size, file_type, created_at, profiles:uploaded_by ( full_name ) ),
+      comments ( id, content, created_at, parent_id, profiles ( full_name, avatar_url ) )
     `
     )
     .eq("id", id)
@@ -63,7 +64,8 @@ export default async function ManageProjectPage({
   const { data: { user } } = await supabase.auth.getUser();
   const isManager = projectData.manager_id === user?.id;
   
-  const safeMembers = Array.isArray(projectData?.project_members) ? projectData.project_members : [];
+  const teamMembers = await getProjectTeamWithOfficerRoles(projectData.id, projectData.term_id);
+  
   const safeTasks = Array.isArray(projectData?.tasks) ? projectData.tasks : [];
   const safeMilestones = Array.isArray(projectData?.project_milestones) ? projectData.project_milestones : [];
   const safeBudgetLogs = Array.isArray(projectData?.budget_logs) ? projectData.budget_logs : [];
@@ -73,6 +75,7 @@ export default async function ManageProjectPage({
   const project: any = {
     ...projectData,
     isManager,
+    currentUserId: user?.id,
     id: projectData.id,
     title: projectData.title || "Untitled Project",
     description: projectData.description || "",
@@ -86,14 +89,17 @@ export default async function ManageProjectPage({
     progress: projectData.progress || 0,
     deadline: projectData.deadline,
     tags: projectData.tags || [], 
-    membersCount: safeMembers.length,
-
-    members: safeMembers.map((m: any) => ({
-      id: m?.profile_id || "unknown",
-      name: m?.profiles?.full_name || "Unknown Officer",
-      role: m?.project_role || "Member",
-      avatarUrl: m?.profiles?.avatar_url || null,
+    
+    comments: (projectData.comments || []).map((c: any) => ({
+      id: c.id,
+      content: c.content,
+      created_at: c.created_at,
+      parent_id: c.parent_id,
+      profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
     })),
+
+    membersCount: teamMembers.length,
+    members: teamMembers,
 
     tasks: safeTasks.map((t: any, index: number) => ({
       id: t?.id || `task-${index}`,
@@ -101,6 +107,7 @@ export default async function ManageProjectPage({
       assignee: t?.profiles?.full_name || "Unassigned",
       assigned_to: t?.assigned_to || null,
       dueDate: t?.due_date ? new Date(t.due_date).toLocaleDateString() : "N/A",
+      rawDueDate: t?.due_date || "", 
       status: t?.status || "Pending",
       cost: t?.cost || 0,
     })),

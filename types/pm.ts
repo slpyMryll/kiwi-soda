@@ -1,4 +1,4 @@
-export type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
+export type TaskStatus = 'Pending' | 'In Progress' | 'Completed' | 'Overdue' | 'Awaiting Review';
 export type PmProjectStatus = 'Active' | 'Completed' | 'Pending';
 
 export interface SidebarTask {

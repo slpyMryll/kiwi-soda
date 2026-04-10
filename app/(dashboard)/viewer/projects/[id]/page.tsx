@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ProjectDetailView } from "@/app/components/projects/ProjectDetailView";
 import { notFound } from "next/navigation";
 import { Project } from "@/types/projects";
+import { getProjectTeamWithOfficerRoles } from "@/lib/actions/project";
 
 export default async function ViewerProjectDetailPage({
   params,
@@ -19,11 +20,10 @@ export default async function ViewerProjectDetailPage({
     .select(
       `
       id, title, description, location, status, live_status, image_url, posted_at, created_at, 
-      total_budget, spent_budget, progress, deadline, tags, manager_id,
-      project_members ( profile_id, project_role, profiles ( full_name, avatar_url ) ),
+      total_budget, spent_budget, progress, deadline, tags, manager_id, term_id,
       project_milestones ( id, title, end_date, status, progress ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
-      comments ( count )
+      comments ( id, content, created_at, parent_id, profiles ( full_name, avatar_url ) )
     `,
     )
     .eq("id", id)
@@ -39,16 +39,6 @@ export default async function ViewerProjectDetailPage({
 
   if (error || !projectData) return notFound();
 
-  let managerProfile = null;
-  if (projectData.manager_id) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name, avatar_url")
-      .eq("id", projectData.manager_id)
-      .single();
-    managerProfile = data;
-  }
-
   let userRole: any = "viewer";
   if (user) {
     const { data: profile } = await supabase
@@ -59,30 +49,7 @@ export default async function ViewerProjectDetailPage({
     if (profile) userRole = profile.role;
   }
 
-  const teamMembers: any[] = [];
-
-  if (managerProfile) {
-    teamMembers.push({
-      id: projectData.manager_id,
-      name: managerProfile.full_name || "Unknown Manager",
-      role: "Project Manager",
-      avatarUrl: managerProfile.avatar_url || null,
-    });
-  }
-
-  const safeMembers = Array.isArray(projectData.project_members)
-    ? projectData.project_members
-    : [];
-  safeMembers.forEach((m: any) => {
-    if (m.profile_id !== projectData.manager_id) {
-      teamMembers.push({
-        id: m.profile_id || Math.random().toString(),
-        name: m.profiles?.full_name || "Unknown Officer",
-        role: m.project_role || "Member",
-        avatarUrl: m.profiles?.avatar_url || null,
-      });
-    }
-  });
+  const teamMembers = await getProjectTeamWithOfficerRoles(projectData.id, projectData.term_id);
 
   const project: Project = {
     ...projectData,
@@ -98,13 +65,22 @@ export default async function ViewerProjectDetailPage({
     spentBudget: Number(projectData.spent_budget || 0),
     progress: projectData.progress || 0,
     tags: projectData.tags || [],
-    commentsCount: projectData.comments?.[0]?.count || 0,
+    comments: (projectData.comments || []).map((c: any) => ({
+      id: c.id,
+      content: c.content,
+      created_at: c.created_at,
+      parent_id: c.parent_id,
+      profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
+    })),
+    commentsCount: projectData.comments?.length || 0,
+    
     membersCount: teamMembers.length,
+    members: teamMembers,
+    
     isFollowing: false,
     deadline: new Date(projectData.deadline),
     created_at: new Date(projectData.created_at),
     updated_at: new Date(),
-    members: teamMembers,
 
     milestones: (projectData.project_milestones || []).map((m: any) => ({
       id: m.id,

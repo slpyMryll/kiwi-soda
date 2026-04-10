@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import { Header } from "../components/layout/Header";
 import { Footer } from "../components/layout/Footer";
 import { Sidebar } from "../components/layout/Sidebar";
+import { PresencePinger } from "../components/layout/PresencePinger";
+
+export const metadata = {
+  title: "Dashboard - Kiwi Soda",
+};
 
 export default async function DashboardLayout({
   children,
@@ -25,7 +30,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex flex-col min-h-screen bg-bg-main">
       <Header user={user} profile={profile} role={profile?.role} />
-
+      <PresencePinger />
       <div className="flex flex-1 relative w-full mx-auto">
         <Sidebar role={profile?.role} />
 

@@ -63,8 +63,10 @@ export function OverviewTab({ project }: { project: any }) {
     };
   }, [project.id]);
 
-  const handleUpdate = async (formData: FormData) => {
+  const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsPending(true);
+    const formData = new FormData(e.currentTarget);
     const newDesc = formData.get("description") as string;
     setLocalProject((prev: any) => ({ ...prev, description: newDesc }));
 
@@ -76,8 +78,10 @@ export function OverviewTab({ project }: { project: any }) {
     } else setIsEditOpen(false);
   };
 
-  const handleProgressUpdate = async (formData: FormData) => {
+  const handleProgressUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsProgressPending(true);
+    const formData = new FormData(e.currentTarget);
     const newProg = parseInt(formData.get("progress") as string);
     setLocalProject((prev: any) => ({ ...prev, progress: newProg }));
 
@@ -85,7 +89,7 @@ export function OverviewTab({ project }: { project: any }) {
     setIsProgressPending(false);
     if (res?.error) {
       alert(res.error);
-      setLocalProject(project); // Revert on error
+      setLocalProject(project);
     } else setIsProgressEditOpen(false);
   };
 
@@ -173,7 +177,7 @@ export function OverviewTab({ project }: { project: any }) {
               <DialogHeader>
                 <DialogTitle>Edit Project Description</DialogTitle>
               </DialogHeader>
-              <form action={handleUpdate} className="space-y-4 mt-4">
+              <form onSubmit={handleUpdate} className="space-y-4 mt-4">
                 <div>
                   <textarea
                     name="description"
@@ -259,7 +263,7 @@ export function OverviewTab({ project }: { project: any }) {
                       <DialogTitle>Update Progress</DialogTitle>
                     </DialogHeader>
                     <form
-                      action={handleProgressUpdate}
+                      onSubmit={handleProgressUpdate}
                       className="space-y-4 mt-4"
                     >
                       <div>

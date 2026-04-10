@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CheckCircle2,
   PhilippinePeso,
@@ -22,6 +22,7 @@ import { BudgetTab } from "@/app/components/projects/manage/tabs/BudgetTab";
 import { TimelineTab } from "@/app/components/projects/manage/tabs/TimelineTab";
 import { DocumentsTab } from "@/app/components/projects/manage/tabs/DocumentsTab";
 import { ChartsTab } from "@/app/components/projects/manage/tabs/ChartsTab";
+import { FeedbackTab } from "@/app/components/projects/manage/tabs/FeedbackTab";
 import { ProjectDetailView } from "@/app/components/projects/ProjectDetailView";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
@@ -32,6 +33,7 @@ const TABS = [
   "Timeline",
   "Documents",
   "Charts",
+  "Feedback",
 ];
 
 export default function ProjectDetailClient({
@@ -48,6 +50,35 @@ export default function ProjectDetailClient({
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  const [progress, setProgress] = useState(project.progress || 0);
+  const [spentBudget, setSpentBudget] = useState(project.spentBudget || 0);
+  const [membersCount, setMembersCount] = useState(project.membersCount || 0);
+  const [pendingTasks, setPendingTasks] = useState(
+    project.tasks?.filter((t: any) => t.status !== "Completed").length || 0
+  );
+
+  useEffect(() => {
+    const supabase = createClient();
+    
+    const channel = supabase.channel('project-metrics-sync')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'projects', filter: `id=eq.${project.id}` }, (payload) => {
+        if (payload.new.progress !== undefined) setProgress(payload.new.progress);
+        if (payload.new.spent_budget !== undefined) setSpentBudget(payload.new.spent_budget);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `project_id=eq.${project.id}` }, async () => {
+        const { count } = await supabase.from('tasks').select('*', { count: 'exact', head: true })
+          .eq('project_id', project.id).neq('status', 'Completed');
+        if (count !== null) setPendingTasks(count);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_members', filter: `project_id=eq.${project.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT') setMembersCount((prev: number) => prev + 1);
+        if (payload.eventType === 'DELETE') setMembersCount((prev: number) => Math.max(1, prev - 1));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [project.id]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -100,32 +131,35 @@ export default function ProjectDetailClient({
     }
   };
 
+  const formattedBudget = spentBudget >= 1000 
+    ? `${(spentBudget / 1000).toFixed(1)}k` 
+    : spentBudget.toString();
+
   const stats = [
     {
       label: "Progress",
-      value: `${project.progress}%`,
+      value: `${progress}%`,
       icon: CheckCircle2,
       color: "text-green-500",
       bg: "bg-green-100",
     },
     {
       label: "Budget Spent",
-      value: `${(project.spentBudget / 1000).toFixed(1)}k`,
+      value: formattedBudget,
       icon: PhilippinePeso,
       color: "text-blue-500",
       bg: "bg-blue-100",
     },
     {
       label: "Team Members",
-      value: project.membersCount,
+      value: membersCount,
       icon: Users,
       color: "text-purple-500",
       bg: "bg-purple-100",
     },
     {
       label: "Pending Tasks",
-      value:
-        project.tasks?.filter((t: any) => t.status !== "Completed").length || 0,
+      value: pendingTasks,
       icon: Clock,
       color: "text-orange-500",
       bg: "bg-orange-100",
@@ -184,14 +218,14 @@ export default function ProjectDetailClient({
           return (
             <div
               key={idx}
-              className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4"
+              className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4 transition-all duration-300"
             >
               <div
                 className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center shrink-0`}
               >
                 <Icon className={`w-6 h-6 ${stat.color}`} />
               </div>
-              <div>
+              <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
                 <h3 className="text-2xl font-bold text-gray-900 leading-none">
                   {stat.value}
                 </h3>
@@ -228,6 +262,8 @@ export default function ProjectDetailClient({
             members={project.members}
             tasks={project.tasks}
             availablePMs={availablePMs}
+            isProjectLead={project.isManager}
+            currentUserId={project.currentUserId}
           />
         )}
         {activeTab === "Budget" && <BudgetTab project={project} />}
@@ -236,6 +272,12 @@ export default function ProjectDetailClient({
         )}
         {activeTab === "Documents" && <DocumentsTab project={project} />}
         {activeTab === "Charts" && <ChartsTab project={project} />}
+        {activeTab === "Feedback" && (
+          <FeedbackTab 
+            projectId={project.id} 
+            initialComments={project.comments || []} 
+          />
+        )}
       </div>
 
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
