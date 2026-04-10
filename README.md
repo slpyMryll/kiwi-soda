@@ -6,9 +6,23 @@
 
 | Initial Release Code | Date Released |
 | -------------------- | ------------- |
+| KS.010.004           | [2026-04-06]  |
 | KS.010.003           | [2026-03-15]  |
 | KS.010.002           | [2026-03-08]  |
 | KS.010.001           | [2025-02-27]  |
+
+## KS.010.004 Release Notes
+
+**What's New**
+
+* **Core Features:**
+  * Real-Time Project Feed & Statistics: Public project feed for viewers and guests combined with centralized, real-time project  metrics.
+  * Responsive Project Manager Dashboard: Real-time project filtering, enhanced task timeline, and cross device responsiveness.
+  * End-to-End  Task & Feedback Management: Task lifecycle management with real-time sync, role-based approvals, threaded feedback, and PM notifications.
+  * Budget Monitoring Systems: Responsive budget tracking with grid/list views and real-time updates.
+  * Notifications & Alerts System: Real-time in-app alerts and automated deadline  email notifications.
+  * Admin & Moderation  Tools: Real-time in-app alerts and automated deadline email notifiations.
+  * User Management & Academic Structure: Comprehensive user administration with academic term hierarchy support.
 
 ## KS.010.003 Release Notes
 

@@ -3,6 +3,25 @@
 All notable changes to the **OnTrack** project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+
+## [KS.010.004] - 2026-04-11
+
+### Added
+- **Real-Time Project Feed & Statistics:** Deployed a public-facing feed for Guests and Viewers with centralized, real-time project metrics and progress tracking.
+- **Enhanced Project Manager Dashboard:** Added real-time project filtering and a responsive task timeline optimized for cross-device usage.
+- **End-to-End Task & Feedback Management:** Implemented a complete task lifecycle with real-time state synchronization. Added role-based task approvals and threaded feedback modules within project details.
+- **Budget Monitoring Systems:** Introduced a responsive budget tracking module with toggleable Grid and List views.
+- **Notifications & Alerts System:** Integrated real-time in-app alerts and automated background workers for deadline email notifications.
+- **User Management & Academic Structure:** Built a comprehensive administration suite for user management and academic term hierarchy (Terms/Officers) support.
+
+### Changed
+- **UI Responsiveness:** Ensured seamless experience between desktop and mobile views.
+- **Project Detail Architecture:** Updated the project view to handle complex data relations for tasks, team members, and budget logs in a single unified interface.
+
+### Fixed
+- **Skeleton Hydration:** Fixed a `HeroBanner` property error in the dashboard loading state and refined skeleton UI to prevent layout shifts.
+- **Navigation Logic:** Corrected sidebar "Active State" highlighting to ensure the root Dashboard link unsets when navigating to sub-modules like Tasks or Team.
+
 ## [KS.010.003] - 2026-03-15
 ### Added
 - **Real-Time Synchronization Engine**: Integrated Supabase WebSockets across the Management Suite (Overview, Tasks, Team, Documents, and Timeline) for instant, cross-user updates.
