@@ -192,10 +192,9 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
   const { data: members, error } = await supabase
     .from("project_members")
     .select(`
-      id,
       project_role,
       profile_id,
-      profiles ( full_name, avatar_url )
+      profiles!profile_id ( full_name, avatar_url )
     `)
     .eq("project_id", projectId);
 
@@ -229,10 +228,9 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
       : officerPosition;
 
     return {
-      id: member.id || Math.random().toString(),
+      id: member.profile_id,
       profile_id: member.profile_id,
       name: profile?.full_name || "Unknown Officer",
-      avatarUrl: profile?.avatar_url || null,
       avatar_url: profile?.avatar_url || null, 
       role: member.project_role || "Member",
       display_role: displayRole,
