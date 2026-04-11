@@ -5,6 +5,7 @@ import { Plus, CheckCircle2, Receipt, Clock, Loader2, Edit2, RotateCcw, AlertCir
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { addExpense, updateProjectBudget, approveExpense, rejectExpense, adjustExpense } from "@/lib/actions/project-details";
 import { createClient } from "@/lib/supabase/client";
+import { USSC_BUDGET_CATEGORIES } from "@/lib/constants/budget-categories";
 
 const formatLog = (log: any) => {
   if (!log) return null;
@@ -182,7 +183,7 @@ export function BudgetTab({ project }: any) {
                   {exp.description.includes('Total Budget') ? (
                     <p className="text-sm font-bold text-gray-900">{exp.updatedBy} requested Total Budget change to <span className="text-blue-600">₱{exp.newTotal.toLocaleString()}</span></p>
                   ) : (
-                    <p className="text-sm font-bold text-gray-900">{exp.updatedBy} requested <span className="text-red-600">₱{exp.amountChange.toLocaleString()}</span></p>
+                    <p className="text-sm font-bold text-gray-900">{exp.updatedBy} requested <span className="text-red-600">₱{Math.abs(exp.amountChange).toLocaleString()}</span></p>
                   )}
                   <p className="text-xs text-gray-500 font-medium">{exp.category}: {exp.description}</p>
                 </div>
@@ -282,7 +283,10 @@ export function BudgetTab({ project }: any) {
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1">Category</label>
                   <select name="category" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]">
-                    <option value="Venue">Venue</option><option value="Catering">Catering</option><option value="Marketing">Marketing</option><option value="Equipment">Equipment</option><option value="Other">Other</option>
+                    <option value="">Select Category...</option>
+                    {USSC_BUDGET_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -320,7 +324,7 @@ export function BudgetTab({ project }: any) {
                     {exp.category}
                     {exp.status === 'Adjusted' && <span className="ml-2 text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">Voided</span>}
                   </td>
-                  <td className="py-4 px-2 font-bold text-red-500">₱{exp.amountChange.toLocaleString()}</td>
+                  <td className="py-4 px-2 font-bold text-red-500">₱{Math.abs(exp.amountChange).toLocaleString()}</td>
                   <td className="py-4 px-2 text-gray-500 font-normal">
                     {exp.status === 'Adjusted' ? <><span className="text-red-500 font-bold mr-1">[Voided Entry]</span><span className="line-through">{exp.description}</span></> : exp.description}
                   </td>
