@@ -51,6 +51,8 @@ export default function ProjectDetailClient({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  const [localProject, setLocalProject] = useState(project);
+
   const [progress, setProgress] = useState(project.progress || 0);
   const [spentBudget, setSpentBudget] = useState(project.spentBudget || 0);
   const [membersCount, setMembersCount] = useState(project.membersCount || 0);
@@ -63,8 +65,21 @@ export default function ProjectDetailClient({
     
     const channel = supabase.channel('project-metrics-sync')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'projects', filter: `id=eq.${project.id}` }, (payload) => {
+        // Update the specific stat cards
         if (payload.new.progress !== undefined) setProgress(payload.new.progress);
         if (payload.new.spent_budget !== undefined) setSpentBudget(payload.new.spent_budget);
+
+        setLocalProject((prev: any) => ({
+          ...prev,
+          title: payload.new.title !== undefined ? payload.new.title : prev.title,
+          description: payload.new.description !== undefined ? payload.new.description : prev.description,
+          progress: payload.new.progress !== undefined ? payload.new.progress : prev.progress,
+          spentBudget: payload.new.spent_budget !== undefined ? payload.new.spent_budget : prev.spentBudget,
+          totalBudget: payload.new.total_budget !== undefined ? payload.new.total_budget : prev.totalBudget,
+          imageUrl: payload.new.image_url !== undefined ? payload.new.image_url : prev.imageUrl,
+          liveStatus: payload.new.live_status !== undefined ? payload.new.live_status : prev.liveStatus,
+          status: payload.new.status !== undefined ? payload.new.status : prev.status,
+        }));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `project_id=eq.${project.id}` }, async () => {
         const { count } = await supabase.from('tasks').select('*', { count: 'exact', head: true })
@@ -122,7 +137,7 @@ export default function ProjectDetailClient({
 
       if (updateError) throw updateError;
 
-      router.refresh();
+      router.refresh(); 
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Failed to update cover photo.");
@@ -186,7 +201,7 @@ export default function ProjectDetailClient({
 
       <div className="relative w-full h-64 md:h-80 rounded-3xl overflow-hidden shadow-sm group bg-gray-200">
         <img
-          src={project.imageUrl || "/project-card-place.webp"}
+          src={localProject.imageUrl || "/project-card-place.webp"}
           alt="Project Cover"
           className={`w-full h-full object-cover transition-all duration-500 ${isUploading ? "opacity-50 scale-105" : "group-hover:scale-105"}`}
         />
@@ -210,7 +225,7 @@ export default function ProjectDetailClient({
         </div>
       </div>
 
-      <ProjectManageHeader project={project} />
+      <ProjectManageHeader project={localProject} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, idx) => {
@@ -255,27 +270,27 @@ export default function ProjectDetailClient({
       </div>
 
       <div className="w-full">
-        {activeTab === "Overview" && <OverviewTab project={project} />}
+        {activeTab === "Overview" && <OverviewTab project={localProject} />}
         {activeTab === "Tasks & Team" && (
           <TasksAndTeamTab
-            projectId={project.id}
-            members={project.members}
-            tasks={project.tasks}
+            projectId={localProject.id}
+            members={localProject.members}
+            tasks={localProject.tasks}
             availablePMs={availablePMs}
-            isProjectLead={project.isManager}
-            currentUserId={project.currentUserId}
+            isProjectLead={localProject.isManager}
+            currentUserId={localProject.currentUserId}
           />
         )}
-        {activeTab === "Budget" && <BudgetTab project={project} />}
+        {activeTab === "Budget" && <BudgetTab project={localProject} />}
         {activeTab === "Timeline" && (
-          <TimelineTab projectId={project.id} milestones={project.milestones} />
+          <TimelineTab projectId={localProject.id} milestones={localProject.milestones} />
         )}
-        {activeTab === "Documents" && <DocumentsTab project={project} />}
-        {activeTab === "Charts" && <ChartsTab project={project} />}
+        {activeTab === "Documents" && <DocumentsTab project={localProject} />}
+        {activeTab === "Charts" && <ChartsTab project={localProject} />}
         {activeTab === "Feedback" && (
           <FeedbackTab 
-            projectId={project.id} 
-            initialComments={project.comments || []} 
+            projectId={localProject.id} 
+            initialComments={localProject.comments || []} 
           />
         )}
       </div>
@@ -284,7 +299,7 @@ export default function ProjectDetailClient({
         <DialogContent className="w-[95vw] sm:w-[90vw] lg:max-w-4xl xl:max-w-5xl p-0 overflow-hidden bg-white border-none shadow-2xl max-h-[90vh] overflow-y-auto">
           <DialogTitle className="sr-only">Project Preview</DialogTitle>
           <ProjectDetailView
-            project={project}
+            project={localProject}
             userRole="guest"
             isModal={true}
             isPreview={true}
