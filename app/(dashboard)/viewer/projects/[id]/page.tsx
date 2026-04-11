@@ -22,7 +22,7 @@ export default async function ViewerProjectDetailPage({
       id, title, description, location, status, live_status, image_url, posted_at, created_at, 
       total_budget, spent_budget, progress, deadline, tags, manager_id, term_id,
       project_milestones ( id, title, end_date, status, progress ),
-      budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
+      budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
       comments ( id, content, created_at, parent_id, profiles ( full_name, avatar_url ) )
     `,
     )
@@ -94,27 +94,25 @@ export default async function ViewerProjectDetailPage({
 
     budgetUpdates: (projectData.budget_logs || [])
       .map((log: any) => {
-        const parts = (log.budget_change_reason || "").split(":");
+        const rawReason = log.budget_change_reason || "";
+        const parts = rawReason.split(":");
+        const changedAt = log.changed_at ? new Date(log.changed_at) : new Date();
+
         return {
           id: log.id,
-          date: log.changed_at
-            ? new Date(log.changed_at).toLocaleDateString()
-            : "Unknown Date",
+          rawDate: changedAt.getTime(),
+          date: changedAt.toLocaleString(),
           amountChange: (log.new_amount || 0) - (log.old_amount || 0),
-          description:
-            parts.length > 1
-              ? parts[1].trim()
-              : log.budget_change_reason || "No description",
+          category: parts.length > 1 ? parts[0].trim() : "General",
+          description: parts.length > 1 ? parts.slice(1).join(":").trim() : rawReason,
           updatedBy: log.profiles?.full_name || "System",
           oldTotal: log.old_amount || 0,
           newTotal: log.new_amount || 0,
-          isInitial: log.is_initial,
+          isInitial: log.is_initial || false,
+          status: log.status || 'Approved',
         };
       })
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime(),
-      ),
+      .sort((a: any, b: any) => b.rawDate - a.rawDate),
   };
 
   return (
