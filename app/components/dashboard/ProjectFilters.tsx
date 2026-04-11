@@ -8,7 +8,7 @@ import {
   Calendar,
   Clock,
 } from "lucide-react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   DropdownMenu,
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ProjectFilters() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -50,7 +49,10 @@ export function ProjectFilters() {
         params.delete(key);
       }
     });
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+
+    const newUrl = `${pathname}?${params.toString()}`;
+
+    window.history.pushState(null, '', newUrl);
   };
 
   const getTabClass = (isActive: boolean) =>
@@ -74,7 +76,7 @@ export function ProjectFilters() {
           />
         </div>
 
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger className="bg-gray-200/50 hover:bg-gray-200 p-3.5 rounded-xl text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center shrink-0 focus:outline-none">
             <SlidersHorizontal className="w-5 h-5" />
           </DropdownMenuTrigger>
