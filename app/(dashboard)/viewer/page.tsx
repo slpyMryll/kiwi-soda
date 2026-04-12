@@ -48,6 +48,7 @@ export default async function ViewerDashboard({
         initialProjects={initialProjects}
         userRole="viewer"
         searchParams={{ q, status, sort, termId: activeTermId }}
+        followingOnly={false} 
       />
 
       <FaqFab />

@@ -13,6 +13,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ProgressBar } from "../ui/ProgressBar";
 import { ProjectCardProps } from "@/types/projects";
+import { FollowButton } from "@/app/components/ui/followButton";
+
 
 export function ProjectCard({
   project,
@@ -56,7 +58,7 @@ export function ProjectCard({
       day: "numeric",
     },
   );
-
+  
   return (
     <article className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <div className="relative h-48 w-full bg-gray-100">
@@ -87,13 +89,10 @@ export function ProjectCard({
           )}
         </div>
 
-        <button
-          onClick={handleAction}
-          className="absolute top-4 right-4 flex items-center gap-1 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-semibold transition-colors z-10"
-        >
-          {project.isFollowing ? "Following" : "Follow"}{" "}
-          <Plus className="w-3 h-3" />
-        </button>
+        <FollowButton
+        projectId={project.id}
+        isGuest={isGuest}
+        />
       </div>
 
       <div className="p-6">

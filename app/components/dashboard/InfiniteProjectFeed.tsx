@@ -16,12 +16,14 @@ interface InfiniteProjectFeedProps {
   initialProjects: Project[];
   userRole: "guest" | "viewer";
   searchParams: { q?: string; status?: string; sort?: string; termId?: string };
+  followingOnly?: boolean;
 }
 
 export function InfiniteProjectFeed({
   initialProjects,
   userRole,
   searchParams,
+  followingOnly = false,
 }: InfiniteProjectFeedProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [page, setPage] = useState(1);
@@ -65,6 +67,8 @@ export function InfiniteProjectFeed({
           const fullProject = await getSingleProjectForFeed(record.id);
 
           if (fullProject) {
+
+            if (followingOnly && !fullProject.isFollowing) return;
             setProjects((prev) => {
               const exists = prev.some((p) => p.id === fullProject.id);
               if (exists) {
@@ -114,7 +118,8 @@ export function InfiniteProjectFeed({
         q: searchParams.q,
         status: searchParams.status,
         sort: searchParams.sort,
-        termId: searchParams.termId
+        termId: searchParams.termId,
+        followingOnly,
       });
 
       setProjects((prev) => [...prev, ...res.projects]);
@@ -181,12 +186,14 @@ export function InfiniteProjectFeed({
         )}
 
         {!hasMore && projects.length > 0 && (
-          <div className="text-center py-10">
-            <p className="text-sm text-gray-400 font-medium">
-              You've reached the end of the feed.
-            </p>
-          </div>
-        )}
+        <div className="text-center py-10">
+          <p className="text-sm text-gray-400 font-medium">
+            {followingOnly
+              ? "You’re all caught up with your followed projects."
+              : "You've reached the end of the feed."}
+          </p>
+        </div>
+      )}
       </div>
 
       {userRole === "guest" && (
