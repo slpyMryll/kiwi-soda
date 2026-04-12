@@ -9,6 +9,31 @@ import { ProjectBudgetHistory } from "./ProjectBudgetHistory";
 import { ProjectFeedback } from "./ProjectFeedback";
 import { Eye } from "lucide-react";
 
+const formatLog = (log: any) => {
+  if (!log) return null;
+  
+  const rawReason = log.budget_change_reason || log.description || "";
+  const parts = rawReason.split(":");
+  
+  const dateStr = log.changed_at || log.date || new Date().toISOString();
+  const dateObj = new Date(dateStr);
+
+  return {
+    ...log,
+    id: log.id,
+    dateObj: dateObj,
+    date: dateObj.toLocaleString(),
+    amountChange: log.amountChange ?? ((log.new_amount || 0) - (log.old_amount || 0)),
+    category: log.category && log.category !== "General" ? log.category : (parts.length > 1 ? parts[0].trim() : "General"),
+    description: parts.length > 1 ? parts.slice(1).join(":").trim() : rawReason,
+    updatedBy: log.profiles?.full_name || log.updatedBy || "System",
+    oldTotal: log.old_amount ?? log.oldTotal ?? 0,
+    newTotal: log.new_amount ?? log.newTotal ?? 0,
+    isInitial: log.is_initial ?? log.isInitial ?? false,
+    status: log.status || 'Approved',
+  };
+};
+
 interface ProjectDetailProps {
   project: Project;
   userRole: "guest" | "viewer" | "project-manager" | "admin";
@@ -25,6 +50,11 @@ export function ProjectDetailView({
   onClose,
 }: ProjectDetailProps) {
   const isGuest = userRole === "guest";
+
+  const formattedBudgetUpdates = (project.budgetUpdates || [])
+    .map(formatLog)
+    .filter(Boolean)
+    .sort((a: any, b: any) => b.dateObj.getTime() - a.dateObj.getTime());
 
   return (
     <div className={`flex flex-col bg-white ${isModal ? "" : "min-h-screen"}`}>
@@ -83,12 +113,15 @@ export function ProjectDetailView({
           <ProjectBudget
             totalBudget={project.totalBudget}
             spentBudget={project.spentBudget}
+            updates={formattedBudgetUpdates}
           />
 
-          <ProjectBudgetHistory
-            updates={project.budgetUpdates ?? []}
-            isGuest={isGuest}
-          />
+          {!isGuest && (
+            <ProjectBudgetHistory
+              updates={formattedBudgetUpdates}
+              isGuest={isGuest}
+            />
+          )}
 
           <section>
             <h2 className="text-base sm:text-lg font-bold text-[#1B4332] mb-3 sm:mb-4">

@@ -54,7 +54,7 @@ export async function getInfiniteProjects({
         ) 
       ),
       project_milestones ( id, title, end_date, status, progress ),
-      budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
+      budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
       comments ( count )
     `)
     .eq('live_status', 'Live');
@@ -120,11 +120,23 @@ export async function getInfiniteProjects({
         id: m.id, title: m.title, dateString: m.end_date ? new Date(m.end_date).toLocaleDateString() : 'No deadline', status: m.status || "Pending", progress: m.progress || 0
       })),
       budgetUpdates: (projectData.budget_logs || []).map((log: any) => {
-        const parts = (log.budget_change_reason || "").split(":");
+        const reason = log.budget_change_reason || "";
+        const parts = reason.split(":");
+        const changedAt = log.changed_at ? new Date(log.changed_at) : new Date();
         return {
-          id: log.id, date: log.changed_at ? new Date(log.changed_at).toLocaleDateString() : 'Unknown Date', amountChange: (log.new_amount || 0) - (log.old_amount || 0), description: parts.length > 1 ? parts[1].trim() : (log.budget_change_reason || "No description"), updatedBy: log.profiles?.full_name || "System", oldTotal: log.old_amount || 0, newTotal: log.new_amount || 0, isInitial: log.is_initial
+          id: log.id, 
+          rawDate: changedAt.getTime(),
+          date: changedAt.toLocaleString(), 
+          amountChange: (log.new_amount || 0) - (log.old_amount || 0), 
+          category: parts.length > 1 ? parts[0].trim() : "General",
+          description: parts.length > 1 ? parts.slice(1).join(":").trim() : reason, 
+          updatedBy: log.profiles?.full_name || "System", 
+          oldTotal: log.old_amount || 0, 
+          newTotal: log.new_amount || 0, 
+          isInitial: log.is_initial || false,
+          status: log.status || 'Approved'
         };
-      }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      }).sort((a: any, b: any) => b.rawDate - a.rawDate)
     };
   });
 
@@ -149,7 +161,7 @@ export async function getSingleProjectForFeed(projectId: string): Promise<Projec
         ) 
       ),
       project_milestones ( id, title, end_date, status, progress ),
-      budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
+      budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
       comments ( count )
     `)
     .eq('id', projectId)
@@ -195,10 +207,22 @@ export async function getSingleProjectForFeed(projectId: string): Promise<Projec
       id: m.id, title: m.title, dateString: m.end_date ? new Date(m.end_date).toLocaleDateString() : 'No deadline', status: m.status || "Pending", progress: m.progress || 0
     })),
     budgetUpdates: (projectData.budget_logs || []).map((log: any) => {
-      const parts = (log.budget_change_reason || "").split(":");
+      const reason = log.budget_change_reason || "";
+      const parts = reason.split(":");
+      const changedAt = log.changed_at ? new Date(log.changed_at) : new Date();
       return {
-        id: log.id, date: log.changed_at ? new Date(log.changed_at).toLocaleDateString() : 'Unknown Date', amountChange: (log.new_amount || 0) - (log.old_amount || 0), description: parts.length > 1 ? parts[1].trim() : (log.budget_change_reason || "No description"), updatedBy: log.profiles?.full_name || "System", oldTotal: log.old_amount || 0, newTotal: log.new_amount || 0, isInitial: log.is_initial
+        id: log.id, 
+        rawDate: changedAt.getTime(),
+        date: changedAt.toLocaleString(), 
+        amountChange: (log.new_amount || 0) - (log.old_amount || 0), 
+        category: parts.length > 1 ? parts[0].trim() : "General",
+        description: parts.length > 1 ? parts.slice(1).join(":").trim() : reason, 
+        updatedBy: log.profiles?.full_name || "System", 
+        oldTotal: log.old_amount || 0, 
+        newTotal: log.new_amount || 0, 
+        isInitial: log.is_initial || false,
+        status: log.status || 'Approved'
       };
-    }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    }).sort((a: any, b: any) => b.rawDate - a.rawDate)
   };
 }
