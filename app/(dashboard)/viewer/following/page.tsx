@@ -9,6 +9,7 @@ import { getInfiniteProjects } from "@/lib/actions/project-feed";
 import { getAllTerms, getActiveTerm } from "@/lib/actions/project";
 import { FollowedStats } from "@/app/components/dashboard/FollowStatCard";
 import { getFollowedStats } from "@/lib/actions/follow";
+import ViewerFollowingLoading from "./loading";
 
 export default function ViewerFollowing() {
   const searchParams = useSearchParams();
@@ -80,7 +81,7 @@ export default function ViewerFollowing() {
     fetchData();
   }, [q, status, sort, searchParams]);
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <ViewerFollowingLoading />;
 
   return (
     <main className="mx-auto px-4 lg:px-12 w-full flex-1 relative pb-24 bg-bg-main">
