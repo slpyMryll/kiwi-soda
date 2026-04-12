@@ -7,7 +7,7 @@ import {
   FolderKanban, 
   CheckSquare, 
   Wallet,
-  PhilippinePeso, 
+  ShieldCheck,
   ShieldAlert,
   Users,
   CalendarDays
@@ -24,6 +24,7 @@ export const NAV_CONFIG: Record<string, NavItem[]> = {
   viewer: [
     { name: "Explore Feed", href: "/viewer", icon: Compass },
     { name: "My Following", href: "/viewer/following", icon: Heart },
+    { name: "Transparency", href: "/viewer/transparency", icon: ShieldCheck },
     { divider: true },
     { name: "Support", href: "/viewer/support", icon: LifeBuoy },
     { name: "Settings", href: "/viewer/settings", icon: Settings },
@@ -42,8 +43,8 @@ export const NAV_CONFIG: Record<string, NavItem[]> = {
     { name: "User Management", href: "/admin/users", icon: Users },
     { name: "Term Management", href: "/admin/terms", icon: CalendarDays },
     { name: "Content Moderation", href: "/admin/moderation", icon: ShieldAlert },
-    { name: "Reports & Reviews", href: "/admin/reports", icon: PhilippinePeso },
     { divider: true },
-    { name: "System Settings", href: "/admin/settings", icon: Settings },
+    { name: "Activity Logs", href: "/admin/logs", icon: LifeBuoy },
+    { name: "Platform Settings", href: "/admin/settings", icon: Settings },
   ],
 };

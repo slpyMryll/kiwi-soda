@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { recordActivity } from "./system";
 
 export async function createProject(formData: FormData) {
   const supabase = await createClient();
@@ -108,6 +109,13 @@ export async function createProject(formData: FormData) {
 
   if (budgetError) return { error: `Budget Log Error: ${budgetError.message}` };
 
+  await recordActivity({
+    action_type: "PROJECT_CREATED",
+    entity_id: project.id,
+    entity_name: title,
+    description: `Created a new project: ${title} with an initial budget of ₱${totalBudget.toLocaleString()}`,
+  });
+
   revalidatePath("/project-manager/projects");
   return { success: true };
 }
@@ -129,6 +137,12 @@ export async function toggleProjectLiveStatus(
     .update({ live_status: newStatus })
     .eq("id", projectId);
   if (error) return { error: error.message };
+
+  await recordActivity({
+    action_type: "PROJECT_STATUS_CHANGED",
+    entity_id: projectId,
+    description: `Changed project visibility status to ${newStatus}`,
+  });
 
   revalidatePath("/project-manager/projects", "layout");
   revalidatePath(`/project-manager/projects/${projectId}`);
@@ -156,6 +170,12 @@ export async function deleteProject(projectId: string) {
     .eq("manager_id", user.id);
 
   if (error) return { error: error.message };
+
+  await recordActivity({
+    action_type: "PROJECT_DELETED",
+    entity_id: projectId,
+    description: `Permanently deleted a project and its associated records`,
+  });
 
   revalidatePath("/project-manager/projects", "layout");
   return { success: true };
@@ -192,15 +212,14 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
   const { data: members, error } = await supabase
     .from("project_members")
     .select(`
-      id,
       project_role,
       profile_id,
-      profiles ( full_name, avatar_url )
+      profiles!profile_id ( full_name, avatar_url )
     `)
     .eq("project_id", projectId);
 
   if (error || !members) {
-    console.error("Error fetching team:", error);
+    console.error("Error fetching team:", error?.message || error);
     return [];
   }
 
@@ -221,7 +240,6 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
 
   return members.map((member: any) => {
     const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
-    
     const officerPosition = officerMap.get(member.profile_id) || "USSC Member";
 
     const displayRole = member.project_role === "Project Lead" 
@@ -229,7 +247,7 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
       : officerPosition;
 
     return {
-      id: member.id || Math.random().toString(),
+      id: member.profile_id,
       profile_id: member.profile_id,
       name: profile?.full_name || "Unknown Officer",
       avatarUrl: profile?.avatar_url || null,

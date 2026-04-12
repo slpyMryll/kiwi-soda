@@ -5,6 +5,7 @@ import { Search, MoreVertical, ShieldAlert, Trash2, UserPlus, UserMinus, ShieldC
 import { updateUserRole, removeUser } from "@/lib/actions/admin-management";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
@@ -157,7 +158,7 @@ export function UserManagementClient({ initialUsers }: { initialUsers: any[] }) 
                     </td>
                     <td className="px-6 py-4 text-right">
                       {user.role !== 'admin' && (
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger className="p-2 hover:bg-gray-100 rounded-lg outline-none">
                             <MoreVertical className="w-4 h-4 text-gray-500" />
                           </DropdownMenuTrigger>
@@ -172,9 +173,13 @@ export function UserManagementClient({ initialUsers }: { initialUsers: any[] }) 
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator className="bg-gray-100" />
-                            <DropdownMenuItem disabled className="gap-2 text-gray-400 cursor-not-allowed">
-                              <Activity className="w-4 h-4" /> View Activity Logs
+                            
+                            <DropdownMenuItem asChild className="gap-2 cursor-pointer focus:bg-gray-50">
+                              <Link href={`/admin/logs?actorId=${user.id}`}>
+                                <Activity className="w-4 h-4" /> View Activity Logs
+                              </Link>
                             </DropdownMenuItem>
+                            
                             <DropdownMenuSeparator className="bg-gray-100" />
                             <DropdownMenuItem onClick={() => { setPendingAction({ type: 'remove', userId: user.id, name: user.full_name }); setIsModalOpen(true); }} className="gap-2 cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700">
                               <Trash2 className="w-4 h-4" /> Remove User
