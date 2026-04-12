@@ -1,3 +1,5 @@
+// app/viewer/projects/[id]/page.tsx
+
 import { createClient } from "@/lib/supabase/server";
 import { ProjectDetailView } from "@/app/components/projects/ProjectDetailView";
 import { notFound } from "next/navigation";
@@ -7,9 +9,9 @@ import { getProjectTeamWithOfficerRoles } from "@/lib/actions/project";
 export default async function ViewerProjectDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string }; // no need for Promise here
 }) {
-  const { id } = await params;
+  const { id } = params;
   if (!id) return notFound();
 
   const supabase = await createClient();
@@ -24,7 +26,7 @@ export default async function ViewerProjectDetailPage({
       project_milestones ( id, title, end_date, status, progress ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, profiles:changed_by ( full_name ) ),
       comments ( id, content, created_at, parent_id, profiles ( full_name, avatar_url ) )
-    `,
+    `
     )
     .eq("id", id)
     .eq("live_status", "Live")
@@ -48,6 +50,17 @@ export default async function ViewerProjectDetailPage({
       .single();
     if (profile) userRole = profile.role;
   }
+
+  // ------------------------------
+    const { data: followData } = await supabase
+    .from("project_followers")
+    .select("*")
+    .eq("user_id", user?.id)
+    .eq("project_id", projectData.id)
+    .single();
+
+  const isFollowing = !!followData;
+  // ------------------------------
 
   const teamMembers = await getProjectTeamWithOfficerRoles(projectData.id, projectData.term_id);
 
@@ -73,11 +86,9 @@ export default async function ViewerProjectDetailPage({
       profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
     })),
     commentsCount: projectData.comments?.length || 0,
-    
     membersCount: teamMembers.length,
     members: teamMembers,
-    
-    isFollowing: false,
+    isFollowing, 
     deadline: new Date(projectData.deadline),
     created_at: new Date(projectData.created_at),
     updated_at: new Date(),
@@ -113,17 +124,13 @@ export default async function ViewerProjectDetailPage({
       })
       .sort(
         (a: any, b: any) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime(),
+          new Date(b.date).getTime() - new Date(a.date).getTime()
       ),
   };
 
   return (
     <div className="w-full h-full bg-bg-main relative">
-      <ProjectDetailView
-        project={project}
-        userRole={userRole}
-        isModal={false}
-      />
+      <ProjectDetailView project={project} userRole={userRole} isModal={false} />
     </div>
   );
 }
