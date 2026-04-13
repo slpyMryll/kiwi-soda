@@ -1,5 +1,3 @@
-// app/viewer/projects/[id]/page.tsx
-
 import { createClient } from "@/lib/supabase/server";
 import { ProjectDetailView } from "@/app/components/projects/ProjectDetailView";
 import { notFound } from "next/navigation";
@@ -9,9 +7,9 @@ import { getProjectTeamWithOfficerRoles } from "@/lib/actions/project";
 export default async function ViewerProjectDetailPage({
   params,
 }: {
-  params: { id: string }; // no need for Promise here
+  params: Promise<{ id: string }>; 
 }) {
-  const { id } = params;
+  const { id } = await params; 
   if (!id) return notFound();
 
   const supabase = await createClient();
@@ -51,16 +49,17 @@ export default async function ViewerProjectDetailPage({
     if (profile) userRole = profile.role;
   }
 
-  // ------------------------------
+  let isFollowing = false;
+  if (user) {
     const { data: followData } = await supabase
-    .from("project_followers")
-    .select("*")
-    .eq("user_id", user?.id)
-    .eq("project_id", projectData.id)
-    .single();
+      .from("project_followers")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("project_id", projectData.id)
+      .maybeSingle(); 
 
-  const isFollowing = !!followData;
-  // ------------------------------
+    isFollowing = !!followData;
+  }
 
   const teamMembers = await getProjectTeamWithOfficerRoles(projectData.id, projectData.term_id);
 
