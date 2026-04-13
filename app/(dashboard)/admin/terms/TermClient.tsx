@@ -166,7 +166,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
                 e.stopPropagation();
                 setEditingTerm(term);
               }}
-              className="absolute top-4 right-4 p-2 bg-white shadow-md hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg transition-all border border-gray-200 hover:border-blue-200 z-[50]"
+              className="absolute top-4 right-4 p-2 bg-white shadow-md hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg transition-all border border-gray-200 hover:border-blue-200 z-20"
               title="Manage Term"
             >
               <Edit className="w-4 h-4" />

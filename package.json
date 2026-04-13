@@ -11,6 +11,8 @@
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
+    "@tanstack/react-query": "^5.97.0",
+    "@tanstack/react-query-devtools": "^5.97.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -19,6 +21,7 @@
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-intersection-observer": "^10.0.3",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7"

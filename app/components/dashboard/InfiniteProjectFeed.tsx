@@ -1,131 +1,149 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInView } from "react-intersection-observer";
 import { ProjectCard } from "./ProjectCard";
 import { ProjectDetailView } from "../projects/ProjectDetailView";
 import { Project } from "@/types/projects";
-import {
-  getInfiniteProjects,
-  getSingleProjectForFeed,
-} from "@/lib/actions/project-feed";
+import { getInfiniteProjects, getSingleProjectForFeed } from "@/lib/actions/project-feed";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Inbox } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface InfiniteProjectFeedProps {
-  initialProjects: Project[];
   userRole: "guest" | "viewer";
-  searchParams: { q?: string; status?: string; sort?: string; termId?: string };
+  termId: string;
+  followingOnly?: boolean;
 }
 
-export function InfiniteProjectFeed({
-  initialProjects,
-  userRole,
-  searchParams,
+export function InfiniteProjectFeed({ 
+  userRole, 
+  termId, 
+  followingOnly = false 
 }: InfiniteProjectFeedProps) {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(initialProjects.length >= 5);
-  const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const { ref, inView } = useInView();
 
-  const observer = useRef<IntersectionObserver | null>(null);
+  const q = searchParams.get("q") || "";
+  const status = searchParams.get("status") || "all";
+  const sort = searchParams.get("sort") || "newest";
+  const date = searchParams.get("date") || "all";
+
+  const queryKey = ["projects", "public", q, status, sort, date, termId, followingOnly];
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isFetching
+  } = useInfiniteQuery({
+    queryKey,
+    queryFn: async ({ pageParam = 1 }) => {
+      return getInfiniteProjects({
+        page: pageParam,
+        q,
+        status,
+        sort,
+        date,
+        termId,
+        followingOnly,
+      });
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => lastPage.hasMore ? allPages.length + 1 : undefined,
+    placeholderData: (previousData) => previousData, 
+  });
+
+  const projects = useMemo(() => data?.pages.flatMap((page) => page.projects) || [], [data]);
 
   useEffect(() => {
-    setProjects(initialProjects);
-    setPage(1);
-    setHasMore(initialProjects.length >= 5);
-  }, [initialProjects, searchParams]);
+    if (inView && hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
     const supabase = createClient();
+    const channel = supabase.channel("public-project-feed")
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, async (payload) => {
+        const oldRecord = payload.old as { id?: string };
+        const newRecord = payload.new as { id?: string; live_status?: string };
+        const targetId = oldRecord.id || newRecord.id;
 
-    const channel = supabase
-      .channel("public-project-feed")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "projects",
-        },
-        async (payload) => {
-          if (payload.eventType === "DELETE") {
-            setProjects((prev) => prev.filter((p) => p.id !== payload.old.id));
-            return;
-          }
+        if (payload.eventType === "DELETE" || (newRecord && newRecord.live_status !== "Live")) {
+          queryClient.setQueryData(queryKey, (oldData: any) => {
+            if (!oldData) return oldData;
+            return { ...oldData, pages: oldData.pages.map((page: any) => ({
+                ...page, projects: page.projects.filter((p: Project) => p.id !== targetId),
+            }))};
+          });
+          return;
+        }
 
-          const record = payload.new;
+        if (!newRecord.id) return;
 
-          if (record.live_status !== "Live") {
-            setProjects((prev) => prev.filter((p) => p.id !== record.id));
-            return;
-          }
+        const fullProject = await getSingleProjectForFeed(newRecord.id);
+        if (fullProject) {
+          queryClient.setQueryData(queryKey, (oldData: any) => {
+            if (!oldData) return oldData;
 
-          const fullProject = await getSingleProjectForFeed(record.id);
+            if (followingOnly && !fullProject.isFollowing) {
+              return {
+                ...oldData,
+                pages: oldData.pages.map((page: any) => ({
+                  ...page, projects: page.projects.filter((p: Project) => p.id !== fullProject.id)
+                }))
+              };
+            }
 
-          if (fullProject) {
-            setProjects((prev) => {
-              const exists = prev.some((p) => p.id === fullProject.id);
-              if (exists) {
-                return prev.map((p) =>
-                  p.id === fullProject.id ? fullProject : p,
-                );
-              } else {
-                return [fullProject, ...prev];
-              }
+            const derivedStatus = (fullProject.status === "Completed" || fullProject.progress === 100) ? "Completed" : "Ongoing";
+            fullProject.status = derivedStatus;
+
+            const isOngoingTab = status === "ongoing";
+            const isCompletedTab = status === "completed";
+
+            const shouldEject = 
+              (isOngoingTab && derivedStatus === "Completed") || 
+              (isCompletedTab && derivedStatus === "Ongoing");
+
+            if (shouldEject) {
+              return {
+                ...oldData,
+                pages: oldData.pages.map((page: any) => ({
+                  ...page, projects: page.projects.filter((p: Project) => p.id !== fullProject.id)
+                }))
+              };
+            }
+
+            let found = false;
+            const newPages = oldData.pages.map((page: any) => {
+              const updatedProjects = page.projects.map((p: Project) => {
+                if (p.id === fullProject.id) { found = true; return fullProject; }
+                return p;
+              });
+              return { ...page, projects: updatedProjects };
             });
-          }
-        },
-      )
-      .subscribe();
+            
+            if (!found && newPages.length > 0) newPages[0].projects.unshift(fullProject);
+            return { ...oldData, pages: newPages };
+          });
+        }
+      }).subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient, queryKey, status, followingOnly]);
 
-  const lastProjectElementRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (isLoading) return;
-      if (observer.current) observer.current.disconnect();
-
-      observer.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore) {
-            loadMoreProjects();
-          }
-        },
-        { rootMargin: "300px" },
-      );
-
-      if (node) observer.current.observe(node);
-    },
-    [isLoading, hasMore],
-  );
-
- const loadMoreProjects = async () => {
-    setIsLoading(true);
-    const nextPage = page + 1;
-
-    try {
-      const res = await getInfiniteProjects({
-        page: nextPage,
-        q: searchParams.q,
-        status: searchParams.status,
-        sort: searchParams.sort,
-        termId: searchParams.termId
-      });
-
-      setProjects((prev) => [...prev, ...res.projects]);
-      setHasMore(res.hasMore);
-      setPage(nextPage);
-    } catch (error) {
-      console.error("Failed to fetch more projects:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (isLoading && projects.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-10 h-10 animate-spin text-[#1B4332]" />
+      </div>
+    );
+  }
 
   if (projects.length === 0) {
     return (
@@ -134,10 +152,12 @@ export function InfiniteProjectFeed({
           <Inbox className="w-8 h-8 text-gray-400" />
         </div>
         <h3 className="text-lg font-bold text-gray-900 mb-2">
-          No active projects found
+          {date === "month" ? "No projects this month" : "No active projects found"}
         </h3>
         <p className="text-sm text-gray-500 max-w-sm">
-          We couldn't find any projects matching your search or filters.
+          {date === "month" 
+            ? "There are no projects created this month matching your current filters." 
+            : "We couldn't find any projects matching your search or filters."}
         </p>
       </div>
     );
@@ -145,65 +165,54 @@ export function InfiniteProjectFeed({
 
   return (
     <>
-      <div className="flex flex-col gap-6 mt-6 mx-auto w-full">
-        {projects.map((project, index) => {
-          const isLastElement = projects.length === index + 1;
-          return (
-            <div
-              key={`${project.id}-${index}`}
-              ref={isLastElement ? lastProjectElementRef : null}
-              className="animate-in fade-in slide-in-from-top-4 duration-500"
-            >
-              <ProjectCard
-                userRole={userRole}
-                project={project}
-                onReadMore={
-                  userRole === "guest"
-                    ? () => setSelectedProject({
-                        ...project,
-                        comments: project.comments || [],
-                        milestones: project.milestones || [],
-                        budgetUpdates: project.budgetUpdates || [],
-                        members: project.members || [],
-                        tags: project.tags || []
-                      })
-                    : undefined
-                }
-              />
+      <div className={`relative flex flex-col gap-6 mt-6 mx-auto w-full transition-opacity duration-300 ${isFetching && !isFetchingNextPage ? 'opacity-50' : 'opacity-100'}`}>
+        
+        {isFetching && !isFetchingNextPage && (
+          <div className="absolute inset-0 z-50 flex justify-center pointer-events-none">
+            <div className="sticky top-24 h-fit inline-flex items-center gap-2 bg-white/95 px-4 py-2 rounded-full shadow-lg border border-gray-100 animate-in fade-in pointer-events-auto mt-2">
+               <Loader2 className="w-4 h-4 animate-spin text-[#1B4332]" />
+               <span className="text-xs font-bold text-[#1B4332]">Updating...</span>
             </div>
-          );
-        })}
-
-        {isLoading && (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-[#1B4332]" />
           </div>
         )}
 
-        {!hasMore && projects.length > 0 && (
-          <div className="text-center py-10">
-            <p className="text-sm text-gray-400 font-medium">
-              You've reached the end of the feed.
-            </p>
-          </div>
-        )}
+        {projects.map((project, index) => (
+           <div key={`${project.id}-${index}`} className="animate-in fade-in slide-in-from-top-4 duration-500">
+             <ProjectCard 
+               userRole={userRole} 
+               project={project} 
+               onReadMore={userRole === "guest" ? () => setSelectedProject({
+                 ...project,
+                 comments: project.comments || [],
+                 milestones: project.milestones || [],
+                 budgetUpdates: project.budgetUpdates || [],
+                 members: project.members || [],
+                 tags: project.tags || []
+               }) : undefined} 
+             />
+           </div>
+        ))}
+        
+        <div ref={ref} className="h-10 w-full flex justify-center items-center">
+          {isFetchingNextPage && <Loader2 className="w-6 h-6 animate-spin text-[#1B4332]" />}
+        </div>
       </div>
+      
+      {!hasNextPage && projects.length > 0 && (
+         <div className="text-center py-10">
+           <p className="text-sm text-gray-400 font-medium">
+             {followingOnly
+               ? "You’re all caught up with your followed projects."
+               : "You've reached the end of the feed."}
+           </p>
+         </div>
+      )}
 
       {userRole === "guest" && (
-        <Dialog
-          open={!!selectedProject}
-          onOpenChange={(open) => !open && setSelectedProject(null)}
-        >
-          <DialogContent className="w-[95vw] sm:w-[90vw] lg:max-w-4xl xl:max-w-5xl p-0 overflow-hidden bg-white border-none shadow-2xl max-h-[90vh] overflow-y-auto">
+        <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
+          <DialogContent className="w-[95vw] sm:w-[90vw] lg:max-w-4xl xl:max-w-5xl p-0 overflow-hidden bg-white border-none shadow-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
             <DialogTitle className="sr-only">Project Details</DialogTitle>
-            {selectedProject && (
-              <ProjectDetailView
-                project={selectedProject}
-                userRole="guest"
-                isModal={true}
-                onClose={() => setSelectedProject(null)}
-              />
-            )}
+            {selectedProject && <ProjectDetailView project={selectedProject} userRole="guest" isModal={true} onClose={() => setSelectedProject(null)} />}
           </DialogContent>
         </Dialog>
       )}

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { recordActivity } from "./system";
 
 export async function createProject(formData: FormData) {
   const supabase = await createClient();
@@ -108,6 +109,13 @@ export async function createProject(formData: FormData) {
 
   if (budgetError) return { error: `Budget Log Error: ${budgetError.message}` };
 
+  await recordActivity({
+    action_type: "PROJECT_CREATED",
+    entity_id: project.id,
+    entity_name: title,
+    description: `Created a new project: ${title} with an initial budget of ₱${totalBudget.toLocaleString()}`,
+  });
+
   revalidatePath("/project-manager/projects");
   return { success: true };
 }
@@ -129,6 +137,12 @@ export async function toggleProjectLiveStatus(
     .update({ live_status: newStatus })
     .eq("id", projectId);
   if (error) return { error: error.message };
+
+  await recordActivity({
+    action_type: "PROJECT_STATUS_CHANGED",
+    entity_id: projectId,
+    description: `Changed project visibility status to ${newStatus}`,
+  });
 
   revalidatePath("/project-manager/projects", "layout");
   revalidatePath(`/project-manager/projects/${projectId}`);
@@ -156,6 +170,12 @@ export async function deleteProject(projectId: string) {
     .eq("manager_id", user.id);
 
   if (error) return { error: error.message };
+
+  await recordActivity({
+    action_type: "PROJECT_DELETED",
+    entity_id: projectId,
+    description: `Permanently deleted a project and its associated records`,
+  });
 
   revalidatePath("/project-manager/projects", "layout");
   return { success: true };
@@ -192,15 +212,14 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
   const { data: members, error } = await supabase
     .from("project_members")
     .select(`
-      id,
       project_role,
       profile_id,
-      profiles ( full_name, avatar_url )
+      profiles!profile_id ( full_name, avatar_url )
     `)
     .eq("project_id", projectId);
 
   if (error || !members) {
-    console.error("Error fetching team:", error);
+    console.error("Error fetching team:", error?.message || error);
     return [];
   }
 
@@ -221,7 +240,6 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
 
   return members.map((member: any) => {
     const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
-    
     const officerPosition = officerMap.get(member.profile_id) || "USSC Member";
 
     const displayRole = member.project_role === "Project Lead" 
@@ -229,7 +247,7 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
       : officerPosition;
 
     return {
-      id: member.id || Math.random().toString(),
+      id: member.profile_id,
       profile_id: member.profile_id,
       name: profile?.full_name || "Unknown Officer",
       avatarUrl: profile?.avatar_url || null,
@@ -261,4 +279,116 @@ export async function getAllTerms() {
     .order("start_date", { ascending: false });
 
   return data || [];
+}
+
+export async function getProjectsByManager(
+  userId: string, 
+  params: { q?: string; status?: string; sort?: string; page?: number; dateFilter?: string }
+) {
+  const supabase = await createClient();
+  const q = params.q || "";
+  const status = params.status || "all";
+  const sort = params.sort || "newest";
+  const dateFilter = params.dateFilter || "all";
+  const page = params.page || 1;
+  const limit = 6;
+
+  const { data: memberRecords } = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('profile_id', userId);
+    
+  const memberProjectIds = memberRecords?.map(r => r.project_id) || [];
+  const quotedMemberIds = memberProjectIds.length > 0 
+    ? memberProjectIds.map(id => `"${id}"`).join(',') 
+    : "";
+
+  let statsQuery = supabase.from("projects").select("live_status, progress");
+  if (quotedMemberIds) {
+    statsQuery = statsQuery.or(`manager_id.eq.${userId},id.in.(${quotedMemberIds})`);
+  } else {
+    statsQuery = statsQuery.eq("manager_id", userId);
+  }
+  const { data: statsData } = await statsQuery;
+
+  const totalStats = statsData?.length || 0;
+  const liveStats = statsData?.filter((p) => p.live_status === "Live").length || 0;
+  const draftStats = statsData?.filter((p) => p.live_status === "Draft").length || 0;
+  const avgProgressStats = totalStats > 0 ? statsData!.reduce((acc, p) => acc + (p.progress || 0), 0) / totalStats : 0;
+
+  let query = supabase
+    .from("projects")
+    .select(`*, project_members (count), comments (count)`, { count: "exact" });
+
+  if (quotedMemberIds) {
+    query = query.or(`manager_id.eq.${userId},id.in.(${quotedMemberIds})`);
+  } else {
+    query = query.eq("manager_id", userId);
+  }
+
+  if (q) query = query.ilike("title", `%${q}%`);
+  
+  if (status !== "all") {
+    const statusFilter = status.toLowerCase();
+    if (statusFilter === "ongoing") {
+      query = query.or('status.ilike.%ongoing%,status.ilike.%active%,status.is.null,status.eq.""');
+    } else if (statusFilter === "completed") {
+      query = query.ilike("status", "%completed%");
+    } else {
+      query = query.ilike("status", `%${statusFilter}%`); 
+    }
+  }
+
+  if (dateFilter === "this_month") {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    query = query.gte("created_at", startOfMonth.toISOString());
+  }
+
+  if (sort === "newest") query = query.order("created_at", { ascending: false });
+  else if (sort === "oldest") query = query.order("created_at", { ascending: true });
+  else if (sort === "a-z") query = query.order("title", { ascending: true });
+  else if (sort === "z-a") query = query.order("title", { ascending: false });
+
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+  query = query.range(from, to);
+
+  const { data, count } = await query;
+  const totalPages = Math.ceil((count || 0) / limit);
+
+  const projects = data?.map((p: any) => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      location: p.location || "VSU Campus",
+      imageUrl: p.image_url,
+      tags: p.tags || [],
+      status: (p.status && p.status.toLowerCase() === "completed") ? ("Completed" as const) : ("Ongoing" as const),
+      liveStatus: p.live_status,
+      totalBudget: Number(p.total_budget),
+      spentBudget: Number(p.spent_budget),
+      progress: p.progress,
+      deadline: p.deadline,
+      postedAt: p.posted_at || p.created_at,
+      created_at: p.created_at,
+      updated_at: p.updated_at,
+      membersCount: p.project_members?.[0]?.count || 0,
+      commentsCount: p.comments?.[0]?.count || 0,
+      isFollowing: false,
+    })) || [];
+
+  return {
+    success: true,
+    projects,
+    totalPages,
+    totalFiltered: count || 0,
+    stats: {
+      total: totalStats,
+      live: liveStats,
+      draft: draftStats,
+      avgProgress: avgProgressStats,
+    }
+  };
 }

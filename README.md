@@ -6,10 +6,26 @@
 
 | Initial Release Code | Date Released |
 | -------------------- | ------------- |
+| KS.010.005           | [2026-04-13]  |
 | KS.010.004           | [2026-04-06]  |
 | KS.010.003           | [2026-03-15]  |
 | KS.010.002           | [2026-03-08]  |
 | KS.010.001           | [2025-02-27]  |
+
+## KS.010.005 Release Notes
+
+**What's New**
+
+* **Core Features:**
+
+  * Core Project System : Launched real-time project feed, metrics, and full lifecycle management (tasks, feedback, budget tracking).
+  * Responsive PM Dashboard : Unified dashboard with filters, timeline tracking, and cross-device support.
+  * Admin & Transparency Suite : Added activity logging, CMS for legal/docs, and user-level audit tracking.
+  * Notifications System : Real-time in-app alerts + automated email notifications via SendGrid.
+  * My Following Page : Dedicated followed-projects feed with accurate Supabase-driven stats and filtering.
+  * Performance Upgrades : Integrated TanStack Query for instant filtering, caching, and smoother navigation.
+  * UX Improvements : Added structured skeleton loading, fixed timezone filtering (PHT), and resolved routing/build issues.
+  * Security & Data Control : Centralized budget categories and restricted sensitive financial logs for guests.
 
 ## KS.010.004 Release Notes
 

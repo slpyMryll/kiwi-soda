@@ -3,10 +3,36 @@
 All notable changes to the **OnTrack** project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-
 ## [KS.010.004] - 2026-04-11
 
 ### Added
+
+* Real-time project feed with infinite scrolling and live metrics
+* Full project lifecycle system (tasks, feedback, budget tracking)
+* Responsive Project Manager dashboard with filtering and timeline view
+* Admin suite (activity logs, CMS for legal docs, user audit tracking)
+* In-app notifications and automated email alerts via SendGrid
+* Dedicated **My Following** page with followed-project filtering
+* Centralized budget categories configuration
+
+### Changed
+
+* Migrated data fetching to TanStack Query for caching and instant UI updates
+* Refactored filtering to use client-side state + pushstate (no reload)
+* Improved timezone handling (UTC+8 / PHT) for accurate date filters
+* Updated UI components for consistency and responsiveness
+* Restricted visibility of detailed budget logs for guest users
+
+### Fixed
+
+* Fixed timezone bug causing incorrect “This Month” results
+* Corrected dropdown/modal stacking (z-index issues)
+* Fixed TypeScript build issues in Project Manager dashboard
+* Ensured correct filtering of followed projects only
+* Fixed loading experience with structured skeleton instead of blank/gradient screen
+
+### Added
+
 - **Real-Time Project Feed & Statistics:** Deployed a public-facing feed for Guests and Viewers with centralized, real-time project metrics and progress tracking.
 - **Enhanced Project Manager Dashboard:** Added real-time project filtering and a responsive task timeline optimized for cross-device usage.
 - **End-to-End Task & Feedback Management:** Implemented a complete task lifecycle with real-time state synchronization. Added role-based task approvals and threaded feedback modules within project details.
@@ -15,15 +41,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **User Management & Academic Structure:** Built a comprehensive administration suite for user management and academic term hierarchy (Terms/Officers) support.
 
 ### Changed
+
 - **UI Responsiveness:** Ensured seamless experience between desktop and mobile views.
 - **Project Detail Architecture:** Updated the project view to handle complex data relations for tasks, team members, and budget logs in a single unified interface.
 
 ### Fixed
+
 - **Skeleton Hydration:** Fixed a `HeroBanner` property error in the dashboard loading state and refined skeleton UI to prevent layout shifts.
 - **Navigation Logic:** Corrected sidebar "Active State" highlighting to ensure the root Dashboard link unsets when navigating to sub-modules like Tasks or Team.
 
 ## [KS.010.003] - 2026-03-15
+
 ### Added
+
 - **Real-Time Synchronization Engine**: Integrated Supabase WebSockets across the Management Suite (Overview, Tasks, Team, Documents, and Timeline) for instant, cross-user updates.
 - **Optimistic UI Implementation**: Replaced `router.refresh()` with local state management to eliminate "page jumping" and provide zero-latency visual feedback.
 - **Financial Reversal Workflow**: New capability for Project Managers to "Reverse/Correct" approved expenses or total budget allocations.
@@ -34,28 +64,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Audit Trail v2**: Redesigned transparency log with "Voided" and "Correction" badges and prioritized action descriptions.
 
 ### Changed
+
 - **Performance Optimization**: Migrated to parallel server-side queries and targeted column selection to minimize network payloads.
 - **Navigation UX**: Relocated the "Back" button to the project detail header for better hierarchy and implemented URL state persistence for all project tabs.
 - **UI Consistency**: Migrated native browser alerts to standardized React Dialog modals for all critical actions (approvals, deletions, reversals).
 - **Automated Lifecycle**: Implemented automatic status transitions (Ongoing/Completed) driven by project progress percentages.
 
 ### Fixed
+
 - **Budget Integrity**: Implemented zero-clamping logic in server actions to prevent negative `spent_budget` values during expense reversals.
 - **Data Security**: Enforced strict database-level filtering to ensure "Draft" projects are invisible to viewers and guests.
 - **Build Stability**: Fixed case-sensitivity import errors and type-mismatch overlaps that previously blocked Vercel deployments.
 
 ## [KS.010.002] - 2026-03-08
+
 ### Added
+
 - Middleware-based RBAC enforcement for `/admin` and `/project-manager` routes.
 - Dynamic navigation sidebar with active-route highlighting.
 - Automatic dashboard redirection for authenticated users.
 
 ### Changed
+
 - Refactored landing page fetching logic to be "Guest-Aware."
 - Modularized navigation and authentication components for better scalability.
 
 ## [KS.010.001] - 2025-02-27
+
 ### Added
+
 - Initial project foundation with Next.js and Supabase.
 - Core Authentication system with VSU email validation.
 - Basic Route Groups for `(auth)` and `(dashboard)`.
