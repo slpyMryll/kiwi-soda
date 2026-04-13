@@ -22,6 +22,7 @@ import {
   updateProjectProgress,
 } from "@/lib/actions/project-details";
 import { createClient } from "@/lib/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function OverviewTab({ project }: { project: any }) {
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -31,6 +32,7 @@ export function OverviewTab({ project }: { project: any }) {
   const [isProgressPending, setIsProgressPending] = useState(false);
 
   const [localProject, setLocalProject] = useState(project);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setLocalProject(project);
@@ -53,6 +55,7 @@ export function OverviewTab({ project }: { project: any }) {
             ...prev,
             description: payload.new.description ?? prev.description,
             progress: payload.new.progress ?? prev.progress,
+            status: payload.new.status ?? prev.status,
           }));
         },
       )
@@ -72,10 +75,16 @@ export function OverviewTab({ project }: { project: any }) {
 
     const res = await updateProjectDescription(project.id, formData);
     setIsPending(false);
+    
     if (res.error) {
       alert(res.error);
       setLocalProject(project);
-    } else setIsEditOpen(false);
+    } else {
+      setIsEditOpen(false);
+
+      queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "public"] });
+    }
   };
 
   const handleProgressUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -83,14 +92,22 @@ export function OverviewTab({ project }: { project: any }) {
     setIsProgressPending(true);
     const formData = new FormData(e.currentTarget);
     const newProg = parseInt(formData.get("progress") as string);
-    setLocalProject((prev: any) => ({ ...prev, progress: newProg }));
+    const newStatus = newProg === 100 ? "Completed" : "Ongoing";
+
+    setLocalProject((prev: any) => ({ ...prev, progress: newProg, status: newStatus }));
 
     const res = await updateProjectProgress(project.id, formData);
     setIsProgressPending(false);
+    
     if (res?.error) {
       alert(res.error);
       setLocalProject(project);
-    } else setIsProgressEditOpen(false);
+    } else {
+      setIsProgressEditOpen(false);
+
+      queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "public"] });
+    }
   };
 
   const startDate = new Date(
