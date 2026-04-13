@@ -32,6 +32,7 @@ export default async function ViewerDashboard({
 
       <InfiniteProjectFeed
         userRole="viewer"
+        followingOnly={false} 
         termId={activeTermId}
       />
 

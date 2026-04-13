@@ -10,9 +10,34 @@ export async function getInfiniteProjects({
   q = "",
   status = "all",
   sort = "newest",
-  termId = "" 
+  termId = "",
+  followingOnly = false, // new flag
+}: {
+  page?: number;
+  q?: string;
+  status?: string;
+  sort?: string;
+  termId?: string;
+  followingOnly?: boolean;
 }) {
   const supabase = await createClient();
+
+   const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let followedIds: string[] = [];
+  if (user) {
+    const { data: followData } = await supabase
+      .from("project_followers")
+      .select("project_id")
+      .eq("user_id", user.id);
+    followedIds = followData?.map(f => f.project_id) || [];
+  }
+    if (followingOnly && followedIds.length === 0) {
+    return { projects: [], hasMore: false };
+  }
+
 
   let query = supabase
     .from("projects")
@@ -33,6 +58,10 @@ export async function getInfiniteProjects({
       comments ( count )
     `)
     .eq('live_status', 'Live');
+  
+    if (followingOnly) {
+                query = query.in("id", followedIds);
+              }
 
   if (termId) query = query.eq('term_id', termId);
   if (q) query = query.ilike("title", `%${q}%`);
@@ -82,7 +111,7 @@ export async function getInfiniteProjects({
       tags: projectData.tags || [],
       commentsCount: projectData.comments?.[0]?.count || 0,
       membersCount: teamMembers.length,
-      isFollowing: false, 
+      isFollowing: followedIds.includes(projectData.id),
       deadline: new Date(projectData.deadline),
       created_at: new Date(projectData.created_at),
       updated_at: new Date(projectData.updated_at),

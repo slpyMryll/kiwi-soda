@@ -15,9 +15,14 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 interface InfiniteProjectFeedProps {
   userRole: "guest" | "viewer";
   termId: string;
+  followingOnly?: boolean;
 }
 
-export function InfiniteProjectFeed({ userRole, termId }: InfiniteProjectFeedProps) {
+export function InfiniteProjectFeed({ 
+  userRole, 
+  termId, 
+  followingOnly = false 
+}: InfiniteProjectFeedProps) {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -27,7 +32,7 @@ export function InfiniteProjectFeed({ userRole, termId }: InfiniteProjectFeedPro
   const status = searchParams.get("status") || "all";
   const sort = searchParams.get("sort") || "newest";
 
-  const queryKey = ["projects", "public", q, status, sort, termId];
+  const queryKey = ["projects", "public", q, status, sort, termId, followingOnly];
 
   const {
     data,
@@ -45,6 +50,7 @@ export function InfiniteProjectFeed({ userRole, termId }: InfiniteProjectFeedPro
         status,
         sort,
         termId,
+        followingOnly,
       });
     },
     initialPageParam: 1,
@@ -82,6 +88,35 @@ export function InfiniteProjectFeed({ userRole, termId }: InfiniteProjectFeedPro
         if (fullProject) {
           queryClient.setQueryData(queryKey, (oldData: any) => {
             if (!oldData) return oldData;
+
+            if (followingOnly && !fullProject.isFollowing) {
+              return {
+                ...oldData,
+                pages: oldData.pages.map((page: any) => ({
+                  ...page, projects: page.projects.filter((p: Project) => p.id !== fullProject.id)
+                }))
+              };
+            }
+
+            const derivedStatus = (fullProject.status === "Completed" || fullProject.progress === 100) ? "Completed" : "Ongoing";
+            fullProject.status = derivedStatus;
+
+            const isOngoingTab = status === "ongoing";
+            const isCompletedTab = status === "completed";
+
+            const shouldEject = 
+              (isOngoingTab && derivedStatus === "Completed") || 
+              (isCompletedTab && derivedStatus === "Ongoing");
+
+            if (shouldEject) {
+              return {
+                ...oldData,
+                pages: oldData.pages.map((page: any) => ({
+                  ...page, projects: page.projects.filter((p: Project) => p.id !== fullProject.id)
+                }))
+              };
+            }
+
             let found = false;
             const newPages = oldData.pages.map((page: any) => {
               const updatedProjects = page.projects.map((p: Project) => {
@@ -90,6 +125,7 @@ export function InfiniteProjectFeed({ userRole, termId }: InfiniteProjectFeedPro
               });
               return { ...page, projects: updatedProjects };
             });
+            
             if (!found && newPages.length > 0) newPages[0].projects.unshift(fullProject);
             return { ...oldData, pages: newPages };
           });
@@ -97,7 +133,7 @@ export function InfiniteProjectFeed({ userRole, termId }: InfiniteProjectFeedPro
       }).subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [queryClient, queryKey]);
+  }, [queryClient, queryKey, status, followingOnly]);
 
   if (isLoading && projects.length === 0) {
     return (
@@ -110,7 +146,9 @@ export function InfiniteProjectFeed({ userRole, termId }: InfiniteProjectFeedPro
   if (projects.length === 0) {
     return (
       <div className="bg-white border border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center text-center shadow-sm mt-6">
-        <Inbox className="w-12 h-12 text-gray-300 mb-4" />
+        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+          <Inbox className="w-8 h-8 text-gray-400" />
+        </div>
         <h3 className="text-lg font-bold text-gray-900 mb-2">No active projects found</h3>
         <p className="text-sm text-gray-500 max-w-sm">We couldn't find any projects matching your search or filters.</p>
       </div>
@@ -128,8 +166,21 @@ export function InfiniteProjectFeed({ userRole, termId }: InfiniteProjectFeedPro
           </div>
         )}
 
-        {projects.map((project) => (
-           <ProjectCard key={project.id} userRole={userRole} project={project} onReadMore={userRole === "guest" ? () => setSelectedProject(project) : undefined} />
+        {projects.map((project, index) => (
+           <div key={`${project.id}-${index}`} className="animate-in fade-in slide-in-from-top-4 duration-500">
+             <ProjectCard 
+               userRole={userRole} 
+               project={project} 
+               onReadMore={userRole === "guest" ? () => setSelectedProject({
+                 ...project,
+                 comments: project.comments || [],
+                 milestones: project.milestones || [],
+                 budgetUpdates: project.budgetUpdates || [],
+                 members: project.members || [],
+                 tags: project.tags || []
+               }) : undefined} 
+             />
+           </div>
         ))}
         
         <div ref={ref} className="h-10 w-full flex justify-center items-center">
@@ -138,7 +189,13 @@ export function InfiniteProjectFeed({ userRole, termId }: InfiniteProjectFeedPro
       </div>
       
       {!hasNextPage && projects.length > 0 && (
-         <p className="text-center py-10 text-sm text-gray-400 font-medium">You've reached the end of the feed.</p>
+         <div className="text-center py-10">
+           <p className="text-sm text-gray-400 font-medium">
+             {followingOnly
+               ? "You’re all caught up with your followed projects."
+               : "You've reached the end of the feed."}
+           </p>
+         </div>
       )}
 
       {userRole === "guest" && (
