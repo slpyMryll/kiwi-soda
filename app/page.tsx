@@ -7,7 +7,6 @@ import { HeroBanner } from "./components/dashboard/HeroBanner";
 import { ProjectFilters } from "./components/dashboard/ProjectFilters";
 import { InfiniteProjectFeed } from "./components/dashboard/InfiniteProjectFeed";
 import { redirect } from "next/navigation";
-import { getInfiniteProjects } from "@/lib/actions/project-feed";
 import { getAllTerms, getActiveTerm } from "@/lib/actions/project";
 
 export default async function LandingPage({
@@ -16,33 +15,19 @@ export default async function LandingPage({
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
     redirect("/dashboard-redirect");
   }
 
   const resolvedParams = await searchParams;
-  const q = resolvedParams?.q || "";
-  const status = resolvedParams?.status || "all";
-  const sort = resolvedParams?.sort || "newest";
-
   const [terms, currentActiveTerm] = await Promise.all([
     getAllTerms(),
     getActiveTerm()
   ]);
 
   const activeTermId = resolvedParams?.term || currentActiveTerm?.id || "";
-
-  const { projects: initialProjects } = await getInfiniteProjects({
-    page: 1,
-    q,
-    status,
-    sort,
-    termId: activeTermId
-  });
 
   return (
     <div className="flex flex-col min-h-screen bg-bg-main">
@@ -72,12 +57,11 @@ export default async function LandingPage({
               </p>
             </div>
 
-            <ProjectFilters />
+            <ProjectFilters termId={activeTermId}/>
 
             <InfiniteProjectFeed
-              initialProjects={initialProjects}
               userRole="guest"
-              searchParams={{ q, status, sort, termId: activeTermId }}
+              termId={activeTermId}
             />
           </div>
           <Footer />

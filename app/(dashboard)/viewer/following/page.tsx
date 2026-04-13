@@ -1,87 +1,22 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { ProjectFilters } from "@/app/components/dashboard/ProjectFilters";
 import { FaqFab } from "@/app/components/ui/FaqFab";
 import { InfiniteProjectFeed } from "@/app/components/dashboard/InfiniteProjectFeed";
-import { getInfiniteProjects } from "@/lib/actions/project-feed";
-import { getAllTerms, getActiveTerm } from "@/lib/actions/project";
+import { getActiveTerm } from "@/lib/actions/project";
 import { FollowedStats } from "@/app/components/dashboard/FollowStatCard";
 import { getFollowedStats } from "@/lib/actions/follow";
-import ViewerFollowingLoading from "./loading";
 
-export default function ViewerFollowing() {
-  const searchParams = useSearchParams();
-  const q = searchParams.get("q") || "";
-  const status = searchParams.get("status") || "all";
-  const sort = searchParams.get("sort") || "newest";
+export default async function ViewerFollowingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}) {
+  const resolvedParams = await searchParams;
+  const [currentActiveTerm, stats] = await Promise.all([
+    getActiveTerm(),
+    getFollowedStats()
+  ]);
 
-  const [projects, setProjects] = useState<any[]>([]);
-  const [terms, setTerms] = useState<any[]>([]);
-  const [currentTermId, setCurrentTermId] = useState<string>("");
-
-  const [activeProjectsCount, setActiveProjectsCount] = useState(0);
-  const [completedProjectsCount, setCompletedProjectsCount] = useState(0);
-
-  // ✅ NEW: stats state
-  const [stats, setStats] = useState({
-    complete: 0,
-    ongoing: 0,
-    followed: 0,
-    updates: 0,
-  });
-
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-
-      const [allTerms, activeTerm] = await Promise.all([
-        getAllTerms(),
-        getActiveTerm(),
-      ]);
-
-      setTerms(allTerms);
-
-      const termId = searchParams.get("term") || activeTerm?.id || "";
-      setCurrentTermId(termId);
-
-      const { projects: fetchedProjects } = await getInfiniteProjects({
-        page: 1,
-        q,
-        status,
-        sort,
-        termId,
-        followingOnly: true,
-      });
-
-      setProjects(fetchedProjects);
-
-      // ✅ project-based counts
-      const activeCount = fetchedProjects.filter(
-        (p) => (p.progress || 0) < 100
-      ).length;
-
-      const completedCount = fetchedProjects.filter(
-        (p) => (p.progress || 0) === 100
-      ).length;
-
-      setActiveProjectsCount(activeCount);
-      setCompletedProjectsCount(completedCount);
-
-      // ✅ FOLLOW STATS FROM SUPABASE
-      const statsData = await getFollowedStats();
-      setStats(statsData);
-
-      setLoading(false);
-    }
-
-    fetchData();
-  }, [q, status, sort, searchParams]);
-
-  if (loading) return <ViewerFollowingLoading />;
+  const activeTermId = resolvedParams?.term || currentActiveTerm?.id || "";
 
   return (
     <main className="mx-auto px-4 lg:px-12 w-full flex-1 relative pb-24 bg-bg-main">
@@ -95,20 +30,18 @@ export default function ViewerFollowing() {
         </p>
       </div>
 
-      
       <FollowedStats
-        complete={stats.complete}
-        ongoing={stats.ongoing}
-        followed={stats.followed}
-        updates={stats.updates}
+        complete={stats?.complete || 0}
+        ongoing={stats?.ongoing || 0}
+        followed={stats?.followed || 0}
+        updates={stats?.updates || 0}
       />
 
-      <ProjectFilters />
+      <ProjectFilters termId={activeTermId} followingOnly={true} />
 
       <InfiniteProjectFeed
-        initialProjects={projects}
         userRole="viewer"
-        searchParams={{ q, status, sort, termId: currentTermId }}
+        termId={activeTermId}
         followingOnly={true}
       />
 
