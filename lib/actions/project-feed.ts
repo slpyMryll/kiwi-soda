@@ -10,13 +10,15 @@ export async function getInfiniteProjects({
   q = "",
   status = "all",
   sort = "newest",
+  date = "all",
   termId = "",
-  followingOnly = false, // new flag
+  followingOnly = false,
 }: {
   page?: number;
   q?: string;
   status?: string;
   sort?: string;
+  date?: string;
   termId?: string;
   followingOnly?: boolean;
 }) {
@@ -34,10 +36,10 @@ export async function getInfiniteProjects({
       .eq("user_id", user.id);
     followedIds = followData?.map(f => f.project_id) || [];
   }
-    if (followingOnly && followedIds.length === 0) {
+  
+  if (followingOnly && followedIds.length === 0) {
     return { projects: [], hasMore: false };
   }
-
 
   let query = supabase
     .from("projects")
@@ -59,13 +61,24 @@ export async function getInfiniteProjects({
     `)
     .eq('live_status', 'Live');
   
-    if (followingOnly) {
-                query = query.in("id", followedIds);
-              }
+  if (followingOnly) {
+    query = query.in("id", followedIds);
+  }
 
   if (termId) query = query.eq('term_id', termId);
   if (q) query = query.ilike("title", `%${q}%`);
   if (status !== "all") query = query.eq("status", status === "ongoing" ? "Ongoing" : "Completed");
+
+  if (date === "month") {
+    const now = new Date();
+    const phtNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+    
+    const year = phtNow.getUTCFullYear();
+    const month = String(phtNow.getUTCMonth() + 1).padStart(2, '0');
+    
+    const startOfPHTMonth = `${year}-${month}-01T00:00:00+08:00`;
+    query = query.gte("created_at", startOfPHTMonth);
+  }
 
   if (sort === "newest") query = query.order("created_at", { ascending: false });
   else if (sort === "oldest") query = query.order("created_at", { ascending: true });
