@@ -28,7 +28,7 @@ export default async function ViewerDashboard({
         </p>
       </div>
 
-      <ProjectFilters />
+      <ProjectFilters termId={activeTermId}/>
 
       <InfiniteProjectFeed
         userRole="viewer"

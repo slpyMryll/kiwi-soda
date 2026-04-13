@@ -8,8 +8,10 @@ import {
   Calendar,
   Clock,
 } from "lucide-react";
-import { useSearchParams, usePathname } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getInfiniteProjects } from "@/lib/actions/project-feed";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,9 +21,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function ProjectFilters() {
+interface ProjectFiltersProps {
+  termId: string;
+  followingOnly?: boolean;
+}
+
+export function ProjectFilters({ termId, followingOnly = false }: ProjectFiltersProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
 
   const currentStatus = searchParams.get("status") || "all";
   const currentSort = searchParams.get("sort") || "newest";
@@ -49,10 +58,29 @@ export function ProjectFilters() {
         params.delete(key);
       }
     });
-
+    
     const newUrl = `${pathname}?${params.toString()}`;
-
     window.history.pushState(null, '', newUrl);
+  };
+
+  const prefetchTab = (targetStatus: string) => {
+    if (currentStatus === targetStatus) return;
+
+    queryClient.prefetchInfiniteQuery({
+      queryKey: ["projects", "public", searchQuery, targetStatus, currentSort, currentDate, termId, followingOnly],
+      queryFn: async ({ pageParam = 1 }) => {
+        return getInfiniteProjects({
+          page: pageParam,
+          q: searchQuery,
+          status: targetStatus,
+          sort: currentSort,
+          date: currentDate,
+          termId,
+          followingOnly,
+        });
+      },
+      initialPageParam: 1,
+    });
   };
 
   const getTabClass = (isActive: boolean) =>
@@ -67,6 +95,7 @@ export function ProjectFilters() {
       <div className="flex items-center gap-3 w-full">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          
           <input
             type="text"
             value={searchQuery}
@@ -76,71 +105,39 @@ export function ProjectFilters() {
           />
         </div>
 
-        <DropdownMenu modal={false}>
+        <DropdownMenu>
           <DropdownMenuTrigger className="bg-gray-200/50 hover:bg-gray-200 p-3.5 rounded-xl text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center shrink-0 focus:outline-none">
             <SlidersHorizontal className="w-5 h-5" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-56 p-2 bg-white rounded-xl shadow-lg border border-gray-200"
-          >
-            <DropdownMenuLabel className="font-bold text-gray-900">
-              Sort By Date
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => updateQueryParams({ sort: "newest" })}
-              className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentSort === "newest" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}
-            >
-              <Clock className="mr-2 w-4 h-4" />
-              Newest First
+          <DropdownMenuContent align="end" className="w-56 p-2 bg-white rounded-xl shadow-lg border border-gray-200">
+            <DropdownMenuLabel className="font-bold text-gray-900">Sort By Date</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => updateQueryParams({ sort: "newest" })} className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentSort === "newest" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}>
+              <Clock className="mr-2 w-4 h-4" /> Newest First
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => updateQueryParams({ sort: "oldest" })}
-              className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentSort === "oldest" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}
-            >
-              <Clock className="mr-2 w-4 h-4" />
-              Oldest First
+            <DropdownMenuItem onClick={() => updateQueryParams({ sort: "oldest" })} className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentSort === "oldest" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}>
+              <Clock className="mr-2 w-4 h-4" /> Oldest First
             </DropdownMenuItem>
 
             <DropdownMenuSeparator className="bg-gray-200 my-1" />
 
-            <DropdownMenuLabel className="font-bold text-gray-900">
-              Sort Alphabetically
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => updateQueryParams({ sort: "a-z" })}
-              className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentSort === "a-z" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}
-            >
-              <ArrowDownAZ className="mr-2 w-4 h-4" />
-              Title (A to Z)
+            <DropdownMenuLabel className="font-bold text-gray-900">Sort Alphabetically</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => updateQueryParams({ sort: "a-z" })} className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentSort === "a-z" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}>
+              <ArrowDownAZ className="mr-2 w-4 h-4" /> Title (A to Z)
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => updateQueryParams({ sort: "z-a" })}
-              className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentSort === "z-a" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}
-            >
-              <ArrowUpZA className="mr-2 w-4 h-4" />
-              Title (Z to A)
+            <DropdownMenuItem onClick={() => updateQueryParams({ sort: "z-a" })} className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentSort === "z-a" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}>
+              <ArrowUpZA className="mr-2 w-4 h-4" /> Title (Z to A)
             </DropdownMenuItem>
 
             <DropdownMenuSeparator className="bg-gray-200 my-1" />
 
-            <DropdownMenuLabel className="font-bold text-gray-900">
-              Filter Timeframe
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => updateQueryParams({ date: "all" })}
-              className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentDate === "all" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}
-            >
-              <Calendar className="mr-2 w-4 h-4" />
-              All Time
+            <DropdownMenuLabel className="font-bold text-gray-900">Filter By Time</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => updateQueryParams({ date: "all" })} className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentDate === "all" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}>
+              <Calendar className="mr-2 w-4 h-4" /> All Time
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => updateQueryParams({ date: "this_month" })}
-              className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentDate === "this_month" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}
-            >
-              <Calendar className="mr-2 w-4 h-4" />
-              Projects this Month
+            <DropdownMenuItem onClick={() => updateQueryParams({ date: "month" })} className={`py-2.5 px-3 cursor-pointer rounded-lg transition-colors ${currentDate === "month" ? "bg-gray-100 text-[#1B4332] font-semibold" : "text-gray-700"}`}>
+              <Calendar className="mr-2 w-4 h-4" /> This Month
             </DropdownMenuItem>
+
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -148,18 +145,21 @@ export function ProjectFilters() {
       <div className="flex items-center justify-center gap-8 border-b border-gray-200 px-4">
         <button
           onClick={() => updateQueryParams({ status: "all" })}
+          onMouseEnter={() => prefetchTab("all")}
           className={getTabClass(currentStatus === "all")}
         >
           All
         </button>
         <button
           onClick={() => updateQueryParams({ status: "ongoing" })}
+          onMouseEnter={() => prefetchTab("ongoing")}
           className={getTabClass(currentStatus === "ongoing")}
         >
           Ongoing
         </button>
         <button
           onClick={() => updateQueryParams({ status: "completed" })}
+          onMouseEnter={() => prefetchTab("completed")}
           className={getTabClass(currentStatus === "completed")}
         >
           Completed

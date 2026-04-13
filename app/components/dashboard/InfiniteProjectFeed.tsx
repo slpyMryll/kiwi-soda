@@ -31,8 +31,9 @@ export function InfiniteProjectFeed({
   const q = searchParams.get("q") || "";
   const status = searchParams.get("status") || "all";
   const sort = searchParams.get("sort") || "newest";
+  const date = searchParams.get("date") || "all";
 
-  const queryKey = ["projects", "public", q, status, sort, termId, followingOnly];
+  const queryKey = ["projects", "public", q, status, sort, date, termId, followingOnly];
 
   const {
     data,
@@ -49,13 +50,14 @@ export function InfiniteProjectFeed({
         q,
         status,
         sort,
+        date,
         termId,
         followingOnly,
       });
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => lastPage.hasMore ? allPages.length + 1 : undefined,
-    placeholderData: (previousData) => previousData, // Smooth transitions
+    placeholderData: (previousData) => previousData, 
   });
 
   const projects = useMemo(() => data?.pages.flatMap((page) => page.projects) || [], [data]);
@@ -149,20 +151,28 @@ export function InfiniteProjectFeed({
         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
           <Inbox className="w-8 h-8 text-gray-400" />
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2">No active projects found</h3>
-        <p className="text-sm text-gray-500 max-w-sm">We couldn't find any projects matching your search or filters.</p>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">
+          {date === "month" ? "No projects this month" : "No active projects found"}
+        </h3>
+        <p className="text-sm text-gray-500 max-w-sm">
+          {date === "month" 
+            ? "There are no projects created this month matching your current filters." 
+            : "We couldn't find any projects matching your search or filters."}
+        </p>
       </div>
     );
   }
 
   return (
     <>
-      <div className={`flex flex-col gap-6 mt-6 mx-auto w-full transition-opacity duration-300 ${isFetching && !isFetchingNextPage ? 'opacity-50' : 'opacity-100'}`}>
+      <div className={`relative flex flex-col gap-6 mt-6 mx-auto w-full transition-opacity duration-300 ${isFetching && !isFetchingNextPage ? 'opacity-50' : 'opacity-100'}`}>
         
         {isFetching && !isFetchingNextPage && (
-          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-white/95 px-4 py-2 rounded-full shadow-lg border border-gray-100 animate-in fade-in">
-             <Loader2 className="w-4 h-4 animate-spin text-[#1B4332]" />
-             <span className="text-xs font-bold text-[#1B4332]">Updating...</span>
+          <div className="absolute inset-0 z-50 flex justify-center pointer-events-none">
+            <div className="sticky top-24 h-fit inline-flex items-center gap-2 bg-white/95 px-4 py-2 rounded-full shadow-lg border border-gray-100 animate-in fade-in pointer-events-auto mt-2">
+               <Loader2 className="w-4 h-4 animate-spin text-[#1B4332]" />
+               <span className="text-xs font-bold text-[#1B4332]">Updating...</span>
+            </div>
           </div>
         )}
 

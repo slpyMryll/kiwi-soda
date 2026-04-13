@@ -57,7 +57,7 @@ export default async function LandingPage({
               </p>
             </div>
 
-            <ProjectFilters />
+            <ProjectFilters termId={activeTermId}/>
 
             <InfiniteProjectFeed
               userRole="guest"
