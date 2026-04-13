@@ -37,6 +37,7 @@ interface Props {
     avgProgress: number;
   };
   currentUserId: string; 
+  activeTermId: string;
 }
 
 export default function PmProjectsClient({ 
@@ -45,7 +46,8 @@ export default function PmProjectsClient({
   totalPages: initialTotalPages, 
   totalFiltered: initialFiltered, 
   stats: initialStats, 
-  currentUserId 
+  currentUserId,
+  activeTermId
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -55,14 +57,21 @@ export default function PmProjectsClient({
   const q = searchParams.get("q") || "";
   const status = searchParams.get("status") || "all";
   const sort = searchParams.get("sort") || "newest";
+  const date = searchParams.get("date") || "all";
   const page = parseInt(searchParams.get("page") || "1");
 
-  const queryKey = ["pm-projects", currentUserId, q, status, sort, page];
+  const queryKey = ["pm-projects", currentUserId, q, status, sort, date, page];
 
   const { data, isFetching } = useQuery<ProjectManagerResponse>({
     queryKey,
     queryFn: async () => {
-      const res = await getProjectsByManager(currentUserId, { q, status, sort, page });
+      const res = await getProjectsByManager(currentUserId, { 
+        q, 
+        status, 
+        sort, 
+        dateFilter: date, 
+        page 
+      });
 
       return {
         success: res.success,
@@ -73,7 +82,7 @@ export default function PmProjectsClient({
       };
     },
     placeholderData: (previousData) => previousData,
-    initialData: (page === currentPage && q === "" && status === "all") ? {
+    initialData: (page === currentPage && q === "" && status === "all" && date === "all") ? {
       success: true, 
       projects: initialProjects, 
       totalPages: initialTotalPages, 
@@ -85,7 +94,6 @@ export default function PmProjectsClient({
   const localProjects = data?.projects || [];
   const displayTotalPages = data?.totalPages || 1;
   const displayTotalFiltered = data?.totalFiltered || 0;
-  const displayStats = data?.stats || initialStats;
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -112,10 +120,8 @@ export default function PmProjectsClient({
 
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", newPage.toString());
-    router.push(`${pathname}?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
-
-  const isSearchActive = searchParams.get("q") || searchParams.get("status") !== "all";
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-6 lg:gap-8">
@@ -129,7 +135,7 @@ export default function PmProjectsClient({
       <ProjectStats {...(data?.stats || initialStats)} />
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6">
-        <ProjectFilters />
+        <ProjectFilters termId={activeTermId} />
       </div>
 
       {localProjects.length > 0 ? (
@@ -149,16 +155,16 @@ export default function PmProjectsClient({
 
           {displayTotalPages > 1 && (
             <div className="flex justify-center gap-4 mt-8">
-              <button onClick={() => handlePageChange(page - 1)} disabled={page === 1} className="p-2 border rounded-xl disabled:opacity-50"><ChevronLeft /></button>
+              <button onClick={() => handlePageChange(page - 1)} disabled={page === 1} className="p-2 border rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors"><ChevronLeft /></button>
               <span className="flex items-center font-bold text-gray-600">Page {page} of {displayTotalPages}</span>
-              <button onClick={() => handlePageChange(page + 1)} disabled={page === displayTotalPages} className="p-2 border rounded-xl disabled:opacity-50"><ChevronRight /></button>
+              <button onClick={() => handlePageChange(page + 1)} disabled={page === displayTotalPages} className="p-2 border rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors"><ChevronRight /></button>
             </div>
           )}
         </div>
       ) : (
-         <div className="bg-white border rounded-2xl p-12 text-center shadow-sm">
+         <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center shadow-sm mt-6">
            <Inbox className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-           <p className="text-gray-500">No projects found.</p>
+           <p className="text-gray-500 font-medium">No projects found matching your criteria.</p>
          </div>
       )}
     </div>

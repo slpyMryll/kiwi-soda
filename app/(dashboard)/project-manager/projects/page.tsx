@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import PmProjectsClient from "./PmProjectsClient";
-import { getProjectsByManager } from "@/lib/actions/project";
+import { getProjectsByManager, getActiveTerm } from "@/lib/actions/project"; //
 
 export default async function PmProjectsPage({
   searchParams,
@@ -19,7 +19,17 @@ export default async function PmProjectsPage({
   const dateFilter = resolvedParams?.date || "all";
   const page = parseInt(resolvedParams?.page || "1");
 
-  const result = await getProjectsByManager(user.id, { q, status, sort, dateFilter, page });
+  // Fetch the active term ID
+  const activeTerm = await getActiveTerm();
+  const activeTermId = activeTerm?.id || "";
+
+  const result = await getProjectsByManager(user.id, { 
+    q, 
+    status, 
+    sort, 
+    dateFilter, 
+    page 
+  });
 
   return (
     <PmProjectsClient
@@ -29,6 +39,7 @@ export default async function PmProjectsPage({
       totalFiltered={result.totalFiltered}
       stats={result.stats}
       currentUserId={user.id}
+      activeTermId={activeTermId}
     />
   );
 }
