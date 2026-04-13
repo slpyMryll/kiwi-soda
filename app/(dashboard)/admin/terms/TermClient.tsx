@@ -1,15 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { CalendarDays, Plus, CheckCircle2, Users, Search, Filter, X, Trash2, Edit, ImageIcon, Loader2 } from "lucide-react";
-import { createTermWithOfficers, setActiveTerm, assignOfficer, removeOfficer, updateTermCover } from "@/lib/actions/admin-management";
+import { useState, useEffect } from "react";
+import { 
+  CalendarDays, Plus, CheckCircle2, Users, Search, Filter, X, 
+  Trash2, Edit, ImageIcon, Loader2, LayoutGrid, List, MoreVertical 
+} from "lucide-react";
+import { 
+  createTermWithOfficers, setActiveTerm, assignOfficer, 
+  removeOfficer, updateTermCover, getTermsAndOfficers, deleteTerm 
+} from "@/lib/actions/admin-management";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[], availablePMs: any[] }) {
   const [terms, setTerms] = useState(initialTerms);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "archived">("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list"); 
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -22,6 +36,23 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
   const [editingTerm, setEditingTerm] = useState<any>(null);
   const [newOfficerProfile, setNewOfficerProfile] = useState("");
   const [newOfficerPosition, setNewOfficerPosition] = useState("");
+
+  useEffect(() => {
+    const supabase = createClient();
+    
+    const fetchFreshData = async () => {
+      const freshTerms = await getTermsAndOfficers();
+      setTerms(freshTerms);
+      setEditingTerm((prev: any) => prev ? freshTerms.find((t: any) => t.id === prev.id) || null : null);
+    };
+
+    const channel = supabase.channel('admin-terms-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'terms' }, fetchFreshData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'officers' }, fetchFreshData)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const filteredTerms = terms.filter(t => {
     const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -42,15 +73,30 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     }
 
     const result = await createTermWithOfficers({ name, start_date: startDate, end_date: endDate }, officers);
-    if (result.success) window.location.reload(); 
-    else { alert(`Error: ${result.error}`); setIsProcessing(false); }
+    setIsProcessing(false);
+    
+    if (result.success) {
+      setIsModalOpen(false);
+      setName(""); setStartDate(""); setEndDate(""); setOfficers([{ profile_id: "", position: "" }]);
+    } else { 
+      alert(`Error: ${result.error}`); 
+    }
   };
 
   const handleActivateTerm = async (id: string) => {
     if(!confirm("Warning: Activating a new term will archive current projects. Continue?")) return;
     setIsProcessing(true);
-    await setActiveTerm(id);
-    window.location.reload(); 
+    const result = await setActiveTerm(id);
+    setIsProcessing(false);
+    if (!result.success) alert(`Error: ${result.error}`);
+  };
+
+  const handleDeleteTerm = async (id: string, termName: string) => {
+    if(!confirm(`Are you absolutely sure you want to delete "${termName}"? All associated data will be removed.`)) return;
+    setIsProcessing(true);
+    const result = await deleteTerm(id);
+    setIsProcessing(false);
+    if (!result.success) alert(`Error: ${result.error}`);
   };
 
   const handleAddSingleOfficer = async (e: React.FormEvent) => {
@@ -65,16 +111,22 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
 
     setIsProcessing(true);
     const result = await assignOfficer(editingTerm.id, newOfficerProfile, newOfficerPosition);
-    if (result.success) window.location.reload();
-    else { alert(`Error: ${result.error}`); setIsProcessing(false); }
+    setIsProcessing(false);
+    
+    if (result.success) {
+      setNewOfficerProfile("");
+      setNewOfficerPosition("");
+    } else { 
+      alert(`Error: ${result.error}`); 
+    }
   };
 
   const handleRemoveOfficer = async (officerId: string) => {
     if(!confirm("Remove this officer?")) return;
     setIsProcessing(true);
     const result = await removeOfficer(officerId);
-    if (result.success) window.location.reload();
-    else { alert(`Error: ${result.error}`); setIsProcessing(false); }
+    setIsProcessing(false);
+    if (!result.success) alert(`Error: ${result.error}`);
   };
 
   const handleCoverPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,11 +154,8 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
       const { data: { publicUrl } } = supabase.storage.from("project-images").getPublicUrl(fileName);
 
       const result = await updateTermCover(editingTerm.id, publicUrl);
-      if (result.success) {
-        window.location.reload();
-      } else {
-        throw new Error(result.error);
-      }
+      if (!result.success) throw new Error(result.error);
+      
     } catch (err: any) {
       alert("Upload failed: " + err.message);
     } finally {
@@ -125,7 +174,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
   return (
    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-6 lg:gap-8">
       
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold text-[#153B44] flex items-center gap-2">
             <CalendarDays className="w-6 h-6 text-[#1B4332]" /> Term Management
@@ -133,7 +182,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
           <p className="text-gray-500 text-sm mt-1">Manage academic years and council hierarchies.</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto items-center">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input type="text" placeholder="Search terms..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1B4332] shadow-sm bg-white" />
@@ -146,6 +195,12 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
               <option value="archived">Archived</option>
             </select>
           </div>
+          
+          <div className="hidden sm:flex bg-gray-200/50 p-1 rounded-xl shrink-0">
+            <button onClick={() => setViewMode("list")} className={cn("p-1.5 rounded-lg transition-all", viewMode === "list" ? "bg-white text-[#1B4332] shadow-sm font-bold" : "text-gray-500 hover:text-gray-700")} title="Table View"><List className="w-4 h-4"/></button>
+            <button onClick={() => setViewMode("grid")} className={cn("p-1.5 rounded-lg transition-all", viewMode === "grid" ? "bg-white text-[#1B4332] shadow-sm font-bold" : "text-gray-500 hover:text-gray-700")} title="Grid View"><LayoutGrid className="w-4 h-4"/></button>
+          </div>
+
           <button onClick={() => setIsModalOpen(true)} className="hidden md:flex items-center justify-center gap-2 px-4 py-2 bg-[#1B4332] text-white rounded-xl text-sm font-bold shadow-sm hover:bg-green-900 shrink-0">
             <Plus className="w-4 h-4" /> Add Term
           </button>
@@ -156,67 +211,149 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
         <Plus className="w-6 h-6" />
       </button>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTerms.map((term) => (
-          <div key={term.id} className={cn("bg-white rounded-2xl p-5 border shadow-sm flex flex-col transition-all relative group", term.is_current ? "border-green-300 ring-4 ring-green-50" : "border-gray-200 hover:border-gray-300")}>
-            
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setEditingTerm(term);
-              }}
-              className="absolute top-4 right-4 p-2 bg-white shadow-md hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg transition-all border border-gray-200 hover:border-blue-200 z-20"
-              title="Manage Term"
-            >
-              <Edit className="w-4 h-4" />
-            </button>
+      {viewMode === "grid" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTerms.map((term) => (
+            <div key={term.id} className={cn("bg-white rounded-2xl p-5 border shadow-sm flex flex-col transition-all relative group", term.is_current ? "border-green-300 ring-4 ring-green-50" : "border-gray-200 hover:border-gray-300")}>
+              
+              <div className="absolute top-4 right-4 flex gap-2 z-20">
+                <button 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTerm(term); }} 
+                  className="p-2 bg-white shadow-md hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg transition-all border border-gray-200 hover:border-blue-200" 
+                  title="Manage Term"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                {!term.is_current && (
+                  <button 
+                    disabled={isProcessing}
+                    onClick={(e) => { e.stopPropagation(); handleDeleteTerm(term.id, term.name); }} 
+                    className="p-2 bg-white shadow-md hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-all border border-gray-200 hover:border-red-200 disabled:opacity-50" 
+                    title="Delete Term"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
 
-            {term.cover_url && (
-               <div className="absolute top-0 left-0 w-full h-16 bg-gray-100 rounded-t-2xl overflow-hidden opacity-30 pointer-events-none z-0">
-                 <img src={term.cover_url} alt="" className="w-full h-full object-cover" />
-               </div>
-            )}
-
-            <div className="flex justify-between items-start mb-3 pr-12 relative z-10 pt-2">
-              <h3 className="text-lg font-bold text-gray-900 truncate pr-2">{term.name}</h3>
-              {term.is_current ? (
-                <span className="flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shrink-0"><CheckCircle2 className="w-3 h-3" /> Active</span>
-              ) : (
-                <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shrink-0">Archived</span>
-              )}
-            </div>
-            
-            <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-4 font-medium relative z-10">
-              <CalendarDays className="w-3.5 h-3.5 text-gray-400" />
-              {new Date(term.start_date).toLocaleDateString()} to {new Date(term.end_date).toLocaleDateString()}
-            </p>
-
-            <div className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100 relative z-10">
-              <h4 className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Council Officers</h4>
-              {term.officers?.length > 0 ? (
-                <div className="space-y-2">
-                  {term.officers.slice(0, 3).map((off: any) => (
-                    <div key={off.id} className="flex justify-between items-center text-[11px]">
-                      <span className="font-bold text-gray-900 truncate pr-2">{off.profiles?.full_name}</span>
-                      <span className="text-gray-500 shrink-0 bg-white border border-gray-200 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider">{off.position}</span>
-                    </div>
-                  ))}
-                  {term.officers.length > 3 && <p className="text-[10px] text-center text-gray-400 font-bold pt-1">+ {term.officers.length - 3} more officers</p>}
+              {term.cover_url && (
+                <div className="absolute top-0 left-0 w-full h-16 bg-gray-100 rounded-t-2xl overflow-hidden opacity-30 pointer-events-none z-0">
+                  <img src={term.cover_url} alt="" className="w-full h-full object-cover" />
                 </div>
-              ) : (
-                <p className="text-xs text-gray-400 italic">No officers assigned.</p>
+              )}
+
+              <div className="flex justify-between items-start mb-3 pr-20 relative z-10 pt-2">
+                <h3 className="text-lg font-bold text-gray-900 truncate pr-2">{term.name}</h3>
+                {term.is_current ? (
+                  <span className="flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shrink-0"><CheckCircle2 className="w-3 h-3" /> Active</span>
+                ) : (
+                  <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shrink-0">Archived</span>
+                )}
+              </div>
+              
+              <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-4 font-medium relative z-10">
+                <CalendarDays className="w-3.5 h-3.5 text-gray-400" />
+                {new Date(term.start_date).toLocaleDateString()} to {new Date(term.end_date).toLocaleDateString()}
+              </p>
+
+              <div className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100 relative z-10">
+                <h4 className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Council Officers</h4>
+                {term.officers?.length > 0 ? (
+                  <div className="space-y-2">
+                    {term.officers.slice(0, 3).map((off: any) => (
+                      <div key={off.id} className="flex justify-between items-center text-[11px]">
+                        <span className="font-bold text-gray-900 truncate pr-2">{off.profiles?.full_name}</span>
+                        <span className="text-gray-500 shrink-0 bg-white border border-gray-200 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider">{off.position}</span>
+                      </div>
+                    ))}
+                    {term.officers.length > 3 && <p className="text-[10px] text-center text-gray-400 font-bold pt-1">+ {term.officers.length - 3} more officers</p>}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 italic">No officers assigned.</p>
+                )}
+              </div>
+
+              {!term.is_current && (
+                <button disabled={isProcessing} onClick={() => handleActivateTerm(term.id)} className="mt-4 w-full py-2 bg-gray-50 hover:bg-green-50 text-gray-600 hover:text-green-700 border border-gray-200 hover:border-green-200 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 relative z-10">
+                  Set as Active Term
+                </button>
               )}
             </div>
-
-            {!term.is_current && (
-              <button disabled={isProcessing} onClick={() => handleActivateTerm(term.id)} className="mt-4 w-full py-2 bg-gray-50 hover:bg-green-50 text-gray-600 hover:text-green-700 border border-gray-200 hover:border-green-200 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 relative z-10">
-                Set as Active Term
-              </button>
-            )}
+          ))}
+        </div>
+      ) : (
+        /* 🔥 TABLE VIEW WITH TRIPLE DOT MENU */
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Term Name</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Duration</th>
+                  <th className="px-6 py-4 text-center">Officers</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredTerms.length > 0 ? filteredTerms.map((term) => (
+                  <tr key={term.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-gray-900 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-md bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
+                        {term.cover_url ? (
+                          <img src={term.cover_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon className="w-3 h-3" /></div>
+                        )}
+                      </div>
+                      {term.name}
+                    </td>
+                    <td className="px-6 py-4">
+                      {term.is_current ? (
+                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider"><CheckCircle2 className="w-3 h-3" /> Active</span>
+                      ) : (
+                        <span className="inline-flex items-center bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">Archived</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-gray-500 text-xs font-medium">
+                      {new Date(term.start_date).toLocaleDateString()} - {new Date(term.end_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-center text-gray-600 font-bold">
+                      {term.officers?.length || 0}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none">
+                          <MoreVertical className="w-4 h-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 rounded-xl shadow-lg p-1">
+                          <DropdownMenuItem onClick={() => setEditingTerm(term)} className="py-2.5 px-3 cursor-pointer rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
+                            <Edit className="w-4 h-4" /> Manage Term
+                          </DropdownMenuItem>
+                          {!term.is_current && (
+                            <>
+                              <DropdownMenuItem disabled={isProcessing} onClick={() => handleActivateTerm(term.id)} className="py-2.5 px-3 cursor-pointer rounded-lg text-sm font-semibold text-green-600 hover:bg-green-50 transition-colors flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4" /> Set as Active
+                              </DropdownMenuItem>
+                              <DropdownMenuItem disabled={isProcessing} onClick={() => handleDeleteTerm(term.id, term.name)} className="py-2.5 px-3 cursor-pointer rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
+                                <Trash2 className="w-4 h-4" /> Delete Term
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No terms found matching your filters.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {editingTerm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
