@@ -177,3 +177,26 @@ export async function updateTermCover(termId: string, coverUrl: string) {
   revalidatePath("/");
   return { success: true };
 }
+
+export async function deleteTerm(termId: string) {
+  const supabase = await createClient();
+
+  const { data: term } = await supabase.from("terms").select("is_current, name").eq("id", termId).single();
+  
+  if (term?.is_current) {
+    return { success: false, error: "You cannot delete the currently active term. Activate another term first." };
+  }
+
+  const { error } = await supabase.from("terms").delete().eq("id", termId);
+  
+  if (error) return { success: false, error: error.message };
+
+  await recordActivity({
+    action_type: "TERM_DELETED",
+    entity_id: termId,
+    description: `Deleted academic term: ${term?.name}`,
+  });
+
+  revalidatePath("/admin/terms");
+  return { success: true };
+}
