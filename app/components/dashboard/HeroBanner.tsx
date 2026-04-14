@@ -2,6 +2,7 @@
 
 import { ChevronDown, Check } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,10 +32,13 @@ export function HeroBanner({ terms, currentTermId }: { terms: Term[], currentTer
 
   return (
     <div className="relative w-full h-48 md:h-64 rounded-b-2xl overflow-hidden mb-8 shadow-sm group">
-      <img 
+      <Image
         src={activeTerm?.cover_url || "/hero-section-place.jpg"} 
         alt="VSU SSC Team" 
-        className="w-full h-full object-cover object-top"
+        fill
+        className="object-cover object-top"
+        priority
+        sizes="100vw"
       />
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
       
