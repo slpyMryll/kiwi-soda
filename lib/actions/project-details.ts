@@ -122,9 +122,14 @@ export async function updateProjectDetails(
       progress,
       status,
     })
-    .eq("id", projectId);
+    .eq("id", projectId)
+    .select()
+    .single();
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === 'PGRST116') return { error: "Permission Denied: Only the Project Manager can edit these details." };
+    return { error: error.message };
+  }
   return { success: true };
 }
 
@@ -138,9 +143,14 @@ export async function updateProjectDescription(
   const { error } = await supabase
     .from("projects")
     .update({ description, updated_at: new Date() })
-    .eq("id", projectId);
+    .eq("id", projectId)
+    .select()
+    .single();
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === 'PGRST116') return { error: "Permission Denied: Only the Project Manager can edit the description." };
+    return { error: error.message };
+  }
   return { success: true };
 }
 
@@ -246,12 +256,22 @@ export async function updateProjectProgress(
     return { error: "Invalid progress value. Must be between 0 and 100." };
   }
 
+  const status = progress === 100 ? "Completed" : "Ongoing";
+
   const { error } = await supabase
     .from("projects")
-    .update({ progress, updated_at: new Date() })
-    .eq("id", projectId);
+    .update({ progress, status, updated_at: new Date() })
+    .eq("id", projectId)
+    .select()
+    .single();
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return { error: "Permission Denied: Only the Project Manager can update overall progress." };
+    }
+    return { error: error.message };
+  }
+  
   return { success: true };
 }
 

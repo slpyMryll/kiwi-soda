@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function ProjectDetailLoading() {
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-8 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-8  w-full">
       <div className="flex flex-col gap-6">
         <Link
           href="/project-manager/projects"

@@ -182,7 +182,7 @@ export default function ProjectDetailClient({
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-6 max-w-7xl mx-auto w-full pb-24">
+    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-6 w-full pb-24">
       <div className="flex justify-between items-center w-full mb-1">
         <Link
           href="/project-manager/projects"
