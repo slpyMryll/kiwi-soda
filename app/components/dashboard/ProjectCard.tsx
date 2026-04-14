@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   MessageCircle,
   Share2,
@@ -15,7 +16,6 @@ import { ProgressBar } from "../ui/ProgressBar";
 import { ProjectCardProps } from "@/types/projects";
 import { FollowButton } from "@/app/components/ui/followButton";
 
-
 export function ProjectCard({
   project,
   userRole = "guest",
@@ -24,6 +24,7 @@ export function ProjectCard({
   const router = useRouter();
 
   const isGuest = userRole === "guest";
+  const projectHref = isGuest ? "/login" : `/${userRole}/projects/${project.id}`;
 
   const handleAction = (e: React.MouseEvent) => {
     if (isGuest) {
@@ -38,10 +39,9 @@ export function ProjectCard({
     e.preventDefault();
     if (onReadMore) {
       onReadMore();
-    } else if (!isGuest) {
-      router.push(`/${userRole}/projects/${project.id}`);
     }
   };
+
   const formattedPostedDate = new Date(project.postedAt).toLocaleDateString(
     "en-US",
     {
@@ -50,6 +50,7 @@ export function ProjectCard({
       day: "numeric",
     },
   );
+  
   const formattedDeadline = new Date(project.deadline).toLocaleDateString(
     "en-US",
     {
@@ -90,8 +91,8 @@ export function ProjectCard({
         </div>
 
         <FollowButton
-        projectId={project.id}
-        isGuest={isGuest}
+          projectId={project.id}
+          isGuest={isGuest}
         />
       </div>
 
@@ -155,12 +156,22 @@ export function ProjectCard({
             </button>
           </div>
 
-          <button
-            onClick={handleReadMore}
-            className="w-full sm:w-auto flex justify-center items-center gap-2 border border-gray-300 rounded-full px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors"
-          >
-            Read More <ArrowRight className="w-4 h-4" />
-          </button>
+          {onReadMore ? (
+            <button
+              onClick={handleReadMore}
+              className="w-full sm:w-auto flex justify-center items-center gap-2 border border-gray-300 rounded-full px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Read More <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <Link
+              href={projectHref}
+              onMouseEnter={() => router.prefetch(projectHref)}
+              className="w-full sm:w-auto flex justify-center items-center gap-2 border border-gray-300 rounded-full px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Read More <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
         </div>
       </div>
     </article>
