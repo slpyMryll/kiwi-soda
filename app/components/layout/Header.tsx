@@ -72,7 +72,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
   
           <Sheet>
             <SheetTrigger asChild>
-              <button className="lg:hidden p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors">
+              <button className="hidden md:flex lg:hidden p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors">
                 <Menu className="w-6 h-6 text-white" />
               </button>
             </SheetTrigger>

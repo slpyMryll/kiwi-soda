@@ -7,7 +7,7 @@ export function FaqFab() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end">
+    <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 flex flex-col items-end">
       
       {isOpen && (
         <div className="mb-4 w-[calc(100vw-32px)] sm:w-[350px] h-[450px] max-h-[75vh] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
@@ -76,7 +76,7 @@ export function FaqFab() {
       <button 
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle FAQ"
-        className="border border-[#81AC34] bg-linear-to-b from-[#A9DC02] from-0% via-5% to-[#274F57] text-white p-3.5 sm:p-4 rounded-full shadow-lg transition-transform hover:scale-105 flex items-center justify-center"
+        className="border border-[#81AC34] bg-linear-to-b from-[#A9DC02] from-0% via-5% to-[#274F57] text-white p-3.5 md:p-4 rounded-full shadow-lg transition-transform hover:scale-105 flex items-center justify-center"
       >
         {isOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />}
       </button>
