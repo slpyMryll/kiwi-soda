@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   MessageCircle,
   Share2,
@@ -24,7 +25,9 @@ export function ProjectCard({
   const router = useRouter();
 
   const isGuest = userRole === "guest";
-  const projectHref = isGuest ? "/login" : `/${userRole}/projects/${project.id}`;
+  const projectHref = isGuest
+    ? "/login"
+    : `/${userRole}/projects/${project.id}`;
 
   const handleAction = (e: React.MouseEvent) => {
     if (isGuest) {
@@ -50,7 +53,7 @@ export function ProjectCard({
       day: "numeric",
     },
   );
-  
+
   const formattedDeadline = new Date(project.deadline).toLocaleDateString(
     "en-US",
     {
@@ -59,14 +62,17 @@ export function ProjectCard({
       day: "numeric",
     },
   );
-  
+
   return (
     <article className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <div className="relative h-48 w-full bg-gray-100">
-        <img
+        <Image
           src={project.imageUrl || "/project-car-place.jpg"}
           alt={project.title}
-          className="w-full h-full object-cover"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover"
+          priority={false}
         />
 
         <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-20">
@@ -90,10 +96,7 @@ export function ProjectCard({
           )}
         </div>
 
-        <FollowButton
-          projectId={project.id}
-          isGuest={isGuest}
-        />
+        <FollowButton projectId={project.id} isGuest={isGuest} />
       </div>
 
       <div className="p-6">
@@ -138,6 +141,7 @@ export function ProjectCard({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
           <div className="flex items-center gap-6 text-sm text-gray-600">
             <button
+              aria-label={`View comments for ${project.title}`}
               onClick={handleAction}
               className="flex items-center gap-1.5 hover:text-gray-900 transition-colors"
             >
