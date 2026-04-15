@@ -44,7 +44,14 @@ export function ProjectCard({
       onReadMore();
     }
   };
-
+  const handleCommentClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isGuest) {
+      router.push("/login");
+    } else {
+      router.push(`${projectHref}?tab=Feedback#feedback`);
+    }
+  };
   const formattedPostedDate = new Date(project.postedAt).toLocaleDateString(
     "en-US",
     {
@@ -142,7 +149,7 @@ export function ProjectCard({
           <div className="flex items-center gap-6 text-sm text-gray-600">
             <button
               aria-label={`View comments for ${project.title}`}
-              onClick={handleAction}
+              onClick={handleCommentClick}
               className="flex items-center gap-1.5 hover:text-gray-900 transition-colors"
             >
               <MessageCircle className="w-4 h-4" />

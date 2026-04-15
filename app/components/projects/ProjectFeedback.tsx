@@ -43,6 +43,17 @@ export function ProjectFeedback({ comments, projectId, isGuest }: ProjectFeedbac
     }
   }, [isGuest, projectId, comments]);
 
+  useEffect(() => {
+    if (window.location.hash === '#feedback') {
+      const element = document.getElementById('feedback');
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, []);
+
   const handleSubmit = async () => {
     if (!content.trim() || isSubmitting) return;
     setIsSubmitting(true);
@@ -54,7 +65,7 @@ export function ProjectFeedback({ comments, projectId, isGuest }: ProjectFeedbac
   };
 
   return (
-    <section>
+    <section id="feedback" className="scroll-mt-24">
       <h2 className="text-lg font-bold text-[#1B4332] mb-4">
         Student Feedback ({realtimeCount})
       </h2>
