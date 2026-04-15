@@ -46,7 +46,7 @@ export default async function ManageProjectPage({
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
       project_milestones ( id, title, end_date, status, progress ),
       project_documents ( id, name, file_url, file_size, file_type, created_at, profiles:uploaded_by ( full_name ) ),
-      comments ( id, content, created_at, parent_id, profiles ( full_name, avatar_url ) )
+      comments ( id, user_id, content, created_at, parent_id, profiles ( full_name, avatar_url ) )
     `
     )
     .eq("id", id)
@@ -92,6 +92,7 @@ export default async function ManageProjectPage({
     
     comments: (projectData.comments || []).map((c: any) => ({
       id: c.id,
+      user_id: c.user_id,
       content: c.content,
       created_at: c.created_at,
       parent_id: c.parent_id,
