@@ -111,6 +111,7 @@ export async function getInfiniteProjects({
 
     return {
       id: projectData.id,
+      termId: projectData.term_id,
       title: projectData.title,
       description: projectData.description,
       location: projectData.location || "VSU Campus",
@@ -159,6 +160,21 @@ export async function getInfiniteProjects({
 export async function getSingleProjectForFeed(projectId: string): Promise<Project | null> {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let isFollowing = false;
+  if (user) {
+    const { data: followData } = await supabase
+      .from("project_followers")
+      .select("id")
+      .eq("project_id", projectId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    isFollowing = !!followData;
+  }
+
   const { data: projectData, error } = await supabase
     .from("projects")
     .select(`
@@ -198,6 +214,7 @@ export async function getSingleProjectForFeed(projectId: string): Promise<Projec
 
   return {
     id: projectData.id,
+    termId: projectData.term_id,
     title: projectData.title,
     description: projectData.description,
     location: projectData.location || "VSU Campus",
@@ -211,7 +228,7 @@ export async function getSingleProjectForFeed(projectId: string): Promise<Projec
     tags: projectData.tags || [],
     commentsCount: projectData.comments?.[0]?.count || 0,
     membersCount: teamMembers.length,
-    isFollowing: false, 
+    isFollowing, 
     deadline: new Date(projectData.deadline),
     created_at: new Date(projectData.created_at),
     updated_at: new Date(projectData.updated_at),

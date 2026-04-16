@@ -14,7 +14,7 @@ export const MOCK_PM_PROJECTS: PmProjectData[] = [
   {
     id: "1",
     title: "Protect Project Nature 2026",
-    status: "Active",
+    status: "Ongoing",
     isLive: true,
     progress: 67,
     projectLead: "Php 50,000",

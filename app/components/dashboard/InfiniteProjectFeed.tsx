@@ -33,7 +33,7 @@ export function InfiniteProjectFeed({
   const sort = searchParams.get("sort") || "newest";
   const date = searchParams.get("date") || "all";
 
-  const queryKey = ["projects", "public", q, status, sort, date, termId, followingOnly];
+  const queryKey = useMemo(() => ["projects", "public", q, status, sort, date, termId, followingOnly], [q, status, sort, date, termId, followingOnly]);
 
   const {
     data,
@@ -72,9 +72,9 @@ export function InfiniteProjectFeed({
       .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, async (payload) => {
         const oldRecord = payload.old as { id?: string };
         const newRecord = payload.new as { id?: string; live_status?: string };
-        const targetId = oldRecord.id || newRecord.id;
+        const targetId = oldRecord?.id || newRecord?.id;
 
-        if (payload.eventType === "DELETE" || (newRecord && newRecord.live_status !== "Live")) {
+        if (payload.eventType === "DELETE" || (newRecord && newRecord.live_status === "Draft")) {
           queryClient.setQueryData(queryKey, (oldData: any) => {
             if (!oldData) return oldData;
             return { ...oldData, pages: oldData.pages.map((page: any) => ({
@@ -84,7 +84,7 @@ export function InfiniteProjectFeed({
           return;
         }
 
-        if (!newRecord.id) return;
+        if (!newRecord?.id) return;
 
         const fullProject = await getSingleProjectForFeed(newRecord.id);
         if (fullProject) {
@@ -106,9 +106,28 @@ export function InfiniteProjectFeed({
             const isOngoingTab = status === "ongoing";
             const isCompletedTab = status === "completed";
 
+            const matchesQ = !q || 
+              fullProject.title.toLowerCase().includes(q.toLowerCase()) || 
+              fullProject.description.toLowerCase().includes(q.toLowerCase());
+            
+            const matchesTerm = !termId || fullProject.termId === termId;
+
+            let matchesDate = true;
+            if (date === "month") {
+              const now = new Date();
+              const phtNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+              const year = phtNow.getUTCFullYear();
+              const month = phtNow.getUTCMonth();
+              
+              const pDate = new Date(fullProject.created_at);
+              matchesDate = pDate.getUTCFullYear() === year && pDate.getUTCMonth() === month;
+            }
+
             const shouldEject = 
               (isOngoingTab && derivedStatus === "Completed") || 
-              (isCompletedTab && derivedStatus === "Ongoing");
+              (isCompletedTab && derivedStatus === "Ongoing") ||
+              !matchesQ || !matchesTerm || !matchesDate ||
+              fullProject.liveStatus === "Draft";
 
             if (shouldEject) {
               return {

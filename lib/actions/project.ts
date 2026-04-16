@@ -79,7 +79,7 @@ export async function createProject(formData: FormData) {
       deadline,
       manager_id: user.id,
       term_id: derivedTermId,
-      status: "Active",
+      status: "Ongoing",
       live_status: "Draft",
       progress: 0,
       image_url: finalImageUrl,
@@ -131,10 +131,15 @@ export async function toggleProjectLiveStatus(
   if (!user) return { error: "Unauthorized" };
 
   const newStatus = currentStatus === "Live" ? "Draft" : "Live";
+  const updateData: any = { live_status: newStatus };
+
+  if (newStatus === "Live") {
+    updateData.status = "Ongoing";
+  }
 
   const { error } = await supabase
     .from("projects")
-    .update({ live_status: newStatus })
+    .update(updateData)
     .eq("id", projectId);
   if (error) return { error: error.message };
 
