@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Mail, Lock, Eye, EyeOff, ChevronLeft } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ChevronLeft, Loader2 } from "lucide-react";
 import { signInWithGoogle, signInWithEmail } from "@/lib/actions/auth";
 import { useState, useMemo } from "react";
 import { getBorderClass } from "@/lib/utils/ui-helpers";
@@ -11,6 +11,7 @@ export default function Home() {
   const [password, setPassword] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
   
   const isEmailValid = useMemo(() => validateVsuEmail(email), [email]);
   const isPasswordValid = useMemo(() => password.length >= 8, [password]);
@@ -21,18 +22,32 @@ export default function Home() {
     if (result?.error) alert(result.error);
   };
 
-  const handleFormAction = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); 
     setIsSubmitted(true);
+    
     if (!isEmailValid || !isPasswordValid) return;
 
+    setIsSigningIn(true);
+    
+    const formData = new FormData(e.currentTarget);
     const result = await signInWithEmail(formData);
-    if (result?.error) alert(result.error);
+    
+    if (result?.error) {
+      alert(result.error);
+      setIsSigningIn(false); 
+    }
   };
+  
   return (
     <main className="min-h-screen w-full bg-surface-brand flex flex-col-reverse lg:flex-row items-stretch justify-center lg:px-14 lg:py-1 lg:gap-14">
       <section className="relative flex-1 bg-white rounded-t-[40px] lg:rounded-2xl px-8 py-10 lg:px-14 lg:py-8 shadow-2xl self-end lg:self-center w-full max-w-2xl mx-auto z-10 transition-all duration-500">
+        
+        {/* 🔥 FIX: Added 'replace' to fix history loops, and 'prefetch={true}' for instant loading */}
         <Link
           href="/"
+          replace
+          prefetch={true}
           className="absolute top-6 left-6 flex items-center gap-1 text-sm font-bold text-gray-400 hover:text-green-dark transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
@@ -53,7 +68,7 @@ export default function Home() {
           </p>
         </div>
 
-        <form action={handleFormAction} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col space-y-2">
             <label className="text-sm font-bold text-green-dark ml-1 text-left">
               Email
@@ -69,7 +84,8 @@ export default function Home() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your VSU email"
-                className={`w-full bg-white border-b-2 py-4 pl-12 pr-4 text-sm focus:outline-none transition-all ${getBorderClass(isEmailValid, email, isSubmitted)}`}
+                disabled={isSigningIn}
+                className={`w-full bg-white border-b-2 py-4 pl-12 pr-4 text-sm focus:outline-none transition-all disabled:opacity-50 ${getBorderClass(isEmailValid, email, isSubmitted)}`}
               />
             </div>
             {isSubmitted && !isEmailValid && (
@@ -94,12 +110,14 @@ export default function Home() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className={`w-full bg-white border-b-2 py-4 pl-12 pr-12 text-sm focus:outline-none transition-all ${getBorderClass(isPasswordValid, password, isSubmitted)}`}
+                disabled={isSigningIn}
+                className={`w-full bg-white border-b-2 py-4 pl-12 pr-12 text-sm focus:outline-none transition-all disabled:opacity-50 ${getBorderClass(isPasswordValid, password, isSubmitted)}`}
               />
               <button
                 type="button"
+                disabled={isSigningIn}
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-dark transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-dark transition-colors disabled:opacity-50"
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -126,9 +144,17 @@ export default function Home() {
 
           <button
             type="submit"
-            className="w-full bg-[#1B4332] text-white font-bold py-4 rounded-2xl shadow-lg transition-all duration-300 lg:hover:bg-green-900 lg:hover:scale-[1.02] active:scale-95"
+            disabled={isSigningIn}
+            className="w-full bg-[#1B4332] text-white font-bold py-4 rounded-2xl shadow-lg transition-all duration-300 hover:bg-green-900 disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center gap-2"
           >
-            Sign In
+            {isSigningIn ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Signing In...
+              </>
+            ) : (
+              "Sign In"
+            )}
           </button>
 
           <div className="relative flex items-center justify-center py-2">
@@ -142,8 +168,9 @@ export default function Home() {
 
           <button
             type="button"
+            disabled={isSigningIn}
             onClick={handleGoogleSignIn}
-            className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 lg:hover:bg-gray-50 lg:hover:border-green-dark/30 shadow-sm"
+            className="w-full bg-white border border-gray-200 text-gray-700 font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 hover:bg-gray-50 hover:border-green-dark/30 shadow-sm disabled:opacity-50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
