@@ -30,7 +30,7 @@ export function Sidebar({ role }: SidebarProps) {
   const navItems = NAV_CONFIG[role] || NAV_CONFIG.viewer;
 
   return (
-    <aside className="fixed bottom-0 left-0 z-40 w-full bg-white border-t border-gray-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] md:shadow-none md:sticky md:top-18 md:w-64 md:bg-bg-main md:h-[calc(100vh-72px)] md:border-t-0 md:border-r md:border-gray-200/60 flex md:flex-col pb-[env(safe-area-inset-bottom)] md:pb-0">
+    <aside className="fixed bottom-0 left-0 z-40 w-full bg-white border-t border-gray-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] flex md:hidden lg:flex lg:shadow-none lg:sticky lg:top-18 lg:w-64 lg:bg-bg-main lg:h-[calc(100vh-72px)] lg:border-t-0 lg:border-r lg:border-gray-200/60 lg:flex-col pb-[env(safe-area-inset-bottom)] lg:pb-0">
       <nav className="flex w-full justify-around items-center px-2 py-2 overflow-x-auto no-scrollbar md:flex-col md:justify-start md:flex-1 md:py-6 md:px-4 md:space-y-1.5 md:items-stretch md:overflow-visible">
         {navItems.map((item, index) => {
           if (item.divider) {
