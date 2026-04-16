@@ -1,5 +1,4 @@
 import { ProjectFilters } from "@/app/components/dashboard/ProjectFilters";
-import { FaqFab } from "@/app/components/ui/FaqFab";
 import { InfiniteProjectFeed } from "@/app/components/dashboard/InfiniteProjectFeed";
 import { getActiveTerm } from "@/lib/actions/project";
 import { FollowedStats } from "@/app/components/dashboard/FollowStatCard";
@@ -45,7 +44,6 @@ export default async function ViewerFollowingPage({
         followingOnly={true}
       />
 
-      <FaqFab />
     </main>
   );
 }
