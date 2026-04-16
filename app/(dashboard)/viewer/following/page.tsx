@@ -4,6 +4,12 @@ import { getActiveTerm } from "@/lib/actions/project";
 import { FollowedStats } from "@/app/components/dashboard/FollowStatCard";
 import { getFollowedStats } from "@/lib/actions/follow";
 
+export const metadata = {
+  title: "Following - OnTrack",
+  description: "Stay updated on the projects you are following. View project progress, updates, and activity in one place.",
+};
+
+
 export default async function ViewerFollowingPage({
   searchParams,
 }: {

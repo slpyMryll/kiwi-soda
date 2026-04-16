@@ -3,6 +3,11 @@ import { Project } from "@/types/projects";
 import { PmDashboardClient } from "./PmDashboardClient";
 import { redirect } from "next/navigation";
 
+export const metadata = {
+  title: "PM Dashboard - OnTrack",
+  description: "Your central hub for managing projects, tracking progress, and overseeing team collaboration. Stay on top of deadlines, budgets, and project health all in one place.",
+};
+
 export default async function PmDashboardPage() {
   const supabase = await createClient();
 

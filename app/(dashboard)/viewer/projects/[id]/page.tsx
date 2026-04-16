@@ -4,6 +4,11 @@ import { notFound } from "next/navigation";
 import { Project } from "@/types/projects";
 import { getProjectTeamWithOfficerRoles } from "@/lib/actions/project";
 
+export const metadata = {
+  title: "Project Details - OnTrack",
+  description: "View detailed information about the project, including progress, milestones, budget updates, and team members.",
+};
+
 export default async function ViewerProjectDetailPage({
   params,
 }: {

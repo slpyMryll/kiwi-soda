@@ -6,7 +6,7 @@ import { Sidebar } from "../components/layout/Sidebar";
 import { PresencePinger } from "../components/layout/PresencePinger";
 
 export const metadata = {
-  title: "Dashboard - Kiwi Soda",
+  title: "Explore - OnTrack",
 };
 
 export default async function DashboardLayout({
