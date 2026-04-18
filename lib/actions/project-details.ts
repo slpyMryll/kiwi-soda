@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { notifyProjectFollowers } from "./follow";
 
 export async function addProjectMember(projectId: string, formData: FormData) {
   const supabase = await createClient();
@@ -99,6 +100,15 @@ export async function addMilestone(projectId: string, formData: FormData) {
   });
 
   if (error) return { error: error.message };
+
+  await notifyProjectFollowers(
+    projectId,
+    user.id,
+    `New Milestone Added: "${title}"`,
+    `/viewer/projects/${projectId}`,
+    'milestone_update'
+  );
+
   return { success: true };
 }
 
@@ -160,6 +170,7 @@ export async function updateMilestone(
   formData: FormData,
 ) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const title = formData.get("title") as string;
   const endDate = formData.get("deadline") as string;
@@ -172,6 +183,17 @@ export async function updateMilestone(
     .eq("id", milestoneId);
 
   if (error) return { error: error.message };
+
+  if (user) {
+    await notifyProjectFollowers(
+      projectId,
+      user.id,
+      `Milestone Updated: "${title}" is now ${status}`,
+      `/viewer/projects/${projectId}`,
+      'milestone_update'
+    );
+  }
+
   return { success: true };
 }
 
@@ -250,6 +272,7 @@ export async function updateProjectProgress(
   formData: FormData,
 ) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const progress = parseInt(formData.get("progress") as string);
 
   if (isNaN(progress) || progress < 0 || progress > 100) {
@@ -272,6 +295,16 @@ export async function updateProjectProgress(
     return { error: error.message };
   }
   
+  if (user) {
+    await notifyProjectFollowers(
+      projectId,
+      user.id,
+      `Project progress is now at ${progress}%`,
+      `/viewer/projects/${projectId}`,
+      'progress_update'
+    );
+  }
+
   return { success: true };
 }
 
@@ -316,6 +349,17 @@ export async function updateProjectBudget(
     .single();
 
   if (logError) return { error: logError.message };
+
+  if (user && status === "Approved") {
+    await notifyProjectFollowers(
+      projectId,
+      user.id,
+      `Total budget was adjusted to ₱${newAmount.toLocaleString()}`,
+      `/viewer/projects/${projectId}`,
+      'budget_update'
+    );
+  }
+
   return { success: true, log };
 }
 
@@ -361,6 +405,17 @@ export async function addExpense(projectId: string, formData: FormData) {
     .single();
 
   if (logError) return { error: logError.message };
+
+  if (user && status === "Approved") {
+    await notifyProjectFollowers(
+      projectId,
+      user.id,
+      `New expense recorded: ₱${amount.toLocaleString()} for ${category}`,
+      `/viewer/projects/${projectId}`,
+      'expense_update'
+    );
+  }
+
   return { success: true, log };
 }
 
@@ -401,6 +456,17 @@ export async function approveExpense(logId: string, projectId: string) {
       .from("projects")
       .update({ total_budget: log.new_amount })
       .eq("id", projectId);
+      
+    if (user) {
+      await notifyProjectFollowers(
+        projectId,
+        user.id,
+        `A budget adjustment request was approved.`,
+        `/viewer/projects/${projectId}`,
+        'budget_update'
+      );
+    }
+
     return { success: true, log: updatedLog };
   } else {
     const amountToApprove = log!.new_amount - log!.old_amount;
@@ -425,6 +491,17 @@ export async function approveExpense(logId: string, projectId: string) {
       .from("projects")
       .update({ spent_budget: newSpent })
       .eq("id", projectId);
+      
+    if (user) {
+      await notifyProjectFollowers(
+        projectId,
+        user.id,
+        `An expense request for ₱${amountToApprove.toLocaleString()} was approved.`,
+        `/viewer/projects/${projectId}`,
+        'expense_update'
+      );
+    }
+
     return { success: true, log: updatedLog };
   }
 }

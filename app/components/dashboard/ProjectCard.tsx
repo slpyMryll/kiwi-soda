@@ -134,7 +134,12 @@ export function ProjectCard({
           )}
         </div>
 
-        <FollowButton projectId={project.id} isGuest={isGuest} />
+        <FollowButton 
+          projectId={project.id} 
+          isGuest={isGuest} 
+          initialIsFollowing={project.isFollowing}
+          className="absolute top-4 right-4" 
+        />
       </div>
 
       <div className="p-6">

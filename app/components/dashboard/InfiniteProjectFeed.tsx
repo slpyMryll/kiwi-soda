@@ -66,95 +66,17 @@ export function InfiniteProjectFeed({
     if (inView && hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // 🔥 FIX: Replaced the complex manual cache updating with a clean invalidation.
+  // This forces the feed to seamlessly refetch the exact moment the DB changes!
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase.channel("public-project-feed")
-      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, async (payload) => {
-        const oldRecord = payload.old as { id?: string };
-        const newRecord = payload.new as { id?: string; live_status?: string };
-        const targetId = oldRecord?.id || newRecord?.id;
-
-        if (payload.eventType === "DELETE" || (newRecord && newRecord.live_status === "Draft")) {
-          queryClient.setQueryData(queryKey, (oldData: any) => {
-            if (!oldData) return oldData;
-            return { ...oldData, pages: oldData.pages.map((page: any) => ({
-                ...page, projects: page.projects.filter((p: Project) => p.id !== targetId),
-            }))};
-          });
-          return;
-        }
-
-        if (!newRecord?.id) return;
-
-        const fullProject = await getSingleProjectForFeed(newRecord.id);
-        if (fullProject) {
-          queryClient.setQueryData(queryKey, (oldData: any) => {
-            if (!oldData) return oldData;
-
-            if (followingOnly && !fullProject.isFollowing) {
-              return {
-                ...oldData,
-                pages: oldData.pages.map((page: any) => ({
-                  ...page, projects: page.projects.filter((p: Project) => p.id !== fullProject.id)
-                }))
-              };
-            }
-
-            const derivedStatus = (fullProject.status === "Completed" || fullProject.progress === 100) ? "Completed" : "Ongoing";
-            fullProject.status = derivedStatus;
-
-            const isOngoingTab = status === "ongoing";
-            const isCompletedTab = status === "completed";
-
-            const matchesQ = !q || 
-              fullProject.title.toLowerCase().includes(q.toLowerCase()) || 
-              fullProject.description.toLowerCase().includes(q.toLowerCase());
-            
-            const matchesTerm = !termId || fullProject.termId === termId;
-
-            let matchesDate = true;
-            if (date === "month") {
-              const now = new Date();
-              const phtNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-              const year = phtNow.getUTCFullYear();
-              const month = phtNow.getUTCMonth();
-              
-              const pDate = new Date(fullProject.created_at);
-              matchesDate = pDate.getUTCFullYear() === year && pDate.getUTCMonth() === month;
-            }
-
-            const shouldEject = 
-              (isOngoingTab && derivedStatus === "Completed") || 
-              (isCompletedTab && derivedStatus === "Ongoing") ||
-              !matchesQ || !matchesTerm || !matchesDate ||
-              fullProject.liveStatus === "Draft";
-
-            if (shouldEject) {
-              return {
-                ...oldData,
-                pages: oldData.pages.map((page: any) => ({
-                  ...page, projects: page.projects.filter((p: Project) => p.id !== fullProject.id)
-                }))
-              };
-            }
-
-            let found = false;
-            const newPages = oldData.pages.map((page: any) => {
-              const updatedProjects = page.projects.map((p: Project) => {
-                if (p.id === fullProject.id) { found = true; return fullProject; }
-                return p;
-              });
-              return { ...page, projects: updatedProjects };
-            });
-            
-            if (!found && newPages.length > 0) newPages[0].projects.unshift(fullProject);
-            return { ...oldData, pages: newPages };
-          });
-        }
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
       }).subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [queryClient, queryKey, status, followingOnly]);
+  }, [queryClient]);
 
   if (isLoading && projects.length === 0) {
     return (

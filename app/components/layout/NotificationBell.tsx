@@ -50,7 +50,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
               </span>
             )}
           </div>
-          {unreadCount > 0 && (
+          {unreadCount > 0 &&
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -60,7 +60,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
             >
               <Check className="w-3 h-3" /> Mark all read
             </button>
-          )}
+          }
         </div>
 
         <div className="max-h-[50vh] sm:max-h-[400px] overflow-y-auto custom-scrollbar">

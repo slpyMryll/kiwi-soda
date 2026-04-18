@@ -1,7 +1,57 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from 'next/headers'
 import { revalidatePath } from "next/cache";
+
+export async function notifyProjectFollowers(
+  projectId: string,
+  actorId: string,
+  message: string,
+  actionLink: string,
+  type: string = 'project_update'
+) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY!;
+
+  if (!supabaseServiceKey) return;
+
+  const supabaseAdmin = createServerClient(supabaseUrl, supabaseServiceKey, {
+    cookies: {
+      getAll() { return []; },
+      setAll() {},
+    },
+  });
+
+  const { data: project } = await supabaseAdmin
+    .from("projects")
+    .select("title")
+    .eq("id", projectId)
+    .single();
+
+  const projectName = project?.title || "A project you follow";
+  
+  const formattedMessage = `[${projectName}] ${message}`;
+
+  const { data: followers } = await supabaseAdmin
+    .from("project_followers")
+    .select("user_id")
+    .eq("project_id", projectId);
+
+  if (!followers || followers.length === 0) return;
+
+  const notifications = followers.map((f: any) => ({
+    user_id: f.user_id,
+    actor_id: actorId,
+    message: formattedMessage,
+    action_link: actionLink,
+    entity_id: projectId,
+    type,
+  }));
+
+  await supabaseAdmin.from("notifications").insert(notifications);
+}
 
 export async function toggleFollow(projectId: string) {
   const supabase = await createClient();
@@ -39,6 +89,7 @@ export async function toggleFollow(projectId: string) {
 
       revalidatePath("/viewer/projects");
       revalidatePath("/following");
+      revalidatePath(`/viewer/projects/${projectId}`);
       return { success: true, following: true };
     }
 
@@ -52,6 +103,7 @@ export async function toggleFollow(projectId: string) {
 
     revalidatePath("/viewer/projects");
     revalidatePath("/following");
+    revalidatePath(`/viewer/projects/${projectId}`);
     return { success: true, following: false };
   } catch (error: any) {
     return { error: error.message };
@@ -65,7 +117,7 @@ export async function getFollowStatus(projectId: string) {
     error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError || !user) return { following: false }; // default for guest
+  if (authError || !user) return { following: false }; 
 
   const { data: existing, error } = await supabase
     .from("project_followers")
