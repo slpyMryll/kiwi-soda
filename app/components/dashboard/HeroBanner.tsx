@@ -17,10 +17,17 @@ interface Term {
   cover_url?: string;
 }
 
+import { useState, useEffect } from "react";
+
 export function HeroBanner({ terms, currentTermId }: { terms: Term[], currentTermId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const activeTerm = terms?.find(t => t.id === currentTermId) || terms?.[0];
 
@@ -29,6 +36,10 @@ export function HeroBanner({ terms, currentTermId }: { terms: Term[], currentTer
     params.set("term", termId);
     router.push(`${pathname}?${params.toString()}`);
   };
+
+  if (!isMounted) {
+    return <div className="relative w-full h-48 md:h-64 rounded-b-2xl overflow-hidden mb-8 shadow-sm bg-gray-200 animate-pulse" />;
+  }
 
   return (
     <div className="relative w-full h-48 md:h-64 rounded-b-2xl overflow-hidden mb-8 shadow-sm group">

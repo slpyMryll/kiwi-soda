@@ -5,12 +5,17 @@ import { useSearchParams } from "next/navigation";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
 import { ProjectCard } from "./ProjectCard";
-import { ProjectDetailView } from "../projects/ProjectDetailView";
 import { Project } from "@/types/projects";
 import { getInfiniteProjects, getSingleProjectForFeed } from "@/lib/actions/project-feed";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Inbox } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import dynamic from "next/dynamic";
+
+const ProjectDetailView = dynamic(() => import("../projects/ProjectDetailView").then(mod => mod.ProjectDetailView), {
+  ssr: false,
+  loading: () => <div className="p-8 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-[#1B4332]" /></div>
+});
 
 interface InfiniteProjectFeedProps {
   userRole: "guest" | "viewer";
@@ -66,8 +71,6 @@ export function InfiniteProjectFeed({
     if (inView && hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // 🔥 FIX: Replaced the complex manual cache updating with a clean invalidation.
-  // This forces the feed to seamlessly refetch the exact moment the DB changes!
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase.channel("public-project-feed")
@@ -121,7 +124,8 @@ export function InfiniteProjectFeed({
            <div key={`${project.id}-${index}`} className="animate-in fade-in slide-in-from-top-4 duration-500">
              <ProjectCard 
                userRole={userRole} 
-               project={project} 
+               project={project}
+               isPriority={index < 2}
                onReadMore={userRole === "guest" ? () => setSelectedProject({
                  ...project,
                  comments: project.comments || [],
