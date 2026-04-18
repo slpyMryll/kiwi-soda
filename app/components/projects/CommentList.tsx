@@ -8,10 +8,17 @@ interface CommentListProps {
   initialComments?: any[];
   projectId: string;
   isGuest: boolean;
+  isManager?: boolean; 
   onCountChange?: (count: number) => void; 
 }
 
-export function CommentList({ initialComments = [], projectId, isGuest, onCountChange }: CommentListProps) {
+export function CommentList({ 
+  initialComments = [], 
+  projectId, 
+  isGuest, 
+  isManager = false, 
+  onCountChange 
+}: CommentListProps) {
   const safeInitial = Array.isArray(initialComments) ? initialComments : [];
   const [allComments, setAllComments] = useState<any[]>(safeInitial);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -56,7 +63,7 @@ export function CommentList({ initialComments = [], projectId, isGuest, onCountC
             const safePrev = Array.isArray(prev) ? prev : [];
             return safePrev.map(c => 
               c.id === payload.new.id 
-                ? { ...c, is_hidden: payload.new.is_hidden, content: payload.new.content } 
+                ? { ...c, ...payload.new } 
                 : c
             );
           });
@@ -106,6 +113,7 @@ export function CommentList({ initialComments = [], projectId, isGuest, onCountC
           replies={getReplies(comment.id)} 
           getReplies={getReplies}
           isGuest={isGuest}
+          isManager={isManager}
           projectId={projectId}
           currentUserId={currentUserId}
         />

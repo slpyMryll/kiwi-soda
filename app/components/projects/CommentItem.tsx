@@ -13,10 +13,20 @@ interface CommentItemProps {
   projectId: string;
   depth?: number;
   currentUserId?: string | null;
+  isManager?: boolean; 
   getReplies: (parentId: string) => any[]; 
 }
 
-export function CommentItem({ comment, replies, isGuest, projectId, depth = 0, currentUserId, getReplies }: CommentItemProps) {
+export function CommentItem({ 
+  comment, 
+  replies, 
+  isGuest, 
+  projectId, 
+  depth = 0, 
+  currentUserId, 
+  isManager = false,
+  getReplies 
+}: CommentItemProps) {
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,6 +35,7 @@ export function CommentItem({ comment, replies, isGuest, projectId, depth = 0, c
 
   const isHidden = comment.is_hidden;
   const isAuthor = currentUserId === comment.user_id;
+  const canDelete = isAuthor || isManager;
 
   const handleReply = async () => {
     if (!replyContent.trim() || isSubmitting) return;
@@ -123,20 +134,21 @@ export function CommentItem({ comment, replies, isGuest, projectId, depth = 0, c
               </button>
               
               {isAuthor && (
-                <>
-                  <button 
-                    onClick={() => setIsEditing(true)}
-                    className="text-[11px] sm:text-xs font-semibold text-gray-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors"
-                  >
-                    <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Edit
-                  </button>
-                  <button 
-                    onClick={handleDelete}
-                    className="text-[11px] sm:text-xs font-semibold text-gray-400 hover:text-red-600 flex items-center gap-1.5 transition-colors"
-                  >
-                    <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Delete
-                  </button>
-                </>
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="text-[11px] sm:text-xs font-semibold text-gray-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors"
+                >
+                  <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Edit
+                </button>
+              )}
+
+              {canDelete && (
+                <button 
+                  onClick={handleDelete}
+                  className="text-[11px] sm:text-xs font-semibold text-gray-400 hover:text-red-600 flex items-center gap-1.5 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Delete
+                </button>
               )}
             </div>
           )}
@@ -180,6 +192,7 @@ export function CommentItem({ comment, replies, isGuest, projectId, depth = 0, c
           isGuest={isGuest} 
           projectId={projectId}
           currentUserId={currentUserId}
+          isManager={isManager} 
           depth={depth + 1}
         />
       ))}
