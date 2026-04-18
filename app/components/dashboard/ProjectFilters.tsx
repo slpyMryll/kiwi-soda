@@ -59,8 +59,7 @@ export function ProjectFilters({ termId, followingOnly = false }: ProjectFilters
       }
     });
     
-    const newUrl = `${pathname}?${params.toString()}`;
-    window.history.pushState(null, '', newUrl);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   const prefetchTab = (targetStatus: string) => {
@@ -94,19 +93,23 @@ export function ProjectFilters({ termId, followingOnly = false }: ProjectFilters
     <div className="w-full space-y-6 my-8">
       <div className="flex items-center gap-3 w-full">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
           
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search projects by title or keywords..."
+            aria-label="Search projects by title or keywords"
             className="w-full bg-gray-200/50 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 transition-all"
           />
         </div>
 
         <DropdownMenu modal={false}>
-          <DropdownMenuTrigger className="bg-gray-200/50 hover:bg-gray-200 p-3.5 rounded-xl text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center shrink-0 focus:outline-none">
+          <DropdownMenuTrigger 
+            aria-label="Sort and filter options"
+            className="bg-gray-200/50 hover:bg-gray-200 p-3.5 rounded-xl text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center shrink-0 focus:outline-none"
+          >
             <SlidersHorizontal className="w-5 h-5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 p-2 bg-white rounded-xl shadow-lg border border-gray-200">

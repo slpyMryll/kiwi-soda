@@ -14,7 +14,7 @@ export function useFollow(projectId: string, initialIsFollowing?: boolean) {
   useEffect(() => {
     if (initialIsFollowing !== undefined) {
       setIsFollowing(initialIsFollowing);
-    } else {
+    } else if (isFollowing === null) {
       async function fetchStatus() {
         try {
           const result = await getFollowStatus(projectId);
@@ -30,13 +30,13 @@ export function useFollow(projectId: string, initialIsFollowing?: boolean) {
 
   useEffect(() => {
     const handleSync = (e: CustomEvent) => {
-      if (e.detail.projectId === projectId) {
+      if (e.detail.projectId === projectId && e.detail.isFollowing !== isFollowing) {
         setIsFollowing(e.detail.isFollowing);
       }
     };
     window.addEventListener("sync-follow", handleSync as EventListener);
     return () => window.removeEventListener("sync-follow", handleSync as EventListener);
-  }, [projectId]);
+  }, [projectId, isFollowing]);
 
   const handleFollow = async (isGuest: boolean) => {
     if (isGuest) {
@@ -44,26 +44,20 @@ export function useFollow(projectId: string, initialIsFollowing?: boolean) {
       return;
     }
 
-    if (loading) return;
+    if (loading || isFollowing === null) return;
     setLoading(true);
 
     const prevState = isFollowing;
     const newState = !prevState;
+
     setIsFollowing(newState);
-    
     window.dispatchEvent(new CustomEvent("sync-follow", { detail: { projectId, isFollowing: newState } }));
 
     try {
       const result = await toggleFollow(projectId);
-      if ("following" in result && typeof result.following === "boolean") {
-        setIsFollowing(result.following);
-        window.dispatchEvent(new CustomEvent("sync-follow", { detail: { projectId, isFollowing: result.following } }));
-        
+      if (result.success) {
         queryClient.invalidateQueries({ queryKey: ["projects"] });
-        
-        router.refresh();
-      } else if ("error" in result) {
-        console.error(result.error);
+      } else {
         setIsFollowing(prevState);
         window.dispatchEvent(new CustomEvent("sync-follow", { detail: { projectId, isFollowing: prevState } }));
       }

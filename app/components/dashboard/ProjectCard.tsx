@@ -18,18 +18,38 @@ import { ProgressBar } from "../ui/ProgressBar";
 import { ProjectCardProps } from "@/types/projects";
 import { FollowButton } from "@/app/components/ui/followButton";
 
+import { getSingleProjectForFeed } from "@/lib/actions/project-feed";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+
 export function ProjectCard({
   project,
   userRole = "guest",
   onReadMore,
-}: ProjectCardProps) {
+  isPriority = false,
+}: ProjectCardProps & { isPriority?: boolean }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isCopied, setIsCopied] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const isGuest = userRole === "guest";
   const projectHref = isGuest
     ? "/login"
     : `/${userRole}/projects/${project.id}`;
+
+  const prefetchProject = () => {
+    if (isGuest) return;
+    queryClient.prefetchQuery({
+      queryKey: ["project", project.id],
+      queryFn: () => getSingleProjectForFeed(project.id),
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+  };
 
   const handleAction = (e: React.MouseEvent) => {
     if (isGuest) {
@@ -82,38 +102,44 @@ export function ProjectCard({
     }
   };
 
-  const formattedPostedDate = new Date(project.postedAt).toLocaleDateString(
-    "en-US",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    },
-  );
+  const formattedPostedDate = isMounted 
+    ? new Date(project.postedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "---";
 
-  const formattedDeadline = new Date(project.deadline).toLocaleDateString(
-    "en-US",
-    {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    },
-  );
+  const formattedDeadline = isMounted
+    ? new Date(project.deadline).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "---";
 
   return (
-    <article className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-      {/* ... (Keep your existing Image and Badge code untouched) ... */}
-      <div className="relative h-48 w-full bg-gray-100">
+    <article 
+      onMouseEnter={prefetchProject}
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (!target.closest('button') && !target.closest('a') && !target.closest('.badge-action')) {
+          onReadMore ? onReadMore() : router.push(projectHref);
+        }
+      }}
+      className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer group/card"
+    >
+      <div className="relative h-48 w-full bg-gray-100 overflow-hidden">
         <Image
           src={project.imageUrl || "/project-car-place.jpg"}
           alt={project.title}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover"
-          priority={false}
+          className="object-cover transition-transform duration-500 group-hover/card:scale-105"
+          priority={isPriority}
         />
 
-        <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-20">
+        <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-20 badge-action">
           {project.tags.map((tag) => (
             <Badge
               key={tag}
@@ -134,12 +160,14 @@ export function ProjectCard({
           )}
         </div>
 
-        <FollowButton 
-          projectId={project.id} 
-          isGuest={isGuest} 
-          initialIsFollowing={project.isFollowing}
-          className="absolute top-4 right-4" 
-        />
+        <div onClick={(e) => e.stopPropagation()}>
+          <FollowButton 
+            projectId={project.id} 
+            isGuest={isGuest} 
+            initialIsFollowing={project.isFollowing}
+            className="absolute top-4 right-4" 
+          />
+        </div>
       </div>
 
       <div className="p-6">
@@ -184,9 +212,9 @@ export function ProjectCard({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
           <div className="flex items-center gap-6 text-sm text-gray-600">
             <button
-              aria-label={`View comments for ${project.title}`}
+              aria-label={`View and post comments for ${project.title}`}
               onClick={handleCommentClick}
-              className="flex items-center gap-1.5 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1.5 hover:text-gray-900 transition-colors cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
               <span>
@@ -196,9 +224,9 @@ export function ProjectCard({
             </button>
           
             <button
-              aria-label="Share project"
+              aria-label={`Share link for ${project.title}`}
               onClick={handleShare}
-              className="flex items-center gap-1.5 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1.5 hover:text-gray-900 transition-colors cursor-pointer"
             >
               <Share2 className="w-4 h-4" />
               <span className={isCopied ? "text-[#1B4332] font-bold" : ""}>

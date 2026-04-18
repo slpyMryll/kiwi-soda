@@ -112,12 +112,15 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
               <NotificationBell userId={user.id} />
 
               <DropdownMenu modal={false}>
-                <DropdownMenuTrigger className="flex items-center gap-2 hover:bg-white/10 p-1 md:pr-3 rounded-full transition-all border border-transparent hover:border-white/20 focus:outline-none">
+                <DropdownMenuTrigger 
+                  aria-label={`User menu for ${profile?.full_name || "Account"}`}
+                  className="flex items-center gap-2 hover:bg-white/10 p-1 md:pr-3 rounded-full transition-all border border-transparent hover:border-white/20 focus:outline-none"
+                >
                   {profile?.full_name && <span className="hidden md:block text-sm font-medium text-white/90 pl-2">{profile.full_name}</span>}
 
                   <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden shrink-0 border border-white/10">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                      <img src={profile.avatar_url} alt={`${profile.full_name}'s profile picture`} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white bg-[#1B4332]">
                         {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
@@ -135,7 +138,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                     </div>
                     <div className="w-12 h-12 rounded-full border-2 border-[#2C5243] overflow-hidden shrink-0 ml-4">
                       {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        <img src={profile.avatar_url} alt={`${profile?.full_name || "User"}'s large profile picture`} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white bg-[#1B4332]">
                           {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
@@ -153,7 +156,11 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                     <span className="text-[15px] font-medium">Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200 my-1" />
-                  <DropdownMenuItem onClick={() => logout()} className="py-3 px-3 cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 rounded-lg transition-colors">
+                  <DropdownMenuItem 
+                    aria-label="Log out of your account"
+                    onClick={() => logout()} 
+                    className="py-3 px-3 cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 rounded-lg transition-colors"
+                  >
                     <LogOut className="mr-3 w-5 h-5" strokeWidth={2.5} />
                     <span className="text-[15px] font-medium">Logout</span>
                   </DropdownMenuItem>
