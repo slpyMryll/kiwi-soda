@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,6 +24,7 @@ export function ProjectCard({
   onReadMore,
 }: ProjectCardProps) {
   const router = useRouter();
+  const [isCopied, setIsCopied] = useState(false);
 
   const isGuest = userRole === "guest";
   const projectHref = isGuest
@@ -44,6 +46,7 @@ export function ProjectCard({
       onReadMore();
     }
   };
+
   const handleCommentClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isGuest) {
@@ -52,6 +55,33 @@ export function ProjectCard({
       router.push(`${projectHref}?tab=Feedback#feedback`);
     }
   };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ontrack-web-gamma.vercel.app';
+    const shareUrl = `${baseUrl}/viewer/projects/${project.id}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: project.title,
+          text: `Check out "${project.title}" on OnTrack!`,
+          url: shareUrl,
+        });
+      } catch (error) {
+        console.log("Share dialog closed or failed:", error);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      } catch (err) {
+        console.error("Failed to copy link:", err);
+      }
+    }
+  };
+
   const formattedPostedDate = new Date(project.postedAt).toLocaleDateString(
     "en-US",
     {
@@ -72,6 +102,7 @@ export function ProjectCard({
 
   return (
     <article className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+      {/* ... (Keep your existing Image and Badge code untouched) ... */}
       <div className="relative h-48 w-full bg-gray-100">
         <Image
           src={project.imageUrl || "/project-car-place.jpg"}
@@ -158,12 +189,16 @@ export function ProjectCard({
                 <span className="hidden min-[375px]:inline">Comments</span>
               </span>
             </button>
+          
             <button
-              onClick={handleAction}
+              aria-label="Share project"
+              onClick={handleShare}
               className="flex items-center gap-1.5 hover:text-gray-900 transition-colors"
             >
               <Share2 className="w-4 h-4" />
-              <span>Share</span>
+              <span className={isCopied ? "text-[#1B4332] font-bold" : ""}>
+                {isCopied ? "Copied!" : "Share"}
+              </span>
             </button>
           </div>
 
