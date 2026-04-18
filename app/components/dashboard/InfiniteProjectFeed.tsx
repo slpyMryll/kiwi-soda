@@ -166,7 +166,7 @@ export function InfiniteProjectFeed({
 
   if (projects.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center text-center shadow-sm mt-6">
+      <div className="bg-white border border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center text-center shadow-sm mt-6 mb-6">
         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
           <Inbox className="w-8 h-8 text-gray-400" />
         </div>

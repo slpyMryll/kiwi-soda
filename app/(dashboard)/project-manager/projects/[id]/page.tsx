@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 import ProjectDetailClient from "./ProjectDetailClient";
 import { getProjectTeamWithOfficerRoles } from "@/lib/actions/project";
 
+export const metadata = {
+  title: "PM Projects - OnTrack",
+  description: "View and manage your projects in one place. Track progress, deadlines, and team collaboration with ease.",
+};
+
+
 export default async function ManageProjectPage({
   params,
   searchParams,

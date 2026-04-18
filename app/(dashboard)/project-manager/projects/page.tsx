@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import PmProjectsClient from "./PmProjectsClient";
-import { getProjectsByManager, getActiveTerm } from "@/lib/actions/project"; //
+import { getProjectsByManager, getActiveTerm } from "@/lib/actions/project";
+
+export const metadata = {
+  title: "PM Projects - OnTrack",
+};
 
 export default async function PmProjectsPage({
   searchParams,
