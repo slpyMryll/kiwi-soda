@@ -33,9 +33,7 @@ export async function addProjectMember(projectId: string, formData: FormData) {
 
 export async function assignTask(projectId: string, formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized" };
 
   const title = formData.get("title") as string;
@@ -55,7 +53,7 @@ export async function assignTask(projectId: string, formData: FormData) {
     return { error: "This exact task is already assigned to this officer." };
   }
 
-  const { error } = await supabase.from("tasks").insert({
+  const { error: taskError } = await supabase.from("tasks").insert({
     project_id: projectId,
     assigned_to: assignedTo,
     title,
@@ -64,7 +62,39 @@ export async function assignTask(projectId: string, formData: FormData) {
     status: "Pending",
   });
 
-  if (error) return { error: error.message };
+  if (taskError) return { error: taskError.message };
+
+  if (cost > 0) {
+    const { data: project, error: fetchError } = await supabase
+      .from("projects")
+      .select("spent_budget")
+      .eq("id", projectId)
+      .single();
+
+    if (fetchError) return { error: "Task assigned, but failed to read budget." };
+
+    const currentSpent = Number(project?.spent_budget || 0);
+    const newSpent = currentSpent + cost;
+
+    const { error: updateError } = await supabase
+      .from("projects")
+      .update({ spent_budget: newSpent })
+      .eq("id", projectId);
+
+    if (updateError) return { error: "Task assigned, but failed to deduct budget." };
+    const { error: logError } = await supabase.from("budget_logs").insert({
+      project_id: projectId,
+      old_amount: currentSpent,
+      new_amount: newSpent,
+      budget_change_reason: `Task Allocation: ${title}`,
+      changed_by: user.id,
+      is_initial: false,
+      status: 'Approved',
+    });
+
+    if (logError) return { error: "Task assigned and budget deducted, but failed to create audit log." };
+  }
+
   return { success: true };
 }
 

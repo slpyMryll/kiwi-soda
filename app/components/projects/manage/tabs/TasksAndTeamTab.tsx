@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, User, Loader2, Calendar, Edit2, Trash2, Lock, AlertTriangle } from "lucide-react";
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { addProjectMember, assignTask } from "@/lib/actions/project-details";
+import { USSC_BUDGET_CATEGORIES } from "@/lib/constants/budget-categories";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,9 @@ export function TasksAndTeamTab({
   const searchParams = useSearchParams();
   const highlightTaskId = searchParams.get("taskId");
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   
@@ -40,11 +44,36 @@ export function TasksAndTeamTab({
 
   const [localMembers, setLocalMembers] = useState(members);
   const [localTasks, setLocalTasks] = useState(tasks);
+  
+  const [remainingBudget, setRemainingBudget] = useState<number | null>(null);
+  const fetchFreshTabState = useCallback(async () => {
+    const supabase = createClient();
+    const { data: projectData } = await supabase.from('projects').select('total_budget, spent_budget').eq('id', projectId).single();
+    if (projectData) {
+      setRemainingBudget(Number(projectData.total_budget || 0) - Number(projectData.spent_budget || 0));
+    }
+    const { data: latestTasks } = await supabase.from('tasks').select('*').eq('project_id', projectId);
+    if (latestTasks) {
+      const formattedTasks = latestTasks.map(t => {
+        const pm = availablePMs.find((p: any) => p.id === t.assigned_to);
+        return {
+           id: t.id, 
+           title: t.title, 
+           assignee: pm ? pm.full_name : "Team Member",
+           dueDate: t.due_date ? new Date(t.due_date).toLocaleDateString() : "N/A", 
+           rawDueDate: t.due_date,
+           status: t.status, 
+           cost: t.cost, 
+           assigned_to: t.assigned_to,
+        };
+      });
+      setLocalTasks(formattedTasks);
+    }
+  }, [projectId, availablePMs]);
 
   useEffect(() => {
-    setLocalMembers(members);
-    setLocalTasks(tasks);
-  }, [members, tasks]);
+    if (isMounted) fetchFreshTabState();
+  }, [isMounted, fetchFreshTabState]);
 
   useEffect(() => {
     if (highlightTaskId) {
@@ -179,10 +208,22 @@ export function TasksAndTeamTab({
     e.preventDefault();
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
+  
+    const cost = Number(formData.get("cost") || 0);
+    if (remainingBudget !== null && cost > remainingBudget) {
+      alert(`Error: Task cost (₱${cost.toLocaleString()}) exceeds the remaining project balance (₱${remainingBudget.toLocaleString()}).`);
+      setIsLoading(false);
+      return;
+    }
+
     const result = await assignTask(projectId, formData);
     setIsLoading(false);
-    if (result.error) alert(`Error: ${result.error}`);
-    else setIsTaskModalOpen(false);
+    if (result.error) {
+      alert(`Error: ${result.error}`);
+    } else {
+      fetchFreshTabState();
+      setIsTaskModalOpen(false);
+    }
   };
 
   const handleEditTaskSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -190,12 +231,26 @@ export function TasksAndTeamTab({
     if (!editingTask) return;
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
+    const cost = Number(formData.get("cost") || 0);
+    const oldCost = editingTask.cost || 0;
+    const costDifference = cost - oldCost;
+    
+    if (remainingBudget !== null && costDifference > remainingBudget) {
+      alert(`Error: Increasing the task cost by ₱${costDifference.toLocaleString()} exceeds the remaining project balance (₱${remainingBudget.toLocaleString()}).`);
+      setIsLoading(false);
+      return;
+    }
+
     const supabase = createClient();
-    const updates = { title: formData.get("title"), assigned_to: formData.get("assignedTo"), due_date: formData.get("dueDate"), cost: formData.get("cost") ? Number(formData.get("cost")) : 0 };
+    const updates = { title: formData.get("title"), assigned_to: formData.get("assignedTo"), due_date: formData.get("dueDate"), cost };
     const { error } = await supabase.from('tasks').update(updates).eq('id', editingTask.id);
     setIsLoading(false);
     if (error) alert(`Error updating task: ${error.message}`);
-    else { setIsEditModalOpen(false); setEditingTask(null); }
+    else { 
+      fetchFreshTabState();
+      setIsEditModalOpen(false); 
+      setEditingTask(null); 
+    }
   };
 
   const openEditModal = (task: any) => { setEditingTask(task); setIsEditModalOpen(true); };
@@ -206,6 +261,8 @@ export function TasksAndTeamTab({
     }
   };
 
+  if (!isMounted) return <div className="animate-pulse bg-white p-5 h-[600px] rounded-2xl w-full" />;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col h-[450px] sm:h-[500px] lg:h-[550px]">
@@ -213,7 +270,7 @@ export function TasksAndTeamTab({
           <h2 className="text-lg font-bold text-gray-900">Task management</h2>
 
           {isProjectLead && (
-            <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
+            <Dialog open={isTaskModalOpen} onOpenChange={(open) => { setIsTaskModalOpen(open); if(open) fetchFreshTabState(); }}>
               <DialogTrigger asChild>
                 <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2.5 sm:py-2 rounded-lg text-sm font-semibold transition-colors">
                   <Plus className="w-4 h-4" /> Assign Task
@@ -240,9 +297,20 @@ export function TasksAndTeamTab({
                     </div>
                     <div>
                       <label className="text-sm font-bold text-gray-700 block mb-1">Budget Cost (Optional)</label>
-                      <input type="number" name="cost" placeholder="0.00" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]" />
+                      <input type="number" name="cost" step="0.01" min="0" max={remainingBudget !== null ? remainingBudget : ""} placeholder="0.00" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]" />
                     </div>
                   </div>
+                  
+                  <div>
+                    <label className="text-sm font-bold text-gray-700 block mb-1">Expense Category <span className="text-gray-400 font-normal">(If cost applied)</span></label>
+                    <select name="category" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]">
+                      <option value="Task Allocation">Task Allocation (Default)</option>
+                      {USSC_BUDGET_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   <button type="submit" disabled={isLoading} className="w-full bg-[#1B4332] hover:bg-green-900 text-white font-bold py-3 rounded-xl flex justify-center disabled:opacity-70 transition-colors">
                     {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Task"}
                   </button>
@@ -251,7 +319,7 @@ export function TasksAndTeamTab({
             </Dialog>
           )}
 
-          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <Dialog open={isEditModalOpen} onOpenChange={(open) => { setIsEditModalOpen(open); if(open) fetchFreshTabState(); }}>
             <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Edit Task Details</DialogTitle></DialogHeader>
               {editingTask && (
@@ -274,7 +342,7 @@ export function TasksAndTeamTab({
                     </div>
                     <div>
                       <label className="text-sm font-bold text-gray-700 block mb-1">Budget Cost (Optional)</label>
-                      <input type="number" name="cost" defaultValue={editingTask.cost} placeholder="0.00" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]" />
+                      <input type="number" name="cost" step="0.01" min="0" max={remainingBudget !== null ? remainingBudget + (editingTask.cost || 0) : ""} defaultValue={editingTask.cost} placeholder="0.00" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]" />
                     </div>
                   </div>
                   <button type="submit" disabled={isLoading} className="w-full bg-[#1B4332] hover:bg-green-900 text-white font-bold py-3 rounded-xl flex justify-center disabled:opacity-70 transition-colors">

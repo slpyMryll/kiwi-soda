@@ -4,10 +4,13 @@ export const USSC_BUDGET_CATEGORIES = [
   "Honoraria & Tokens",
   "Prizes & Awards",
   "Stage & Decorations",
-  "Marketing & Tarpaulins",
+  "Printing & Promotional Materials",
   "Transportation & Logistics",
+  "Apparel & Merchandise",
+  "Software & Subscriptions",
+  "Permits & Processing Fees",
   "General Office Supplies",
-  "Miscellaneous / Emergency"
+  "Miscellaneous / Emergency",
 ] as const;
 
 export type UsscBudgetCategory = typeof USSC_BUDGET_CATEGORIES[number];
