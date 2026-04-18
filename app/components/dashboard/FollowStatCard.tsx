@@ -22,10 +22,10 @@ export function FollowedStats({
       bg: "bg-blue-100",
     },
     {
-      label: "Active",
+      label: "Ongoing",
       value: ongoing.toString(),
       icon: Activity,
-      color: "Projects",
+      color: "text-green-500",
       bg: "bg-green-100",
     },
     {
