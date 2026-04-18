@@ -55,13 +55,16 @@ export function PmTasksClient({ initialTasks, currentUserId }: PmTasksClientProp
     if (!currentUserId) return;
 
     const channel = supabase.channel('my-tasks-realtime')
-      // Filtered INSERT/UPDATE for specific user
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks', filter: `assigned_to=eq.${currentUserId}` }, async (payload) => {
         const { data: fullTask } = await supabase.from('tasks').select('id, title, due_date, status, projects (id, title, manager_id)').eq('id', payload.new.id).single();
         if (fullTask) {
           const projectData = Array.isArray(fullTask.projects) ? fullTask.projects[0] : fullTask.projects;
           const formatted: Task = { id: fullTask.id, title: fullTask.title, dueDate: fullTask.due_date || "", status: fullTask.status, projectId: projectData?.id || "", projectName: projectData?.title || "Unknown Project", isProjectLead: projectData?.manager_id === currentUserId };
-          setTasks(prev => [...prev, formatted]);
+
+          setTasks(prev => {
+            if (prev.some(t => t.id === formatted.id)) return prev;
+            return [...prev, formatted];
+          });
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks', filter: `assigned_to=eq.${currentUserId}` }, async (payload) => {
@@ -99,7 +102,7 @@ export function PmTasksClient({ initialTasks, currentUserId }: PmTasksClientProp
       const nextStatus = task.isProjectLead ? "Completed" : "Awaiting Review";
       updateTaskStatus(task.id, nextStatus);
     } else if (task.status === "Awaiting Review") {
-      updateTaskStatus(task.id, "In Progress");
+      updateTaskStatus(task.id, "In Progress"); 
     }
   };
 
