@@ -35,6 +35,11 @@ export function PmTasksClient({ initialTasks, currentUserId }: PmTasksClientProp
   const [searchQuery, setSearchQuery] = useState("");
   const supabase = createClient();
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   useEffect(() => {
     if (highlightTaskId) {
       setTimeout(() => {
@@ -131,6 +136,9 @@ export function PmTasksClient({ initialTasks, currentUserId }: PmTasksClientProp
     }
   };
 
+  if(!isMounted) {
+    return <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen w-full animate-pulse" />;
+  }
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-6 w-full">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

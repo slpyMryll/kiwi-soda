@@ -8,6 +8,26 @@ export const metadata = {
   description: "View and manage your projects in one place. Track progress, deadlines, and team collaboration with ease.",
 };
 
+const formatDate = (dateStr: string | null) => {
+  if (!dateStr) return "N/A";
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      timeZone: 'Asia/Manila'
+    }).format(new Date(dateStr));
+  } catch (e) { return "Invalid Date"; }
+};
+
+const formatDateTime = (dateStr: string | null) => {
+  if (!dateStr) return "Unknown Date";
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+      timeZone: 'Asia/Manila'
+    }).format(new Date(dateStr));
+  } catch (e) { return "Invalid Date"; }
+};
 
 export default async function ManageProjectPage({
   params,
@@ -113,7 +133,7 @@ export default async function ManageProjectPage({
       title: t?.title || "Untitled Task",
       assignee: t?.profiles?.full_name || "Unassigned",
       assigned_to: t?.assigned_to || null,
-      dueDate: t?.due_date ? new Date(t.due_date).toLocaleDateString() : "N/A",
+      dueDate: formatDate(t?.due_date),
       rawDueDate: t?.due_date || "", 
       status: t?.status || "Pending",
       cost: t?.cost || 0,
@@ -122,7 +142,7 @@ export default async function ManageProjectPage({
     milestones: safeMilestones.map((m: any, index: number) => ({
       id: m?.id || `milestone-${index}`,
       title: m?.title || "Untitled Milestone",
-      deadline: m?.end_date ? new Date(m.end_date).toLocaleDateString() : "No deadline",
+      deadline: formatDate(m?.end_date),
       status: m?.status || "Pending",
       progress: m?.progress || 0,
     })),
@@ -131,7 +151,7 @@ export default async function ManageProjectPage({
       const parts = (log?.budget_change_reason || "").split(":");
       return {
         id: log?.id || `log-${index}`,
-        date: log?.changed_at ? new Date(log.changed_at).toLocaleString() : "Unknown Date",
+        date: formatDateTime(log?.changed_at),
         amountChange: (log?.new_amount || 0) - (log?.old_amount || 0),
         category: parts.length > 1 ? parts[0] : "General",
         description: parts.length > 1 ? parts[1].trim() : log?.budget_change_reason || "No description",
@@ -150,7 +170,7 @@ export default async function ManageProjectPage({
       size: d?.file_size || 0,
       type: d?.file_type || "unknown",
       uploadedBy: d?.profiles?.full_name || "Unknown",
-      date: d?.created_at ? new Date(d.created_at).toLocaleDateString() : "Unknown Date",
+      date: formatDate(d?.created_at),
     })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   };
 
