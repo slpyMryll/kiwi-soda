@@ -7,41 +7,23 @@ import { CommentList } from "./CommentList";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+import { useComments } from "@/lib/hooks/useComments";
+
 interface ProjectFeedbackProps {
   comments: any[];
   projectId: string;
   isGuest: boolean;
 }
 
-export function ProjectFeedback({ comments, projectId, isGuest }: ProjectFeedbackProps) {
+export function ProjectFeedback({ comments: initialComments, projectId, isGuest }: ProjectFeedbackProps) {
   const router = useRouter();
   const [content, setContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [activeComments, setActiveComments] = useState<any[]>(Array.isArray(comments) ? comments : []);
-  const [realtimeCount, setRealtimeCount] = useState(activeComments.length);
-
-  useEffect(() => {
-    if (isGuest) {
-      const fetchGuestComments = async () => {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("comments")
-          .select("*, profiles(full_name, avatar_url)")
-          .eq("project_id", projectId);
-
-        if (data && !error) {
-          setActiveComments(data);
-          setRealtimeCount(data.length);
-        }
-      };
-      fetchGuestComments();
-    } else {
-      const safeComments = Array.isArray(comments) ? comments : [];
-      setActiveComments(safeComments);
-      setRealtimeCount(safeComments.length);
-    }
-  }, [isGuest, projectId, comments]);
+  const { 
+    comments, 
+    addComment, 
+    isSubmitting 
+  } = useComments(projectId, initialComments);
 
   useEffect(() => {
     if (window.location.hash === '#feedback') {
@@ -56,18 +38,18 @@ export function ProjectFeedback({ comments, projectId, isGuest }: ProjectFeedbac
 
   const handleSubmit = async () => {
     if (!content.trim() || isSubmitting) return;
-    setIsSubmitting(true);
-    
-    await postComment(projectId, content);
-    
-    setContent("");
-    setIsSubmitting(false);
+    try {
+      await addComment({ content });
+      setContent("");
+    } catch (error) {
+      console.error("Failed to post comment:", error);
+    }
   };
 
   return (
     <section id="feedback" className="scroll-mt-24">
       <h2 className="text-lg font-bold text-[#1B4332] mb-4">
-        Student Feedback ({realtimeCount})
+        Student Feedback ({comments.length})
       </h2>
       
       <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100">
@@ -117,10 +99,9 @@ export function ProjectFeedback({ comments, projectId, isGuest }: ProjectFeedbac
       </div>
 
       <CommentList 
-        initialComments={activeComments} 
+        allComments={comments} 
         projectId={projectId} 
         isGuest={isGuest} 
-        onCountChange={setRealtimeCount} 
       />
     </section>
   );

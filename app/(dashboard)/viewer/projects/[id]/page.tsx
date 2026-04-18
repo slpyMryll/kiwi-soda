@@ -4,10 +4,45 @@ import { notFound } from "next/navigation";
 import { Project } from "@/types/projects";
 import { getProjectTeamWithOfficerRoles } from "@/lib/actions/project";
 
-export const metadata = {
-  title: "Project Details - OnTrack",
-  description: "View detailed information about the project, including progress, milestones, budget updates, and team members.",
-};
+import { Metadata, ResolvingMetadata } from "next";
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> },
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  
+  const { data: project } = await supabase
+    .from("projects")
+    .select("title, description, image_url")
+    .eq("id", id)
+    .single();
+
+  if (!project) {
+    return {
+      title: "Project Not Found",
+    };
+  }
+
+  const previousImages = (await parent).openGraph?.images || [];
+
+  return {
+    title: project.title,
+    description: project.description?.substring(0, 160) || "View project details on OnTrack.",
+    openGraph: {
+      title: project.title,
+      description: project.description?.substring(0, 160),
+      images: [project.image_url || "/project-card-place.webp", ...previousImages],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: project.title,
+      description: project.description?.substring(0, 160),
+      images: [project.image_url || "/project-card-place.webp"],
+    },
+  };
+}
 
 export default async function ViewerProjectDetailPage({
   params,

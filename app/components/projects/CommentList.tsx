@@ -5,88 +5,28 @@ import { createClient } from "@/lib/supabase/client";
 import { CommentItem } from "./CommentItem";
 
 interface CommentListProps {
-  initialComments?: any[];
+  allComments: any[];
   projectId: string;
   isGuest: boolean;
   isManager?: boolean; 
-  onCountChange?: (count: number) => void; 
 }
 
 export function CommentList({ 
-  initialComments = [], 
+  allComments = [], 
   projectId, 
   isGuest, 
   isManager = false, 
-  onCountChange 
 }: CommentListProps) {
-  const safeInitial = Array.isArray(initialComments) ? initialComments : [];
-  const [allComments, setAllComments] = useState<any[]>(safeInitial);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    setAllComments(Array.isArray(initialComments) ? initialComments : []);
-  }, [initialComments]);
-
-  useEffect(() => {
     const supabase = createClient();
-    
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) setCurrentUserId(data.user.id);
     });
-    
-    const channel = supabase
-      .channel(`realtime-comments-${projectId}`)
-      .on('postgres_changes', { 
-        event: '*',
-        schema: 'public', 
-        table: 'comments', 
-        filter: `project_id=eq.${projectId}` 
-      }, async (payload) => {
-        
-        if (payload.eventType === 'INSERT') {
-          const { data: newWithProfile } = await supabase
-            .from('comments')
-            .select('*, profiles(full_name, avatar_url)')
-            .eq('id', payload.new.id)
-            .single();
-
-          if (newWithProfile) {
-            setAllComments((prev) => {
-              const safePrev = Array.isArray(prev) ? prev : [];
-              if (safePrev.some(c => c.id === newWithProfile.id)) return safePrev;
-              return [newWithProfile, ...safePrev];
-            });
-          }
-        } 
-        else if (payload.eventType === 'UPDATE') {
-          setAllComments((prev) => {
-            const safePrev = Array.isArray(prev) ? prev : [];
-            return safePrev.map(c => 
-              c.id === payload.new.id 
-                ? { ...c, ...payload.new } 
-                : c
-            );
-          });
-        }
-        else if (payload.eventType === 'DELETE') {
-          setAllComments((prev) => {
-            const safePrev = Array.isArray(prev) ? prev : [];
-            return safePrev.filter(c => c.id !== payload.old.id);
-          });
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [projectId]);
+  }, []);
 
   const safeComments = Array.isArray(allComments) ? allComments : [];
-
-  useEffect(() => {
-    if (onCountChange) {
-      onCountChange(safeComments.length);
-    }
-  }, [safeComments.length, onCountChange]);
 
   const topLevel = safeComments
     .filter((c: any) => !c.parent_id)
