@@ -15,7 +15,7 @@ export function FeedbackTab({ projectId, initialComments }: FeedbackTabProps) {
   );
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500">
+    <div id="feedback" className="flex flex-col gap-6 animate-in fade-in duration-500 scroll-mt-24">
       <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
         <div className="w-full sm:w-auto">
           <h2 className="text-xl font-bold text-[#153B44]">Student Feedback</h2>

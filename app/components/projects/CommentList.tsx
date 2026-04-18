@@ -14,6 +14,7 @@ interface CommentListProps {
 export function CommentList({ initialComments = [], projectId, isGuest, onCountChange }: CommentListProps) {
   const safeInitial = Array.isArray(initialComments) ? initialComments : [];
   const [allComments, setAllComments] = useState<any[]>(safeInitial);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     setAllComments(Array.isArray(initialComments) ? initialComments : []);
@@ -21,6 +22,10 @@ export function CommentList({ initialComments = [], projectId, isGuest, onCountC
 
   useEffect(() => {
     const supabase = createClient();
+    
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
     
     const channel = supabase
       .channel(`realtime-comments-${projectId}`)
@@ -46,7 +51,6 @@ export function CommentList({ initialComments = [], projectId, isGuest, onCountC
             });
           }
         } 
-        
         else if (payload.eventType === 'UPDATE') {
           setAllComments((prev) => {
             const safePrev = Array.isArray(prev) ? prev : [];
@@ -55,6 +59,12 @@ export function CommentList({ initialComments = [], projectId, isGuest, onCountC
                 ? { ...c, is_hidden: payload.new.is_hidden, content: payload.new.content } 
                 : c
             );
+          });
+        }
+        else if (payload.eventType === 'DELETE') {
+          setAllComments((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return safePrev.filter(c => c.id !== payload.old.id);
           });
         }
       })
@@ -97,6 +107,7 @@ export function CommentList({ initialComments = [], projectId, isGuest, onCountC
           getReplies={getReplies}
           isGuest={isGuest}
           projectId={projectId}
+          currentUserId={currentUserId}
         />
       ))}
     </div>

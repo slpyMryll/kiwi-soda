@@ -206,6 +206,36 @@ export async function postComment(
   return { success: true };
 }
 
+export async function editComment(commentId: string, newContnent: string) {
+  const supabase = await createClient();
+  const { data: {user} } = await supabase.auth.getUser();
+  if(!user) return {error: "Authentication required"};
+
+  const { error } = await supabase
+    .from("comments")
+    .update({ content: newContnent, updated_at: new Date().toISOString() })
+    .eq("id", commentId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function deleteComment(commentId: string) {
+  const supabase = await createClient();
+  const { data: {user} } = await supabase.auth.getUser();
+
+  if(!user) return {error: "Authentication required"};
+  const { error } = await supabase
+    .from("comments")
+    .delete()
+    .eq("id", commentId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
 export async function getProjectTeamWithOfficerRoles(projectId: string, termId: string | null) {
   const supabase = await createClient();
   
