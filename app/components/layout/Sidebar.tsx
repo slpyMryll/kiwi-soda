@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { NAV_CONFIG } from "@/types/navigation";
@@ -26,6 +27,9 @@ const getShortName = (name?: string) => {
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
 
   const navItems = NAV_CONFIG[role] || NAV_CONFIG.viewer;
 
@@ -44,9 +48,10 @@ export function Sidebar({ role }: SidebarProps) {
 
           const Icon = item.icon;
           const isRootPath = item.href === `/${role}`;
-          const isActive = isRootPath
+          
+          const isActive = isMounted && (isRootPath
             ? pathname === item.href
-            : pathname.startsWith(item.href || "");
+            : pathname.startsWith(item.href || ""));
 
           return (
             <Link
