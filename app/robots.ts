@@ -4,11 +4,17 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
+      allow: [
+        "/",
+        "/viewer/projects/*"
+      ],
       disallow: [
         "/admin/",
         "/project-manager/",
-        "/viewer/"
+        "/viewer/following",
+        "/viewer/transparency",
+        "/onboarding",
+        "/auth/"
       ],
     },
     sitemap: "https://ontrack-web-gamma.vercel.app/sitemap.xml", 
