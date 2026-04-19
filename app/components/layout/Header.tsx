@@ -147,14 +147,23 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-gray-200 my-1" />
-                  <DropdownMenuItem className="py-3 px-3 cursor-pointer text-gray-700 focus:bg-gray-50 rounded-lg transition-colors">
-                    <UserIcon className="mr-3 w-5 h-5 text-gray-400" strokeWidth={2.5} />
-                    <span className="text-[15px] font-medium">View Profile</span>
+                  
+                  {role !== "admin" && (
+                    <DropdownMenuItem asChild className="py-3 px-3 cursor-pointer text-gray-700 focus:bg-gray-50 rounded-lg transition-colors">
+                      <Link href={`/${role}/profile`}>
+                        <UserIcon className="mr-3 w-5 h-5 text-gray-400" strokeWidth={2.5} />
+                        <span className="text-[15px] font-medium">View Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuItem asChild className="py-3 px-3 cursor-pointer text-gray-700 focus:bg-gray-50 rounded-lg transition-colors">
+                    <Link href={`/${role}/settings`}>
+                      <Settings className="mr-3 w-5 h-5 text-gray-400" strokeWidth={2.5} />
+                      <span className="text-[15px] font-medium">Settings</span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="py-3 px-3 cursor-pointer text-gray-700 focus:bg-gray-50 rounded-lg transition-colors">
-                    <Settings className="mr-3 w-5 h-5 text-gray-400" strokeWidth={2.5} />
-                    <span className="text-[15px] font-medium">Settings</span>
-                  </DropdownMenuItem>
+                  
                   <DropdownMenuSeparator className="bg-gray-200 my-1" />
                   <DropdownMenuItem 
                     aria-label="Log out of your account"
