@@ -1,85 +1,53 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { ChevronDown, Menu, User as UserIcon, Settings, LogOut, X } from 'lucide-react';
-import { logout } from '@/lib/actions/auth';
-import { Button } from '@/components/ui/button';
-import { ContentRail } from '../landing/ContentRail';
-import { NAV_CONFIG } from '@/types/navigation';
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ChevronDown, Menu, User as UserIcon, Settings, LogOut, X } from "lucide-react";
+import { logout } from "@/lib/actions/auth";
+import { Button } from "@/components/ui/button";
+import { ContentRail } from "../landing/ContentRail";
+import { NAV_CONFIG } from "@/types/navigation";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { NotificationBell } from './NotificationBell';
+import { NotificationBell } from "./NotificationBell";
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-  SheetClose,
+  Sheet, SheetContent, SheetTitle, SheetTrigger, SheetClose,
 } from "@/components/ui/sheet";
 
 interface HeaderProps {
   user?: any;
-  role?: "viewer" | "project-manager" | "admin"; 
-  profile?: {
-    full_name?: string;
-    avatar_url?: string;
-  } | null;
+  role?: "viewer" | "project-manager" | "admin";
+  profile?: { full_name?: string; avatar_url?: string; } | null;
 }
 
 export function Header({ user, profile, role = "viewer" }: HeaderProps) {
   const pathname = usePathname();
   const navItems = NAV_CONFIG[role] || NAV_CONFIG.viewer;
-  
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  if (!isMounted) {
-    return (
-      <header className="w-full bg-surface-brand text-white h-18 sticky top-0 z-50 border-b border-white/10 shadow-md">
-        <div className="h-full mx-auto px-4 lg:px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-             <div className="w-6 h-6 lg:hidden" /> 
-             <div className="flex items-center gap-2 group">
-              <div className="bg-white rounded-full p-0.5 shrink-0 hidden sm:block">
-                <img src="/logov3.png" alt="OnTrack Logo" className="w-8 h-8 rounded-full" />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-white">OnTrack</span>
-            </div>
-          </div>
-        </div>
-      </header>
-    );
-  }
-
   return (
     <header className="w-full bg-surface-brand text-white h-18 sticky top-0 z-50 border-b border-white/10 shadow-md">
       <div className="h-full mx-auto px-4 lg:px-6 flex items-center justify-between">
-        
         <div className="flex items-center gap-3">
-  
           <Sheet>
             <SheetTrigger asChild>
-              <button className="lg:hidden p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors">
+              <button aria-label="Open navigation menu" className="hidden md:flex lg:hidden p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors">
                 <Menu className="w-6 h-6 text-white" />
               </button>
             </SheetTrigger>
-            
+
             <SheetContent side="left" className="w-75 sm:w-87.5 bg-white p-0 overflow-y-auto border-r-0 [&>button]:hidden flex flex-col">
               <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
-              
+
               <div className="p-6 bg-surface-brand text-white flex items-center justify-between border-b border-white/10 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="bg-white rounded-full p-0.5 shrink-0">
@@ -87,11 +55,9 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                   </div>
                   <span className="text-xl font-bold tracking-tight">OnTrack</span>
                 </div>
-
                 <SheetClose asChild>
-                  <button className="p-1 rounded-md text-white opacity-80 hover:opacity-100 hover:bg-white/10 transition-all">
+                  <button aria-label="Close navigation menu" className="p-1 rounded-md text-white opacity-80 hover:opacity-100 hover:bg-white/10 transition-all">
                     <X className="w-6 h-6" />
-                    <span className="sr-only">Close</span>
                   </button>
                 </SheetClose>
               </div>
@@ -100,20 +66,15 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                 <nav className="flex-1 py-6 px-4 space-y-1.5 bg-bg-main h-full">
                   {navItems.map((item, index) => {
                     if (item.divider) return <div key={`divider-${index}`} className="h-px bg-gray-200/80 my-4 ml-4 mr-4" />;
-                    
+
                     const Icon = item.icon;
-                    
-                    const isRootPath = item.href === `/${role}`;
-                    const isActive = isRootPath 
-                      ? pathname === item.href 
-                      : pathname.startsWith(item.href || "");
+                    const isActive = isMounted && (item.href === `/${role}` ? pathname === item.href : pathname.startsWith(item.href || ""));
 
                     return (
                       <SheetClose asChild key={item.name}>
                         <Link
                           href={item.href!}
-                          className={cn(
-                            "flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm",
+                          className={cn("flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm",
                             isActive ? "bg-linear-to-r from-[#e1f0c2] to-transparent text-[#1B4332]" : "text-gray-500 hover:bg-white hover:text-gray-900"
                           )}
                         >
@@ -131,16 +92,12 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                       <Link href="/login">Sign In / Login</Link>
                     </Button>
                   </div>
-                  <ContentRail 
-                    isMobile={true} 
-                    trendingTopics={["#Budget Transparency", "#Student Projects", "#SSC"]} 
-                  />
+                  <ContentRail isMobile={true} trendingTopics={["#Budget Transparency", "#Student Projects", "#SSC"]} />
                 </div>
               )}
-
             </SheetContent>
           </Sheet>
-          
+
           <Link href="/" className="flex items-center gap-2 group">
             <div className="bg-white rounded-full p-0.5 shrink-0 transition-transform group-hover:scale-105 hidden sm:block">
               <img src="/logov3.png" alt="OnTrack Logo" className="w-8 h-8 rounded-full" />
@@ -155,19 +112,18 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
               <NotificationBell userId={user.id} />
 
               <DropdownMenu modal={false}>
-                <DropdownMenuTrigger className="flex items-center gap-2 hover:bg-white/10 p-1 md:pr-3 rounded-full transition-all border border-transparent hover:border-white/20 focus:outline-none">
-                  {profile?.full_name && (
-                    <span className="hidden md:block text-sm font-medium text-white/90 pl-2">
-                      {profile.full_name}
-                    </span>
-                  )}
-                  
+                <DropdownMenuTrigger 
+                  aria-label={`User menu for ${profile?.full_name || "Account"}`}
+                  className="flex items-center gap-2 hover:bg-white/10 p-1 md:pr-3 rounded-full transition-all border border-transparent hover:border-white/20 focus:outline-none"
+                >
+                  {profile?.full_name && <span className="hidden md:block text-sm font-medium text-white/90 pl-2">{profile.full_name}</span>}
+
                   <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden shrink-0 border border-white/10">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                      <img src={profile.avatar_url} alt={`${profile.full_name}'s profile picture`} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white bg-[#1B4332]">
-                        {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
+                        {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
                       </div>
                     )}
                   </div>
@@ -177,40 +133,41 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                 <DropdownMenuContent align="end" className="w-72 p-2 bg-white rounded-xl shadow-lg border border-gray-200 mt-2">
                   <DropdownMenuLabel className="flex items-center justify-between p-3 font-normal">
                     <div className="flex flex-col space-y-1 overflow-hidden">
-                      <p className="text-base font-bold text-gray-900 truncate">
-                        {profile?.full_name || 'User'}
-                      </p>
-                      <p className="text-sm text-gray-400 truncate">
-                        {user.email}
-                      </p>
+                      <p className="text-base font-bold text-gray-900 truncate">{profile?.full_name || "User"}</p>
+                      <p className="text-sm text-gray-400 truncate">{user.email}</p>
                     </div>
                     <div className="w-12 h-12 rounded-full border-2 border-[#2C5243] overflow-hidden shrink-0 ml-4">
                       {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        <img src={profile.avatar_url} alt={`${profile?.full_name || "User"}'s large profile picture`} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white bg-[#1B4332]">
-                          {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
+                          {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
                         </div>
                       )}
                     </div>
                   </DropdownMenuLabel>
-                  
                   <DropdownMenuSeparator className="bg-gray-200 my-1" />
                   
-                  <DropdownMenuItem className="py-3 px-3 cursor-pointer text-gray-700 focus:bg-gray-50 rounded-lg transition-colors">
-                    <UserIcon className="mr-3 w-5 h-5 text-gray-400" strokeWidth={2.5} />
-                    <span className="text-[15px] font-medium">View Profile</span>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem className="py-3 px-3 cursor-pointer text-gray-700 focus:bg-gray-50 rounded-lg transition-colors">
-                    <Settings className="mr-3 w-5 h-5 text-gray-400" strokeWidth={2.5} />
-                    <span className="text-[15px] font-medium">Settings</span>
+                  {role !== "admin" && (
+                    <DropdownMenuItem asChild className="py-3 px-3 cursor-pointer text-gray-700 focus:bg-gray-50 rounded-lg transition-colors">
+                      <Link href={`/${role}/profile`}>
+                        <UserIcon className="mr-3 w-5 h-5 text-gray-400" strokeWidth={2.5} />
+                        <span className="text-[15px] font-medium">View Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuItem asChild className="py-3 px-3 cursor-pointer text-gray-700 focus:bg-gray-50 rounded-lg transition-colors">
+                    <Link href={`/${role}/settings`}>
+                      <Settings className="mr-3 w-5 h-5 text-gray-400" strokeWidth={2.5} />
+                      <span className="text-[15px] font-medium">Settings</span>
+                    </Link>
                   </DropdownMenuItem>
                   
                   <DropdownMenuSeparator className="bg-gray-200 my-1" />
-                  
                   <DropdownMenuItem 
-                    onClick={() => logout()}
+                    aria-label="Log out of your account"
+                    onClick={() => logout()} 
                     className="py-3 px-3 cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 rounded-lg transition-colors"
                   >
                     <LogOut className="mr-3 w-5 h-5" strokeWidth={2.5} />
@@ -220,16 +177,12 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
               </DropdownMenu>
             </>
           ) : (
-            <Link 
-              href="/login" 
-              className="hidden lg:flex bg-white/90 hover:bg-white text-[#1B4332] px-6 py-2 rounded-full text-sm font-bold transition-all shadow-sm hover:scale-105"
-            >
+            <Link href="/login" className="hidden lg:flex bg-white/90 hover:bg-white text-[#1B4332] px-6 py-2 rounded-full text-sm font-bold transition-all shadow-sm hover:scale-105">
               Login
             </Link>
           )}
         </div>
-
       </div>
     </header>
-  )
+  );
 }

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { PmTasksClient, Task } from "./PmTasksClient";
 
 export const metadata = {
-  title: "My Tasks | Ontrack",
+  title: "PM Tasks | Ontrack",
   description: "Manage your assigned tasks and project deliverables.",
 };
 

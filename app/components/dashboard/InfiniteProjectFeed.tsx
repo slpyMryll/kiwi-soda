@@ -5,12 +5,17 @@ import { useSearchParams } from "next/navigation";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
 import { ProjectCard } from "./ProjectCard";
-import { ProjectDetailView } from "../projects/ProjectDetailView";
 import { Project } from "@/types/projects";
 import { getInfiniteProjects, getSingleProjectForFeed } from "@/lib/actions/project-feed";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Inbox } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import dynamic from "next/dynamic";
+
+const ProjectDetailView = dynamic(() => import("../projects/ProjectDetailView").then(mod => mod.ProjectDetailView), {
+  ssr: false,
+  loading: () => <div className="p-8 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-[#1B4332]" /></div>
+});
 
 interface InfiniteProjectFeedProps {
   userRole: "guest" | "viewer";
@@ -33,7 +38,7 @@ export function InfiniteProjectFeed({
   const sort = searchParams.get("sort") || "newest";
   const date = searchParams.get("date") || "all";
 
-  const queryKey = ["projects", "public", q, status, sort, date, termId, followingOnly];
+  const queryKey = useMemo(() => ["projects", "public", q, status, sort, date, termId, followingOnly], [q, status, sort, date, termId, followingOnly]);
 
   const {
     data,
@@ -69,73 +74,12 @@ export function InfiniteProjectFeed({
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase.channel("public-project-feed")
-      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, async (payload) => {
-        const oldRecord = payload.old as { id?: string };
-        const newRecord = payload.new as { id?: string; live_status?: string };
-        const targetId = oldRecord.id || newRecord.id;
-
-        if (payload.eventType === "DELETE" || (newRecord && newRecord.live_status !== "Live")) {
-          queryClient.setQueryData(queryKey, (oldData: any) => {
-            if (!oldData) return oldData;
-            return { ...oldData, pages: oldData.pages.map((page: any) => ({
-                ...page, projects: page.projects.filter((p: Project) => p.id !== targetId),
-            }))};
-          });
-          return;
-        }
-
-        if (!newRecord.id) return;
-
-        const fullProject = await getSingleProjectForFeed(newRecord.id);
-        if (fullProject) {
-          queryClient.setQueryData(queryKey, (oldData: any) => {
-            if (!oldData) return oldData;
-
-            if (followingOnly && !fullProject.isFollowing) {
-              return {
-                ...oldData,
-                pages: oldData.pages.map((page: any) => ({
-                  ...page, projects: page.projects.filter((p: Project) => p.id !== fullProject.id)
-                }))
-              };
-            }
-
-            const derivedStatus = (fullProject.status === "Completed" || fullProject.progress === 100) ? "Completed" : "Ongoing";
-            fullProject.status = derivedStatus;
-
-            const isOngoingTab = status === "ongoing";
-            const isCompletedTab = status === "completed";
-
-            const shouldEject = 
-              (isOngoingTab && derivedStatus === "Completed") || 
-              (isCompletedTab && derivedStatus === "Ongoing");
-
-            if (shouldEject) {
-              return {
-                ...oldData,
-                pages: oldData.pages.map((page: any) => ({
-                  ...page, projects: page.projects.filter((p: Project) => p.id !== fullProject.id)
-                }))
-              };
-            }
-
-            let found = false;
-            const newPages = oldData.pages.map((page: any) => {
-              const updatedProjects = page.projects.map((p: Project) => {
-                if (p.id === fullProject.id) { found = true; return fullProject; }
-                return p;
-              });
-              return { ...page, projects: updatedProjects };
-            });
-            
-            if (!found && newPages.length > 0) newPages[0].projects.unshift(fullProject);
-            return { ...oldData, pages: newPages };
-          });
-        }
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
       }).subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [queryClient, queryKey, status, followingOnly]);
+  }, [queryClient]);
 
   if (isLoading && projects.length === 0) {
     return (
@@ -147,7 +91,7 @@ export function InfiniteProjectFeed({
 
   if (projects.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center text-center shadow-sm mt-6">
+      <div className="bg-white border border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center text-center shadow-sm mt-6 mb-6">
         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
           <Inbox className="w-8 h-8 text-gray-400" />
         </div>
@@ -180,7 +124,8 @@ export function InfiniteProjectFeed({
            <div key={`${project.id}-${index}`} className="animate-in fade-in slide-in-from-top-4 duration-500">
              <ProjectCard 
                userRole={userRole} 
-               project={project} 
+               project={project}
+               isPriority={index < 2}
                onReadMore={userRole === "guest" ? () => setSelectedProject({
                  ...project,
                  comments: project.comments || [],

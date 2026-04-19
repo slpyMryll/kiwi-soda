@@ -15,11 +15,23 @@ import {
 import { toggleProjectLiveStatus, deleteProject } from "@/lib/actions/project";
 import { ProgressBar } from "../ui/ProgressBar";
 
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { getSingleProjectForFeed } from "@/lib/actions/project-feed";
+import { useEffect } from "react";
+
 export function PmProjectCard(project: Project) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isToggleModalOpen, setIsToggleModalOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const {
     id,
@@ -33,12 +45,22 @@ export function PmProjectCard(project: Project) {
     membersCount,
   } = project;
 
+  const prefetchProject = () => {
+    queryClient.prefetchQuery({
+      queryKey: ["project", id],
+      queryFn: () => getSingleProjectForFeed(id),
+      staleTime: 1000 * 60 * 5,
+    });
+  };
+
   const remainingBudget = totalBudget - (spentBudget || 0);
-  const deadlineDate = new Date(deadline).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const deadlineDate = isMounted
+    ? new Date(deadline).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "---";
 
   const handleToggleStatus = async () => {
     setIsPending(true);
@@ -69,11 +91,20 @@ export function PmProjectCard(project: Project) {
 
   return (
     <>
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-gray-300 flex flex-col justify-between gap-4 hover:shadow-lg transition-shadow relative">
+      <div 
+        onMouseEnter={prefetchProject}
+        onClick={(e) => {
+          const target = e.target as HTMLElement;
+          if (!target.closest('button') && !target.closest('a') && !target.closest('.relative.shrink-0')) {
+            router.push(`/project-manager/projects/${id}`);
+          }
+        }}
+        className="bg-white p-4 sm:p-5 rounded-3xl border border-gray-300 flex flex-col justify-between gap-4 hover:shadow-lg transition-shadow relative cursor-pointer group"
+      >
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-start gap-2">
             <div className="flex flex-col gap-1.5 min-w-0">
-              <h3 className="text-lg font-bold text-[#153B44] leading-tight truncate">
+              <h3 className="text-lg font-bold text-[#153B44] leading-tight truncate group-hover:text-[#1B4332] transition-colors">
                 {title}
               </h3>
               <div className="flex flex-wrap items-center gap-2">
@@ -91,10 +122,11 @@ export function PmProjectCard(project: Project) {
               </div>
             </div>
 
-            <div className="relative shrink-0">
+            <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
               <button
+                aria-label={`Project options for ${title}`}
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-400 hover:text-[#153B44] p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="text-gray-400 hover:text-[#153B44] p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <MoreVertical className="w-5 h-5" />
               </button>
@@ -107,7 +139,7 @@ export function PmProjectCard(project: Project) {
                       setIsToggleModalOpen(true);
                     }}
                     disabled={isPending}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                   >
                     {liveStatus === "Live" ? (
                       <EyeOff className="w-4 h-4" />
@@ -122,7 +154,7 @@ export function PmProjectCard(project: Project) {
                       setIsMenuOpen(false);
                       setIsDeleteDialogOpen(true);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" /> Delete Project
                   </button>
@@ -151,7 +183,7 @@ export function PmProjectCard(project: Project) {
           </div>
           <Link
             href={`/project-manager/projects/${id}`}
-            className="flex items-center justify-center p-1.5 sm:p-2 rounded-full bg-gray-50 hover:bg-[#BFFFE3] text-gray-400 hover:text-[#153B44] transition-colors shrink-0"
+            className="flex items-center justify-center p-1.5 sm:p-2 rounded-full bg-gray-50 hover:bg-[#BFFFE3] text-gray-400 hover:text-[#153B44] transition-colors shrink-0 cursor-pointer"
           >
             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </Link>

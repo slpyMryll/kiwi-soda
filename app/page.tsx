@@ -14,13 +14,6 @@ export default async function LandingPage({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (user) {
-    redirect("/dashboard-redirect");
-  }
-
   const resolvedParams = await searchParams;
   const [terms, currentActiveTerm] = await Promise.all([
     getAllTerms(),

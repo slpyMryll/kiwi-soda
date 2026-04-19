@@ -3,7 +3,37 @@
 All notable changes to the **OnTrack** project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [KS.010.004] - 2026-04-11
+## [KS.010.006] - 2026-04-13
+
+### Added
+
+* Real-time comment editing and deletion with inline UI states
+* AI FAQ chatbot with dual-LLM fallback, live context, and session persistence
+* Native Web Share integration for project sharing on mobile apps
+* Real-time notifications system for followed project updates
+* Instant project creation and live dashboard synchronization
+* Budget validation with automatic cost deduction and audit logging
+* Profile, Settings, and Support pages with role-based routing
+
+### Changed
+
+* Standardized project status from “Active” to “Ongoing” for consistency
+* Improved navigation with auto-scroll to feedback and clickable project cards
+* Enhanced state management with real-time sync and optimistic UI updates
+* Upgraded routing to middleware with faster, cached redirects
+* Refined UI responsiveness, modals, sidebar behavior, and loading performance
+
+### Fixed
+
+* Comment sync issues to reflect edits and deletions across all views
+* Next.js Supabase image host configuration error
+* Project feed instability and filtering inconsistencies
+* Dashboard publish/unpublish lag and real-time update delays
+* Logout history loop and hydration (SSR/client) errors
+* Modal overflow and sidebar z-index conflicts
+* Timezone-related UI freezes and stale state issues
+
+## [KS.010.005] - 2026-04-13
 
 ### Added
 
@@ -30,6 +60,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 * Fixed TypeScript build issues in Project Manager dashboard
 * Ensured correct filtering of followed projects only
 * Fixed loading experience with structured skeleton instead of blank/gradient screen
+
+# [KS.010.004] - 2026-04-06
 
 ### Added
 

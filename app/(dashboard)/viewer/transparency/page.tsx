@@ -2,6 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveTerm } from "@/lib/actions/project";
 import { TransparencyClient } from "./TransparencyClient";
 
+export const metadata = {
+  title: "Transparency Hub - OnTrack",
+  description: "Organizational performance and impact tracking for the active term. View aggregated project statistics, budget utilization, and overall progress in one transparent dashboard.",
+};
+
 export default async function TransparencyHubPage() {
   const supabase = await createClient();
   const activeTerm = await getActiveTerm();

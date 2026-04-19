@@ -79,7 +79,7 @@ export async function createProject(formData: FormData) {
       deadline,
       manager_id: user.id,
       term_id: derivedTermId,
-      status: "Active",
+      status: "Ongoing",
       live_status: "Draft",
       progress: 0,
       image_url: finalImageUrl,
@@ -131,10 +131,15 @@ export async function toggleProjectLiveStatus(
   if (!user) return { error: "Unauthorized" };
 
   const newStatus = currentStatus === "Live" ? "Draft" : "Live";
+  const updateData: any = { live_status: newStatus };
+
+  if (newStatus === "Live") {
+    updateData.status = "Ongoing";
+  }
 
   const { error } = await supabase
     .from("projects")
-    .update({ live_status: newStatus })
+    .update(updateData)
     .eq("id", projectId);
   if (error) return { error: error.message };
 
@@ -206,6 +211,36 @@ export async function postComment(
   return { success: true };
 }
 
+export async function editComment(commentId: string, newContnent: string) {
+  const supabase = await createClient();
+  const { data: {user} } = await supabase.auth.getUser();
+  if(!user) return {error: "Authentication required"};
+
+  const { error } = await supabase
+    .from("comments")
+    .update({ content: newContnent, updated_at: new Date().toISOString() })
+    .eq("id", commentId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function deleteComment(commentId: string) {
+  const supabase = await createClient();
+  const { data: {user} } = await supabase.auth.getUser();
+
+  if(!user) return {error: "Authentication required"};
+  const { error } = await supabase
+    .from("comments")
+    .delete()
+    .eq("id", commentId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
 export async function getProjectTeamWithOfficerRoles(projectId: string, termId: string | null) {
   const supabase = await createClient();
   
@@ -259,7 +294,9 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
   });
 }
 
-export async function getActiveTerm() {
+import { cache } from "react";
+
+export const getActiveTerm = cache(async () => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("terms")
@@ -269,9 +306,9 @@ export async function getActiveTerm() {
 
   if (error) return null;
   return data;
-}
+});
 
-export async function getAllTerms() {
+export const getAllTerms = cache(async () => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("terms")
@@ -279,7 +316,7 @@ export async function getAllTerms() {
     .order("start_date", { ascending: false });
 
   return data || [];
-}
+});
 
 export async function getProjectsByManager(
   userId: string, 

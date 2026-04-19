@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Bell, Check, Info, BellRing } from "lucide-react";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import { useRouter } from "next/navigation";
@@ -16,6 +17,9 @@ export function NotificationBell({ userId }: { userId?: string }) {
   const router = useRouter();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(userId);
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
   const handleNotificationClick = (notification: any) => {
     if (!notification.is_read) {
       markAsRead(notification.id);
@@ -26,6 +30,14 @@ export function NotificationBell({ userId }: { userId?: string }) {
   };
 
   if (!userId) return null;
+
+  if (!isMounted) {
+    return (
+      <div className="p-2 rounded-full relative outline-none">
+        <Bell className="w-5 h-5 text-white/80" />
+      </div>
+    );
+  }
 
   return (
     <DropdownMenu modal={false}>
@@ -50,7 +62,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
               </span>
             )}
           </div>
-          {unreadCount > 0 && (
+          {unreadCount > 0 &&
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -60,7 +72,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
             >
               <Check className="w-3 h-3" /> Mark all read
             </button>
-          )}
+          }
         </div>
 
         <div className="max-h-[50vh] sm:max-h-[400px] overflow-y-auto custom-scrollbar">

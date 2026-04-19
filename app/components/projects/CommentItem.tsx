@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { MessageSquare, ShieldAlert } from "lucide-react";
-import { postComment } from "@/lib/actions/project";
+import { MessageSquare, ShieldAlert, Pencil, Trash2 } from "lucide-react";
+import { postComment, editComment, deleteComment } from "@/lib/actions/project";
 import { cn } from "@/lib/utils";
+
+import { useComments } from "@/lib/hooks/useComments";
 
 interface CommentItemProps {
   comment: any;
@@ -12,23 +14,71 @@ interface CommentItemProps {
   isGuest: boolean;
   projectId: string;
   depth?: number;
+  currentUserId?: string | null;
+  isManager?: boolean; 
   getReplies: (parentId: string) => any[]; 
 }
 
-export function CommentItem({ comment, replies, isGuest, projectId, depth = 0, getReplies }: CommentItemProps) {
+export function CommentItem({ 
+  comment, 
+  replies, 
+  isGuest, 
+  projectId, 
+  depth = 0, 
+  currentUserId, 
+  isManager = false,
+  getReplies 
+}: CommentItemProps) {
+  const { addComment, updateComment, deleteComment } = useComments(projectId);
+  
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
 
   const isHidden = comment.is_hidden;
+  const isAuthor = currentUserId === comment.user_id;
+  const canDelete = isAuthor || isManager;
 
   const handleReply = async () => {
     if (!replyContent.trim() || isSubmitting) return;
     setIsSubmitting(true);
-    await postComment(projectId, replyContent, comment.id);
-    setReplyContent("");
-    setIsReplyOpen(false);
-    setIsSubmitting(false);
+    try {
+      await addComment({ content: replyContent, parentId: comment.id });
+      setReplyContent("");
+      setIsReplyOpen(false);
+    } catch (err) {
+      console.error("Reply failed:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEdit = async () => {
+    if (!editContent.trim() || isSubmitting || editContent === comment.content) {
+      setIsEditing(false);
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await updateComment({ commentId: comment.id, content: editContent });
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Edit failed:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (confirm("Are you sure you want to delete this comment?")) {
+      try {
+        await deleteComment(comment.id);
+      } catch (err) {
+        console.error("Delete failed:", err);
+      }
+    }
   };
 
   return (
@@ -57,15 +107,42 @@ export function CommentItem({ comment, replies, isGuest, projectId, depth = 0, g
             </span>
           </div>
           
-          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed wrap-break-word">
-            {isHidden ? (
-              <span className="italic text-gray-400 font-medium">This comment was removed by a platform administrator for violating community guidelines.</span>
-            ) : (
-              comment.content
-            )}
-          </p>
+          {isHidden ? (
+             <p className="text-xs sm:text-sm text-gray-600 leading-relaxed wrap-break-word italic font-medium">
+               This comment was removed by a platform administrator for violating community guidelines.
+             </p>
+          ) : isEditing ? (
+            <div className="mt-2 flex flex-col gap-2 animate-in fade-in">
+              <textarea 
+                autoFocus
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:border-[#1B4332] resize-none"
+                value={editContent}
+                rows={2}
+                onChange={(e) => setEditContent(e.target.value)}
+              />
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => setIsEditing(false)} 
+                  className="px-3 py-1.5 text-[11px] sm:text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleEdit} 
+                  disabled={isSubmitting || !editContent.trim()}
+                  className="px-3 sm:px-4 py-1.5 bg-[#1B4332] hover:bg-green-900 text-white rounded-md text-[11px] sm:text-xs font-bold transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed wrap-break-word">
+              {comment.content}
+            </p>
+          )}
           
-          {!isHidden && (
+          {!isHidden && !isEditing && (
             <div className="flex gap-4 mt-2 sm:mt-3">
               <button 
                 onClick={() => isGuest ? window.location.href = '/login' : setIsReplyOpen(!isReplyOpen)}
@@ -73,6 +150,24 @@ export function CommentItem({ comment, replies, isGuest, projectId, depth = 0, g
               >
                 <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Reply
               </button>
+              
+              {isAuthor && (
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="text-[11px] sm:text-xs font-semibold text-gray-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors"
+                >
+                  <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Edit
+                </button>
+              )}
+
+              {canDelete && (
+                <button 
+                  onClick={handleDelete}
+                  className="text-[11px] sm:text-xs font-semibold text-gray-400 hover:text-red-600 flex items-center gap-1.5 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Delete
+                </button>
+              )}
             </div>
           )}
 
@@ -114,6 +209,8 @@ export function CommentItem({ comment, replies, isGuest, projectId, depth = 0, g
           getReplies={getReplies}
           isGuest={isGuest} 
           projectId={projectId}
+          currentUserId={currentUserId}
+          isManager={isManager} 
           depth={depth + 1}
         />
       ))}

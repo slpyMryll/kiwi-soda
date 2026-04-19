@@ -2,6 +2,7 @@
 
 import { ChevronDown, Check } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +17,17 @@ interface Term {
   cover_url?: string;
 }
 
+import { useState, useEffect } from "react";
+
 export function HeroBanner({ terms, currentTermId }: { terms: Term[], currentTermId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const activeTerm = terms?.find(t => t.id === currentTermId) || terms?.[0];
 
@@ -29,12 +37,19 @@ export function HeroBanner({ terms, currentTermId }: { terms: Term[], currentTer
     router.push(`${pathname}?${params.toString()}`);
   };
 
+  if (!isMounted) {
+    return <div className="relative w-full h-48 md:h-64 rounded-b-2xl overflow-hidden mb-8 shadow-sm bg-gray-200 animate-pulse" />;
+  }
+
   return (
     <div className="relative w-full h-48 md:h-64 rounded-b-2xl overflow-hidden mb-8 shadow-sm group">
-      <img 
+      <Image
         src={activeTerm?.cover_url || "/hero-section-place.jpg"} 
         alt="VSU SSC Team" 
-        className="w-full h-full object-cover object-top"
+        fill
+        className="object-cover object-top"
+        priority
+        sizes="100vw"
       />
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
       

@@ -99,12 +99,44 @@ export default function PmProjectsClient({
     if (!currentUserId) return;
     const supabase = createClient();
     const projectChannel = supabase.channel("pm-projects-sync")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "projects" }, () => {
+         queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
+      })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "projects" }, (payload) => {
+        const record = payload.new;
+        const oldRecord = payload.old as any;
+        
+        const mappedUpdate: Partial<Project> = {
+          id: record.id,
+          title: record.title,
+          description: record.description,
+          location: record.location,
+          status: record.status,
+          liveStatus: record.live_status,
+          imageUrl: record.image_url,
+          tags: record.tags,
+          totalBudget: record.total_budget ? Number(record.total_budget) : undefined,
+          spentBudget: record.spent_budget ? Number(record.spent_budget) : undefined,
+          progress: record.progress,
+          deadline: record.deadline ? new Date(record.deadline) : undefined,
+          postedAt: record.posted_at || record.created_at,
+          updated_at: record.updated_at ? new Date(record.updated_at) : undefined,
+          termId: record.term_id,
+          managerId: record.manager_id,
+        };
+
+        if (oldRecord && oldRecord.live_status !== record.live_status) {
+          queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
+          return;
+        }
+
         queryClient.setQueryData(queryKey, (oldData: any) => {
           if (!oldData || !oldData.projects) return oldData;
           return {
             ...oldData,
-            projects: oldData.projects.map((p: Project) => p.id === payload.new.id ? { ...p, ...payload.new } : p)
+            projects: oldData.projects.map((p: Project) => 
+              p.id === record.id ? { ...p, ...mappedUpdate } : p
+            )
           };
         });
       })

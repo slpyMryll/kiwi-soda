@@ -46,6 +46,10 @@ export default function ProjectDetailClient({
   initialTab: string;
 }) {
   const router = useRouter();
+
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -61,11 +65,11 @@ export default function ProjectDetailClient({
   );
 
   useEffect(() => {
+    if (!isMounted) return;
     const supabase = createClient();
     
     const channel = supabase.channel('project-metrics-sync')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'projects', filter: `id=eq.${project.id}` }, (payload) => {
-        // Update the specific stat cards
         if (payload.new.progress !== undefined) setProgress(payload.new.progress);
         if (payload.new.spent_budget !== undefined) setSpentBudget(payload.new.spent_budget);
 
@@ -93,7 +97,7 @@ export default function ProjectDetailClient({
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [project.id]);
+  }, [project.id, isMounted]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -180,9 +184,26 @@ export default function ProjectDetailClient({
       bg: "bg-orange-100",
     },
   ];
+  
+  if (!isMounted) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-6 w-full pb-24 animate-pulse">
+        <div className="flex justify-between items-center w-full mb-1">
+          <div className="h-5 w-32 bg-gray-200 rounded-md" />
+          <div className="h-10 w-40 bg-gray-200 rounded-lg" />
+        </div>
+        <div className="w-full h-64 md:h-80 bg-gray-200 rounded-3xl shadow-sm" />
+        <div className="h-20 w-full bg-gray-200 rounded-2xl" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-white/50 border border-gray-100 rounded-2xl shadow-sm" />)}
+        </div>
+        <div className="h-12 w-full bg-gray-200/60 rounded-2xl mt-4" />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-6 max-w-7xl mx-auto w-full pb-24">
+    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen flex flex-col gap-6 w-full pb-24">
       <div className="flex justify-between items-center w-full mb-1">
         <Link
           href="/project-manager/projects"

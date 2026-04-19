@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { Project } from "@/types/projects";
 import { ProgressBar } from "../ui/ProgressBar";
 import { ProjectTopBar } from "./ProjectTopBar";
@@ -42,14 +45,67 @@ interface ProjectDetailProps {
   onClose?: () => void;
 }
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getSingleProjectForFeed } from "@/lib/actions/project-feed";
+import { useState } from "react";
+
+
 export function ProjectDetailView({
-  project,
+  project: initialProject,
   userRole,
   isModal = false,
   isPreview = false,
   onClose,
 }: ProjectDetailProps) {
   const isGuest = userRole === "guest";
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const { data: project = initialProject } = useQuery({
+    queryKey: ["project", initialProject.id],
+    queryFn: () => getSingleProjectForFeed(initialProject.id),
+    initialData: initialProject,
+    enabled: !isPreview,
+    staleTime: 1000 * 60, // 1 minute
+  });
+
+  useEffect(() => {
+    if (isPreview || !project) return; 
+
+    const supabase = createClient();
+    const projectId = project.id;
+
+    const handleUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    };
+
+    const channel = supabase.channel(`project-detail-${projectId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects", filter: `id=eq.${projectId}` }, handleUpdate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_milestones", filter: `project_id=eq.${projectId}` }, handleUpdate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_members", filter: `project_id=eq.${projectId}` }, handleUpdate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "budget_logs", filter: `project_id=eq.${projectId}` }, handleUpdate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "comments", filter: `project_id=eq.${projectId}` }, handleUpdate)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [project?.id, isPreview, queryClient]);
+
+  if (!project) return null;
+
+  const postedDateDisplay = isMounted 
+    ? new Date(project.postedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "---";
 
   const formattedBudgetUpdates = (project.budgetUpdates || [])
     .map(formatLog)
@@ -65,6 +121,7 @@ export function ProjectDetailView({
         isModal={isModal}
         isPreview={isPreview}
         onClose={onClose}
+        initialIsFollowing={project.isFollowing} 
       />
 
       {isPreview && (
@@ -85,16 +142,14 @@ export function ProjectDetailView({
 
         <div className="p-4 sm:p-6 md:p-8 max-w-4xl mx-auto w-full space-y-8 sm:space-y-10 overflow-x-hidden">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">
-              {project.title}
-            </h1>
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
+                {project.title}
+              </h1>
+            </div>
+            
             <p className="text-xs sm:text-sm text-gray-500 mb-5 sm:mb-6">
-              Posted on{" "}
-              {new Date(project.postedAt).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
+              Posted on {postedDateDisplay}
             </p>
             <ProgressBar progress={project.progress} />
           </div>

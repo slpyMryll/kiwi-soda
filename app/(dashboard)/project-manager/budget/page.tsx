@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { PmBudgetClient } from "./PmBudgetClient";
 
 export const metadata = {
-  title: "Budget Oversight | Ontrack",
+  title: "PM Budget Oversight | Ontrack",
   description: "Monitor and manage budget allocations across all projects.",
 };
 

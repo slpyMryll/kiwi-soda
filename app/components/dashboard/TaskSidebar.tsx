@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarTask } from "@/types/pm"; 
@@ -11,6 +11,11 @@ interface TaskSidebarProps {
 }
 
 export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
@@ -61,8 +66,11 @@ export function TaskSidebar({ tasks = [] }: TaskSidebarProps) {
     }
   };
 
+  if (!isMounted) {
+    return <div className="bg-white p-3 min-[400px]:p-4 sm:p-6 lg:p-8 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 min-h-[500px] w-full animate-pulse" />;
+  }
+
   return (
-    // Note the p-3 for smallest screens, scaling up gracefully
     <div className="bg-white p-3 min-[400px]:p-4 sm:p-6 lg:p-8 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 space-y-5 sm:space-y-8 h-full flex flex-col w-full">
       <div className="flex flex-col">
         <h2 className="text-xl sm:text-2xl lg:text-[26px] font-bold text-[#153B44] mb-1 tracking-tight">Task Timeline</h2>

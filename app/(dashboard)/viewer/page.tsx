@@ -1,8 +1,13 @@
 import { HeroBanner } from "@/app/components/dashboard/HeroBanner";
 import { ProjectFilters } from "@/app/components/dashboard/ProjectFilters";
-import { FaqFab } from "@/app/components/ui/FaqFab";
 import { InfiniteProjectFeed } from "@/app/components/dashboard/InfiniteProjectFeed";
 import { getAllTerms, getActiveTerm } from "@/lib/actions/project";
+
+export const metadata = {
+  title: "Explore - OnTrack",
+  description: "Discover and engage with USSC projects and initiatives. Explore project details, track progress, and connect with project teams to make an impact.",
+};
+
 
 export default async function ViewerDashboard({
   searchParams,
@@ -36,7 +41,6 @@ export default async function ViewerDashboard({
         termId={activeTermId}
       />
 
-      <FaqFab />
     </main>
   );
 }

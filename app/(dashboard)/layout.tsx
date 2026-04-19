@@ -6,7 +6,7 @@ import { Sidebar } from "../components/layout/Sidebar";
 import { PresencePinger } from "../components/layout/PresencePinger";
 
 export const metadata = {
-  title: "Dashboard - Kiwi Soda",
+  title: "Explore - OnTrack",
 };
 
 export default async function DashboardLayout({
@@ -16,8 +16,10 @@ export default async function DashboardLayout({
 }) {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const user = session?.user;
 
   if (!user) redirect("/login");
 
@@ -34,7 +36,7 @@ export default async function DashboardLayout({
       <div className="flex flex-1 relative w-full mx-auto">
         <Sidebar role={profile?.role} />
 
-        <main className="flex-1 flex flex-col overflow-x-hidden bg-linear-to-b from-[#153B44] from-0% via-bg-main via-[300px] to-bg-main">
+        <main className="flex-1 flex flex-col overflow-x-hidden bg-linear-to-b from-[#153B44] from-0% via-bg-main via-[300px] to-bg-main pb-24 md:pb-0">
           {children}
         </main>
       </div>

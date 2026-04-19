@@ -13,7 +13,7 @@ const formatLog = (log: any) => {
   const parts = reason.split(":");
   return {
     id: log.id,
-    date: log.changed_at ? new Date(log.changed_at).toLocaleString() : new Date().toLocaleString(),
+    date: log.changed_at ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }).format(new Date(log.changed_at)) : "Just now",
     amountChange: (log.new_amount || 0) - (log.old_amount || 0),
     category: parts.length > 1 ? parts[0] : "General",
     description: parts.length > 1 ? parts.slice(1).join(":").trim() : reason,
@@ -26,6 +26,9 @@ const formatLog = (log: any) => {
 };
 
 export function BudgetTab({ project }: any) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [isBudgetEditOpen, setIsBudgetEditOpen] = useState(false);
   
@@ -71,10 +74,8 @@ export function BudgetTab({ project }: any) {
   }, [project.id, fetchLatestData]);
 
   useEffect(() => {
-    setSpentBudget(project.spentBudget);
-    setTotalBudget(project.totalBudget);
-    setBudgetUpdates(project.budgetUpdates || []);
-  }, [project.spentBudget, project.totalBudget, project.budgetUpdates]);
+    if (isMounted) fetchLatestData();
+  }, [isMounted, fetchLatestData]);
 
   const remaining = totalBudget - spentBudget;
   
@@ -98,7 +99,10 @@ export function BudgetTab({ project }: any) {
       if (res.log) {
         const newLog = formatLog(res.log);
         if (newLog) {
-          setBudgetUpdates((prev: any) => [newLog, ...prev].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          setBudgetUpdates((prev: any) => {
+            if (prev.some((p: any) => p.id === newLog.id)) return prev;
+            return [newLog, ...prev].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          });
           if (newLog.status === 'Approved') setSpentBudget(newLog.newTotal);
         }
       }
@@ -117,7 +121,11 @@ export function BudgetTab({ project }: any) {
       if (res.log) {
         const newLog = formatLog(res.log);
         if (newLog) {
-          setBudgetUpdates((prev: any) => [newLog, ...prev].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          // 🔥 FIX: Deduplicate!
+          setBudgetUpdates((prev: any) => {
+            if (prev.some((p: any) => p.id === newLog.id)) return prev;
+            return [newLog, ...prev].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          });
           if (newLog.status === 'Approved') setTotalBudget(newLog.newTotal);
         }
       }
@@ -152,7 +160,10 @@ export function BudgetTab({ project }: any) {
         setBudgetUpdates((prev: any) => {
           const updatedOld = prev.map((u: any) => u.id === logId ? formatLog(res.updatedOldLog) : u);
           const newCorrection = formatLog(res.newLog);
-          return newCorrection ? [newCorrection, ...updatedOld].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) : updatedOld;
+          if (newCorrection && !updatedOld.some((u: any) => u.id === newCorrection.id)) {
+            return [newCorrection, ...updatedOld].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          }
+          return updatedOld;
         });
         
         if (res.isTotalBudget) {
@@ -167,6 +178,8 @@ export function BudgetTab({ project }: any) {
     if (res?.error) setFormError(res.error);
     else setActionModal(null);
   };
+
+  if (!isMounted) return <div className="animate-pulse bg-white p-5 h-[600px] rounded-2xl w-full" />;
 
   return (
     <div className="bg-white p-5 sm:p-8 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-8">
@@ -225,7 +238,7 @@ export function BudgetTab({ project }: any) {
           <span className="px-2.5 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wider">Approved</span>
         </div>
         <div className="flex flex-wrap items-center gap-3 mb-3">
-          <span className="text-2xl sm:text-3xl font-bold text-[#1B4332] break-all">₱{totalBudget.toLocaleString()}</span>
+          <span className="text-2xl sm:text-3xl font-bold text-[#1B4332] break-all">₱{totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
 
           <Dialog open={isBudgetEditOpen} onOpenChange={(open) => { setIsBudgetEditOpen(open); setFormError(""); }}>
             <DialogTrigger asChild>
@@ -240,7 +253,7 @@ export function BudgetTab({ project }: any) {
                 {formError && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">{formError}</div>}
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1">New Total Budget (₱)</label>
-                  <input name="totalBudget" type="number" defaultValue={totalBudget} required min="0" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]" />
+                  <input name="totalBudget" type="number" step="0.01" defaultValue={totalBudget} required min="0" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]" />
                 </div>
                 <button type="submit" disabled={isLoading} className="w-full bg-[#1B4332] text-white font-bold py-3 rounded-xl flex items-center justify-center">
                   {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (project.isManager ? "Confirm Adjustment" : "Submit Request")}
@@ -255,15 +268,15 @@ export function BudgetTab({ project }: any) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 shadow-sm flex flex-col justify-center">
           <p className="text-[11px] sm:text-xs font-bold text-gray-500 mb-1 uppercase">Total Allocated</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-700 break-all">₱{totalBudget.toLocaleString()}</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-700 break-all">₱{totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
         </div>
         <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 shadow-sm flex flex-col justify-center">
           <p className="text-[11px] sm:text-xs font-bold text-gray-500 mb-1 uppercase">Budget Used</p>
-          <p className="text-xl sm:text-2xl font-bold text-red-500 break-all">₱{spentBudget.toLocaleString()}</p>
+          <p className="text-xl sm:text-2xl font-bold text-red-500 break-all">₱{spentBudget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
         </div>
         <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/50 shadow-sm flex flex-col justify-center sm:col-span-2 lg:col-span-1">
           <p className="text-[11px] sm:text-xs font-bold text-gray-500 mb-1 uppercase">Remaining</p>
-          <p className="text-xl sm:text-2xl font-bold text-green-500 break-all">₱{remaining.toLocaleString()}</p>
+          <p className="text-xl sm:text-2xl font-bold text-green-500 break-all">₱{remaining.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
         </div>
       </div>
 
@@ -291,7 +304,7 @@ export function BudgetTab({ project }: any) {
                 </div>
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1">Amount (₱)</label>
-                  <input name="amount" type="number" required min="1" max={remaining} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]" />
+                  <input name="amount" type="number" step="0.01" required min="0.01" max={remaining} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]" />
                 </div>
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1">Description</label>
@@ -324,7 +337,7 @@ export function BudgetTab({ project }: any) {
                     {exp.category}
                     {exp.status === 'Adjusted' && <span className="ml-2 text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">Voided</span>}
                   </td>
-                  <td className="py-4 px-2 font-bold text-red-500">₱{Math.abs(exp.amountChange).toLocaleString()}</td>
+                  <td className="py-4 px-2 font-bold text-red-500">₱{Math.abs(exp.amountChange).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                   <td className="py-4 px-2 text-gray-500 font-normal">
                     {exp.status === 'Adjusted' ? <><span className="text-red-500 font-bold mr-1">[Voided Entry]</span><span className="line-through">{exp.description}</span></> : exp.description}
                   </td>
@@ -367,8 +380,8 @@ export function BudgetTab({ project }: any) {
                   </div>
                   
                   <div className="mt-1 text-[10px] font-bold text-gray-400 flex flex-wrap items-center gap-2 bg-gray-50 px-2 py-1 rounded-md w-max">
-                    <span>₱{log.oldTotal.toLocaleString()}</span><span>➔</span>
-                    <span className={log.status === 'Adjusted' ? 'text-gray-400' : 'text-[#1B4332]'}>₱{log.newTotal.toLocaleString()}</span>
+                    <span>₱{log.oldTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span><span>➔</span>
+                    <span className={log.status === 'Adjusted' ? 'text-gray-400' : 'text-[#1B4332]'}>₱{log.newTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                   </div>
 
                   {project.isManager && log.status === 'Approved' && !log.isInitial && isReversible && (
