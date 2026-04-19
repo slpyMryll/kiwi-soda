@@ -6,11 +6,28 @@
 
 | Initial Release Code | Date Released |
 | -------------------- | ------------- |
+| KS.010.006           | [2026-04-19]  |
 | KS.010.005           | [2026-04-13]  |
 | KS.010.004           | [2026-04-06]  |
 | KS.010.003           | [2026-03-15]  |
 | KS.010.002           | [2026-03-08]  |
 | KS.010.001           | [2025-02-27]  |
+
+## KS.010.006 Release Notes
+
+**What's New**
+
+* **Core Features:**
+
+  * Real-time Comments System: Edit and delete feedback with instant updates and role-based inline editing synced via Supabase.
+  * Seamless Navivation Enhancements: Auto-scroll to feedback and enable fully clickable project cards with prefetching.
+  * Interactive FAQ AI Chatbot:Reliable dual-AI chatbot with real-time context, persistent chat, and backend logging.
+  * Native Sharing Integration: Share projects using the Web Share API across mobile apps
+  * Real-Time Notifications & Follow System: Get instant updates on followed projects with fully synced follow states.
+  * Live Project & Dashboard Sync: View real-time project updates and instant changes without page refresh.
+    Budget Validation & Task Management: Prevent overspending with real-time limits and automatic cost tracking.
+  * UI/UX Improvements: Fix major UI issues while improving responsiveness, routing, and loading performance.
+  * Profile, Settings & Support Foundations: Access new role-based profile, settings, and support pages.
 
 ## KS.010.005 Release Notes
 
