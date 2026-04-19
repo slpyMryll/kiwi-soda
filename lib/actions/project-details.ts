@@ -649,3 +649,18 @@ export async function adjustExpense(logId: string, projectId: string) {
     isTotalBudget,
   };
 }
+
+export async function getProjectComments(projectId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("comments")
+    .select("*, profiles(full_name, avatar_url)")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching comments:", error);
+    return [];
+  }
+  return data || [];
+}

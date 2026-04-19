@@ -294,7 +294,9 @@ export async function getProjectTeamWithOfficerRoles(projectId: string, termId: 
   });
 }
 
-export async function getActiveTerm() {
+import { cache } from "react";
+
+export const getActiveTerm = cache(async () => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("terms")
@@ -304,9 +306,9 @@ export async function getActiveTerm() {
 
   if (error) return null;
   return data;
-}
+});
 
-export async function getAllTerms() {
+export const getAllTerms = cache(async () => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("terms")
@@ -314,7 +316,7 @@ export async function getAllTerms() {
     .order("start_date", { ascending: false });
 
   return data || [];
-}
+});
 
 export async function getProjectsByManager(
   userId: string, 

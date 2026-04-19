@@ -45,8 +45,13 @@ interface ProjectDetailProps {
   onClose?: () => void;
 }
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getSingleProjectForFeed } from "@/lib/actions/project-feed";
+import { useState } from "react";
+
+
 export function ProjectDetailView({
-  project,
+  project: initialProject,
   userRole,
   isModal = false,
   isPreview = false,
@@ -54,23 +59,35 @@ export function ProjectDetailView({
 }: ProjectDetailProps) {
   const isGuest = userRole === "guest";
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  // 🔥 FIX: Real-time synchronization for the Project Details page!
+  const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
-    if (isPreview) return; 
+    setIsMounted(true);
+  }, []);
+
+  const { data: project = initialProject } = useQuery({
+    queryKey: ["project", initialProject.id],
+    queryFn: () => getSingleProjectForFeed(initialProject.id),
+    initialData: initialProject,
+    enabled: !isPreview,
+    staleTime: 1000 * 60, // 1 minute
+  });
+
+  useEffect(() => {
+    if (isPreview || !project) return; 
 
     const supabase = createClient();
     const projectId = project.id;
 
-    // When an event happens, tell the Next.js server to fetch fresh data
     const handleUpdate = () => {
-      router.refresh();
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
     };
 
-    // Listen to changes across all tables related to this specific project
     const channel = supabase.channel(`project-detail-${projectId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "projects", filter: `id=eq.${projectId}` }, handleUpdate)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_milestones", filter: `project_id=eq.${projectId}` }, handleUpdate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_members", filter: `project_id=eq.${projectId}` }, handleUpdate)
       .on("postgres_changes", { event: "*", schema: "public", table: "budget_logs", filter: `project_id=eq.${projectId}` }, handleUpdate)
       .on("postgres_changes", { event: "*", schema: "public", table: "comments", filter: `project_id=eq.${projectId}` }, handleUpdate)
       .subscribe();
@@ -78,7 +95,17 @@ export function ProjectDetailView({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [project.id, isPreview, router]);
+  }, [project?.id, isPreview, queryClient]);
+
+  if (!project) return null;
+
+  const postedDateDisplay = isMounted 
+    ? new Date(project.postedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "---";
 
   const formattedBudgetUpdates = (project.budgetUpdates || [])
     .map(formatLog)
@@ -122,14 +149,8 @@ export function ProjectDetailView({
             </div>
             
             <p className="text-xs sm:text-sm text-gray-500 mb-5 sm:mb-6">
-              Posted on{" "}
-              {new Date(project.postedAt).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
+              Posted on {postedDateDisplay}
             </p>
-            {/* When the DB changes, router.refresh() will automatically re-render this progress bar! */}
             <ProgressBar progress={project.progress} />
           </div>
 

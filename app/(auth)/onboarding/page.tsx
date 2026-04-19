@@ -61,7 +61,7 @@ export default function Onboarding() {
     }
 
     await supabase.auth.refreshSession();
-    window.location.href = "/dashboard-redirect";
+    window.location.href = "/viewer";
   };
 
   return (

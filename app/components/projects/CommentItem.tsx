@@ -6,6 +6,8 @@ import { MessageSquare, ShieldAlert, Pencil, Trash2 } from "lucide-react";
 import { postComment, editComment, deleteComment } from "@/lib/actions/project";
 import { cn } from "@/lib/utils";
 
+import { useComments } from "@/lib/hooks/useComments";
+
 interface CommentItemProps {
   comment: any;
   replies: any[];
@@ -27,6 +29,8 @@ export function CommentItem({
   isManager = false,
   getReplies 
 }: CommentItemProps) {
+  const { addComment, updateComment, deleteComment } = useComments(projectId);
+  
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,10 +44,15 @@ export function CommentItem({
   const handleReply = async () => {
     if (!replyContent.trim() || isSubmitting) return;
     setIsSubmitting(true);
-    await postComment(projectId, replyContent, comment.id);
-    setReplyContent("");
-    setIsReplyOpen(false);
-    setIsSubmitting(false);
+    try {
+      await addComment({ content: replyContent, parentId: comment.id });
+      setReplyContent("");
+      setIsReplyOpen(false);
+    } catch (err) {
+      console.error("Reply failed:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = async () => {
@@ -52,14 +61,23 @@ export function CommentItem({
       return;
     }
     setIsSubmitting(true);
-    await editComment(comment.id, editContent);
-    setIsEditing(false);
-    setIsSubmitting(false);
+    try {
+      await updateComment({ commentId: comment.id, content: editContent });
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Edit failed:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this comment?")) {
-      await deleteComment(comment.id);
+      try {
+        await deleteComment(comment.id);
+      } catch (err) {
+        console.error("Delete failed:", err);
+      }
     }
   };
 

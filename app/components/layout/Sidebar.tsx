@@ -58,6 +58,7 @@ export function Sidebar({ role }: SidebarProps) {
               key={item.name}
               href={item.href!}
               prefetch={true}
+              aria-label={`Navigate to ${item.name}`}
               className={cn(
                 "flex items-center transition-all duration-300 ease-in-out shrink-0",
                 "h-10 md:h-auto rounded-full md:rounded-xl",

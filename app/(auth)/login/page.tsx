@@ -3,10 +3,12 @@ import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, ChevronLeft, Loader2 } from "lucide-react";
 import { signInWithGoogle, signInWithEmail } from "@/lib/actions/auth";
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { getBorderClass } from "@/lib/utils/ui-helpers";
 import { validateVsuEmail } from "@/lib/utils/validation";
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -43,16 +45,14 @@ export default function Home() {
     <main className="min-h-screen w-full bg-surface-brand flex flex-col-reverse lg:flex-row items-stretch justify-center lg:px-14 lg:py-1 lg:gap-14">
       <section className="relative flex-1 bg-white rounded-t-[40px] lg:rounded-2xl px-8 py-10 lg:px-14 lg:py-8 shadow-2xl self-end lg:self-center w-full max-w-2xl mx-auto z-10 transition-all duration-500">
         
-        {/* 🔥 FIX: Added 'replace' to fix history loops, and 'prefetch={true}' for instant loading */}
-        <Link
-          href="/"
-          replace
-          prefetch={true}
+        {/* 🔥 FIX: Changed to router.back() for near-instant navigation using browser memory cache */}
+        <button
+          onClick={() => window.history.length > 1 ? router.back() : router.push("/")}
           className="absolute top-6 left-6 flex items-center gap-1 text-sm font-bold text-gray-400 hover:text-green-dark transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           Back
-        </Link>
+        </button>
 
         <div className="hidden lg:flex gap-3 mb-8 mt-4">
           <img src="logov3.png" alt="OnTrack" className="w-9 h-9" />
