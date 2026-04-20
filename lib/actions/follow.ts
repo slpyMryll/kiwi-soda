@@ -88,7 +88,7 @@ export async function toggleFollow(projectId: string) {
       if (insertError) return { error: insertError.message };
 
       revalidatePath("/viewer/projects");
-      revalidatePath("/following");
+      revalidatePath("/viewer/following");
       revalidatePath(`/viewer/projects/${projectId}`);
       return { success: true, following: true };
     }
@@ -102,7 +102,7 @@ export async function toggleFollow(projectId: string) {
     if (deleteError) return { error: deleteError.message };
 
     revalidatePath("/viewer/projects");
-    revalidatePath("/following");
+    revalidatePath("/viewer/following");
     revalidatePath(`/viewer/projects/${projectId}`);
     return { success: true, following: false };
   } catch (error: any) {

@@ -53,18 +53,67 @@ export function useFollow(projectId: string, initialIsFollowing?: boolean) {
     setIsFollowing(newState);
     window.dispatchEvent(new CustomEvent("sync-follow", { detail: { projectId, isFollowing: newState } }));
 
+    const projectQueries = queryClient.getQueriesData({ queryKey: ["projects"] });
+    projectQueries.forEach(([queryKey, oldData]) => {
+      const data = oldData as any;
+      if (!data || !data.pages) return;
+
+      const followingOnly = (queryKey as any)[7] === true;
+
+      const newPages = data.pages.map((page: any) => {
+        let newProjects = page.projects.map((p: any) => 
+          p.id === projectId ? { ...p, isFollowing: newState } : p
+        );
+
+        if (followingOnly && !newState) {
+          newProjects = newProjects.filter((p: any) => p.id !== projectId);
+        }
+
+        return { ...page, projects: newProjects };
+      });
+
+      queryClient.setQueryData(queryKey, { ...data, pages: newPages });
+    });
+
+    queryClient.setQueryData(["project", projectId], (old: any) => {
+      if (!old) return old;
+      return { ...old, isFollowing: newState };
+    });
+
+    queryClient.setQueriesData({ queryKey: ["pm-projects"] }, (old: any) => {
+      if (!old || !old.projects) return old;
+      return {
+        ...old,
+        projects: old.projects.map((p: any) => 
+          p.id === projectId ? { ...p, isFollowing: newState } : p
+        )
+      };
+    });
+
     try {
       const result = await toggleFollow(projectId);
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ["projects"] });
+        router.refresh();
+
+        if (newState) {
+          queryClient.invalidateQueries({ queryKey: ["projects"] });
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ["followed-stats"] });
       } else {
         setIsFollowing(prevState);
         window.dispatchEvent(new CustomEvent("sync-follow", { detail: { projectId, isFollowing: prevState } }));
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
+        queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+        queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
       }
     } catch (err) {
       console.error("Follow action failed:", err);
       setIsFollowing(prevState);
       window.dispatchEvent(new CustomEvent("sync-follow", { detail: { projectId, isFollowing: prevState } }));
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
     } finally {
       setLoading(false);
     }

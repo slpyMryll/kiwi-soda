@@ -13,7 +13,7 @@ export function useComments(projectId: string, initialComments?: any[]) {
   const { data: comments = initialComments || [] } = useQuery({
     queryKey,
     queryFn: () => getProjectComments(projectId),
-    initialData: initialComments,
+    initialData: initialComments && initialComments.length > 0 ? initialComments : undefined,
     staleTime: 1000 * 60, // 1 minute
   });
 
