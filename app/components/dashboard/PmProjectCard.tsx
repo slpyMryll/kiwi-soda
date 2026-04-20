@@ -183,6 +183,7 @@ export function PmProjectCard(project: Project) {
           </div>
           <Link
             href={`/project-manager/projects/${id}`}
+            aria-label={`Manage ${title}`}
             className="flex items-center justify-center p-1.5 sm:p-2 rounded-full bg-gray-50 hover:bg-[#BFFFE3] text-gray-400 hover:text-[#153B44] transition-colors shrink-0 cursor-pointer"
           >
             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
