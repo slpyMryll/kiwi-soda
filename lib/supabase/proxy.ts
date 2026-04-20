@@ -26,8 +26,11 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // 1. Define Public Routes
-  const publicRoutes = ['/', '/login', '/forgot-password', '/auth']
-  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith('/auth'))
+  const publicRoutes = ['/', '/login', '/forgot-password', '/robots.txt', '/sitemap.xml', '/favicon.ico']
+  const isPublicRoute = 
+    publicRoutes.includes(pathname) || 
+    pathname.startsWith('/auth') || 
+    pathname.startsWith('/viewer/projects/')
 
   // 2. Fetch profile data if user exists - Try cookie cache first
   const roleCookie = request.cookies.get('on-track-role')?.value;
