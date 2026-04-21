@@ -24,6 +24,7 @@ import {
   deleteMilestone,
 } from "@/lib/actions/project-details";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export function TimelineTab({
   projectId,
@@ -102,8 +103,11 @@ export function TimelineTab({
     const formData = new FormData(e.currentTarget);
     const res = await addMilestone(projectId, formData);
     setIsLoading(false);
-    if (res?.error) alert(`Error: ${res.error}`);
-    else setOpen(false);
+    if (res?.error) toast.error(`Error: ${res.error}`);
+    else {
+      toast.success("Milestone added successfully!");
+      setOpen(false);
+    }
   };
 
   const handleEditMilestone = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -113,8 +117,11 @@ export function TimelineTab({
     const formData = new FormData(e.currentTarget);
     const res = await updateMilestone(projectId, editingMilestone.id, formData);
     setIsLoading(false);
-    if (res?.error) alert(`Error: ${res.error}`);
-    else setEditingMilestone(null);
+    if (res?.error) toast.error(`Error: ${res.error}`);
+    else {
+      toast.success("Milestone updated!");
+      setEditingMilestone(null);
+    }
   };
 
   const handleDeleteMilestone = async () => {
@@ -129,7 +136,9 @@ export function TimelineTab({
     setIsLoading(false);
 
     if (res?.error) {
-      alert(`Error deleting: ${res.error}`);
+      toast.error(`Error deleting: ${res.error}`);
+    } else {
+      toast.success("Milestone deleted.");
     }
   };
 

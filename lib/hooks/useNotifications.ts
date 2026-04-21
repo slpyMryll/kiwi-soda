@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 export interface Notification {
   id: string;
@@ -65,18 +66,32 @@ export function useNotifications(userId?: string) {
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       const supabase = createClient();
-      await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
+      const { error } = await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
+      if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success("Notification marked as read");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to mark notification as read");
+    }
   });
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
       if (!userId) return;
       const supabase = createClient();
-      await supabase.from("notifications").update({ is_read: true }).eq("user_id", userId).eq("is_read", false);
+      const { error } = await supabase.from("notifications").update({ is_read: true }).eq("user_id", userId).eq("is_read", false);
+      if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success("All notifications marked as read");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to mark all as read");
+    }
   });
 
   return { 

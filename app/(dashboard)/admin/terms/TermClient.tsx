@@ -11,6 +11,7 @@ import {
 } from "@/lib/actions/admin-management";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 import {
   DropdownMenu,
@@ -67,7 +68,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     const selectedIds = officers.map(o => o.profile_id).filter(Boolean);
     const uniqueIds = new Set(selectedIds);
     if (selectedIds.length !== uniqueIds.size) {
-      alert("You cannot assign the same officer multiple times. Please remove duplicates.");
+      toast.error("You cannot assign the same officer multiple times. Please remove duplicates.");
       setIsProcessing(false);
       return;
     }
@@ -76,10 +77,11 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     setIsProcessing(false);
     
     if (result.success) {
+      toast.success("New academic term created!");
       setIsModalOpen(false);
       setName(""); setStartDate(""); setEndDate(""); setOfficers([{ profile_id: "", position: "" }]);
     } else { 
-      alert(`Error: ${result.error}`); 
+      toast.error(`Error: ${result.error}`); 
     }
   };
 
@@ -88,7 +90,11 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     setIsProcessing(true);
     const result = await setActiveTerm(id);
     setIsProcessing(false);
-    if (!result.success) alert(`Error: ${result.error}`);
+    if (!result.success) {
+      toast.error(`Error: ${result.error}`);
+    } else {
+      toast.success("New academic term set as active!");
+    }
   };
 
   const handleDeleteTerm = async (id: string, termName: string) => {
@@ -96,7 +102,11 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     setIsProcessing(true);
     const result = await deleteTerm(id);
     setIsProcessing(false);
-    if (!result.success) alert(`Error: ${result.error}`);
+    if (!result.success) {
+      toast.error(`Error: ${result.error}`);
+    } else {
+      toast.success("Term deleted successfully");
+    }
   };
 
   const handleAddSingleOfficer = async (e: React.FormEvent) => {
@@ -105,7 +115,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
 
     const isDuplicate = editingTerm.officers?.some((o: any) => o.profiles?.id === newOfficerProfile);
     if (isDuplicate) {
-      alert("This user is already an officer for this term!");
+      toast.error("This user is already an officer for this term!");
       return;
     }
 
@@ -114,10 +124,11 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     setIsProcessing(false);
     
     if (result.success) {
+      toast.success("Officer assigned successfully");
       setNewOfficerProfile("");
       setNewOfficerPosition("");
     } else { 
-      alert(`Error: ${result.error}`); 
+      toast.error(`Error: ${result.error}`); 
     }
   };
 
@@ -126,7 +137,11 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     setIsProcessing(true);
     const result = await removeOfficer(officerId);
     setIsProcessing(false);
-    if (!result.success) alert(`Error: ${result.error}`);
+    if (!result.success) {
+      toast.error(`Error: ${result.error}`);
+    } else {
+      toast.success("Officer removed");
+    }
   };
 
   const handleCoverPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,7 +149,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     if (!file || !editingTerm) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("Please select an image smaller than 5MB");
+      toast.error("Please select an image smaller than 5MB");
       return;
     }
 
@@ -156,8 +171,9 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
       const result = await updateTermCover(editingTerm.id, publicUrl);
       if (!result.success) throw new Error(result.error);
       
+      toast.success("Term cover updated");
     } catch (err: any) {
-      alert("Upload failed: " + err.message);
+      toast.error("Upload failed: " + err.message);
     } finally {
       setIsUploadingCover(false);
     }
@@ -282,7 +298,6 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
           ))}
         </div>
       ) : (
-        /* 🔥 TABLE VIEW WITH TRIPLE DOT MENU */
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">

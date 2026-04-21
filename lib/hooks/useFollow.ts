@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toggleFollow, getFollowStatus } from "@/lib/actions/follow";
 import { useQueryClient } from "@tanstack/react-query"; 
+import { toast } from "sonner";
 
 export function useFollow(projectId: string, initialIsFollowing?: boolean) {
   const router = useRouter();
@@ -53,6 +54,8 @@ export function useFollow(projectId: string, initialIsFollowing?: boolean) {
     setIsFollowing(newState);
     window.dispatchEvent(new CustomEvent("sync-follow", { detail: { projectId, isFollowing: newState } }));
 
+    // Optimistically update the cache for all relevant queries
+    // 1. Update any infinite project feeds (Public/Followed)
     const projectQueries = queryClient.getQueriesData({ queryKey: ["projects"] });
     projectQueries.forEach(([queryKey, oldData]) => {
       const data = oldData as any;
@@ -100,20 +103,23 @@ export function useFollow(projectId: string, initialIsFollowing?: boolean) {
         }
         
         queryClient.invalidateQueries({ queryKey: ["followed-stats"] });
+        toast.success(newState ? "Project followed" : "Project unfollowed");
       } else {
         setIsFollowing(prevState);
         window.dispatchEvent(new CustomEvent("sync-follow", { detail: { projectId, isFollowing: prevState } }));
         queryClient.invalidateQueries({ queryKey: ["projects"] });
         queryClient.invalidateQueries({ queryKey: ["project", projectId] });
         queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
+        toast.error(result.error || "Failed to update follow status");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Follow action failed:", err);
       setIsFollowing(prevState);
       window.dispatchEvent(new CustomEvent("sync-follow", { detail: { projectId, isFollowing: prevState } }));
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
+      toast.error(err.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
     }

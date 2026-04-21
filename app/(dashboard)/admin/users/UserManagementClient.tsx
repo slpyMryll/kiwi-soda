@@ -5,6 +5,7 @@ import { Search, MoreVertical, ShieldAlert, Trash2, UserPlus, UserMinus, ShieldC
 import { updateUserRole, removeUser } from "@/lib/actions/admin-management";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import Link from "next/link";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
@@ -42,15 +43,18 @@ export function UserManagementClient({ initialUsers }: { initialUsers: any[] }) 
       
       const result = await updateUserRole(pendingAction.userId, pendingAction.role!);
       if (!result.success) {
-        alert(`Failed to update role: ${result.error}`);
+        toast.error(`Failed to update role: ${result.error}`);
         setUsers(originalUsers); 
+      } else {
+        toast.success(`User role updated to ${pendingAction.role}`);
       }
     } else if (pendingAction.type === 'remove') {
       const result = await removeUser(pendingAction.userId);
       if (result.success) {
         setUsers(prev => prev.filter(u => u.id !== pendingAction.userId));
+        toast.success("User removed from platform");
       } else {
-        alert(`Failed to remove user: ${result.error}`);
+        toast.error(`Failed to remove user: ${result.error}`);
       }
     }
     

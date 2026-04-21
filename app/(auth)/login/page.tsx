@@ -6,6 +6,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { getBorderClass } from "@/lib/utils/ui-helpers";
 import { validateVsuEmail } from "@/lib/utils/validation";
+import { toast } from "sonner";
 
 export default function Home() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function Home() {
   const handleGoogleSignIn = async () => {
     const origin = window.location.origin;
     const result = await signInWithGoogle(origin);
-    if (result?.error) alert(result.error);
+    if (result?.error) toast.error(result.error);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -36,8 +37,14 @@ export default function Home() {
     const result = await signInWithEmail(formData);
     
     if (result?.error) {
-      alert(result.error);
+      toast.error(result.error);
       setIsSigningIn(false); 
+    } else if (result?.path) {
+      toast.success("Welcome back!");
+      // Give the toast a tiny bit of time to render before navigation starts
+      setTimeout(() => {
+        router.push(result.path);
+      }, 200);
     }
   };
   

@@ -62,7 +62,7 @@ export async function signInWithEmail(formData: FormData) {
   if (authError || !user) return { error: authError?.message || "Login failed" }
 
   const path = await getRoleRedirectPath(supabase, user.id)
-  redirect(path)
+  return { success: true, path }
 }
 
 export async function logout() {
@@ -94,5 +94,5 @@ export async function updatePasswordAction(formData: FormData) {
   if (error || !user) return { error: error?.message || 'Update failed' };
 
   const path = await getRoleRedirectPath(supabase, user.id);
-  redirect(path);
+  return { success: true, path };
 }

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { uploadDocument, deleteDocument } from "@/lib/actions/project-details";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export function DocumentsTab({ project }: { project: any }) {
   const [open, setOpen] = useState(false);
@@ -80,7 +81,7 @@ export function DocumentsTab({ project }: { project: any }) {
     const fileExt = file.name.split(".").pop()?.toLowerCase();
 
     if (!fileExt || !allowedExtensions.includes(fileExt)) {
-      alert(
+      toast.error(
         "Invalid file type. Only PDF, Word, Excel, and ZIP files are allowed.",
       );
       setSelectedFile(null);
@@ -121,10 +122,11 @@ export function DocumentsTab({ project }: { project: any }) {
     setIsLoading(false);
 
     if (res?.error) {
-      alert(`Upload Error: ${res.error}`);
+      toast.error(`Upload Error: ${res.error}`);
     } else {
       setOpen(false);
       setSelectedFile(null);
+      toast.success("Document uploaded successfully");
     }
   };
 
@@ -135,7 +137,11 @@ export function DocumentsTab({ project }: { project: any }) {
     const res = await deleteDocument(project.id, docId, url);
     setIsLoading(false);
 
-    if (res?.error) alert(`Delete Error: ${res.error}`);
+    if (res?.error) {
+      toast.error(`Delete Error: ${res.error}`);
+    } else {
+      toast.success("Document deleted successfully");
+    }
   };
 
   const formatBytes = (bytes: number) => {

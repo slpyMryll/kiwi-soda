@@ -7,6 +7,7 @@ import { Project } from "@/types/projects";
 import { toggleProjectLiveStatus, deleteProject } from "@/lib/actions/project";
 import { updateProjectDetails } from "@/lib/actions/project-details";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export function ProjectManageHeader({ project }: { project: Project }) {
   const router = useRouter();
@@ -19,8 +20,12 @@ export function ProjectManageHeader({ project }: { project: Project }) {
     setIsPending(true);
     const res = await toggleProjectLiveStatus(project.id, project.liveStatus);
     setIsPending(false);
-    if (res.error) alert(`Error: ${res.error}`);
-    else setIsToggleModalOpen(false);
+    if (res.error) {
+      toast.error(`Error: ${res.error}`);
+    } else {
+      setIsToggleModalOpen(false);
+      toast.success(isLive ? "Project unpublished" : "Project published");
+    }
   };
 
   const handleDelete = async () => {
@@ -29,9 +34,10 @@ export function ProjectManageHeader({ project }: { project: Project }) {
     setIsPending(false);
     
     if (res.error) {
-      alert(`Delete Error: ${res.error}`);
+      toast.error(`Delete Error: ${res.error}`);
     } else {
       setIsDeleteModalOpen(false);
+      toast.success("Project deleted successfully");
       router.push("/project-manager/projects");
     }
   };
@@ -40,8 +46,12 @@ export function ProjectManageHeader({ project }: { project: Project }) {
     setIsPending(true);
     const res = await updateProjectDetails(project.id, formData);
     setIsPending(false);
-    if (res.error) alert(res.error);
-    else setIsEditModalOpen(false);
+    if (res.error) {
+      toast.error(res.error);
+    } else {
+      setIsEditModalOpen(false);
+      toast.success("Project details updated successfully");
+    }
   };
 
   const isLive = project.liveStatus === "Live";

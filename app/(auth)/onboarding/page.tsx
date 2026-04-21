@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { User, AtSign, Lock, Eye, EyeOff, ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Onboarding() {
   const [name, setName] = useState("");
@@ -35,7 +36,7 @@ export default function Onboarding() {
       error: userError,
     } = await supabase.auth.getUser();
     if (userError || !user) {
-      alert("Session expired. Please log in again.");
+      toast.error("Session expired. Please log in again.");
       return;
     }
 
@@ -48,7 +49,7 @@ export default function Onboarding() {
     });
 
     if (profileError) {
-      alert(`Profile Error: ${profileError.message}`);
+      toast.error(`Profile Error: ${profileError.message}`);
       return;
     }
 
@@ -56,12 +57,15 @@ export default function Onboarding() {
       password: password,
     });
     if (authError) {
-      alert(`Auth Error: ${authError.message} (Try a stronger password)`);
+      toast.error(`Auth Error: ${authError.message} (Try a stronger password)`);
       return;
     }
 
     await supabase.auth.refreshSession();
-    window.location.href = "/viewer";
+    toast.success("Account setup complete!");
+    setTimeout(() => {
+      window.location.href = "/viewer";
+    }, 200);
   };
 
   return (

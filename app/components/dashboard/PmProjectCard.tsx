@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toggleProjectLiveStatus, deleteProject } from "@/lib/actions/project";
 import { ProgressBar } from "../ui/ProgressBar";
+import { toast } from "sonner";
 
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -66,8 +67,12 @@ export function PmProjectCard(project: Project) {
     setIsPending(true);
     const res = await toggleProjectLiveStatus(id, liveStatus);
     setIsPending(false);
-    if (res.error) alert(`Error: ${res.error}`);
-    else setIsToggleModalOpen(false);
+    if (res.error) {
+      toast.error(`Error: ${res.error}`);
+    } else {
+      toast.success(liveStatus === "Live" ? "Project unpublished" : "Project published live!");
+      setIsToggleModalOpen(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -76,8 +81,9 @@ export function PmProjectCard(project: Project) {
     setIsPending(false);
 
     if (res.error) {
-      alert(`Delete Error: ${res.error}`);
+      toast.error(`Delete Error: ${res.error}`);
     } else {
+      toast.success("Project deleted successfully");
       setIsDeleteDialogOpen(false);
     }
   };

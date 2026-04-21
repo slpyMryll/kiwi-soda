@@ -11,6 +11,7 @@ import { NAV_CONFIG } from "@/types/navigation";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "./NotificationBell";
+import { toast } from "sonner";
 
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -33,6 +34,13 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const handleLogout = async () => {
+    toast.success("Logged out successfully");
+    setTimeout(async () => {
+      await logout();
+    }, 200);
+  };
 
   return (
     <header className="w-full bg-surface-brand text-white h-18 sticky top-0 z-50 border-b border-white/10 shadow-md">
@@ -177,7 +185,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                   <DropdownMenuSeparator className="bg-gray-200 my-1" />
                   <DropdownMenuItem 
                     aria-label="Log out of your account"
-                    onClick={() => logout()} 
+                    onClick={handleLogout} 
                     className="py-3 px-3 cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 rounded-lg transition-colors"
                   >
                     <LogOut className="mr-3 w-5 h-5" strokeWidth={2.5} />
