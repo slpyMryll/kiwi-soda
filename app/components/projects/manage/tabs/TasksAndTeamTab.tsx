@@ -12,6 +12,7 @@ import { USSC_BUDGET_CATEGORIES } from "@/lib/constants/budget-categories";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function TasksAndTeamTab({
   projectId, members = [], tasks = [], availablePMs = [], isProjectLead = false, currentUserId = "",
@@ -181,7 +182,8 @@ export function TasksAndTeamTab({
   const handleApproveTask = async (taskId: string) => {
     const supabase = createClient();
     const { error } = await supabase.from("tasks").update({ status: "Completed" }).eq("id", taskId);
-    if (error) alert("Failed to approve task.");
+    if (error) toast.error("Failed to approve task.");
+    else toast.success("Task approved!");
   };
 
   const confirmDelete = (taskId: string) => {
@@ -197,8 +199,9 @@ export function TasksAndTeamTab({
 
     setIsDeleting(false);
     if (error) {
-      alert("Failed to delete task.");
+      toast.error("Failed to delete task.");
     } else {
+      toast.success("Task deleted successfully.");
       setIsDeleteModalOpen(false);
       setTaskToDelete(null);
     }
@@ -244,8 +247,11 @@ export function TasksAndTeamTab({
     const formData = new FormData(e.currentTarget);
     const result = await addProjectMember(projectId, formData);
     setIsLoading(false);
-    if (result.error) alert(`Database Error: ${result.error}`);
-    else setIsMemberModalOpen(false);
+    if (result.error) toast.error(`Database Error: ${result.error}`);
+    else {
+      toast.success("Member added to project!");
+      setIsMemberModalOpen(false);
+    }
   };
 
   const handleAssignTask = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -255,7 +261,7 @@ export function TasksAndTeamTab({
 
     const cost = Number(formData.get("cost") || 0);
     if (remainingBudget !== null && cost > remainingBudget) {
-      alert(`Error: Task cost (₱${cost.toLocaleString()}) exceeds the remaining project balance (₱${remainingBudget.toLocaleString()}).`);
+      toast.error(`Error: Task cost (₱${cost.toLocaleString()}) exceeds the remaining project balance (₱${remainingBudget.toLocaleString()}).`);
       setIsLoading(false);
       return;
     }
@@ -263,8 +269,9 @@ export function TasksAndTeamTab({
     const result = await assignTask(projectId, formData);
     setIsLoading(false);
     if (result.error) {
-      alert(`Error: ${result.error}`);
+      toast.error(`Error: ${result.error}`);
     } else {
+      toast.success("Task assigned successfully!");
       fetchFreshTabState();
       setIsTaskModalOpen(false);
     }
@@ -280,7 +287,7 @@ export function TasksAndTeamTab({
     const costDifference = cost - oldCost;
 
     if (remainingBudget !== null && costDifference > remainingBudget) {
-      alert(`Error: Increasing the task cost by ₱${costDifference.toLocaleString()} exceeds the remaining project balance (₱${remainingBudget.toLocaleString()}).`);
+      toast.error(`Error: Increasing the task cost by ₱${costDifference.toLocaleString()} exceeds the remaining project balance (₱${remainingBudget.toLocaleString()}).`);
       setIsLoading(false);
       return;
     }
@@ -294,8 +301,9 @@ export function TasksAndTeamTab({
     };
     const { error } = await supabase.from("tasks").update(updates).eq("id", editingTask.id);
     setIsLoading(false);
-    if (error) alert(`Error updating task: ${error.message}`);
+    if (error) toast.error(`Error updating task: ${error.message}`);
     else {
+      toast.success("Task updated successfully!");
       fetchFreshTabState();
       setIsEditModalOpen(false);
       setEditingTask(null);

@@ -23,6 +23,7 @@ import {
 } from "@/lib/actions/project-details";
 import { createClient } from "@/lib/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export function OverviewTab({ project }: { project: any }) {
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -77,10 +78,11 @@ export function OverviewTab({ project }: { project: any }) {
     setIsPending(false);
     
     if (res.error) {
-      alert(res.error);
+      toast.error(res.error);
       setLocalProject(project);
     } else {
       setIsEditOpen(false);
+      toast.success("Project description updated successfully");
 
       queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
       queryClient.invalidateQueries({ queryKey: ["projects", "public"] });
@@ -100,10 +102,11 @@ export function OverviewTab({ project }: { project: any }) {
     setIsProgressPending(false);
     
     if (res?.error) {
-      alert(res.error);
+      toast.error(res.error);
       setLocalProject(project);
     } else {
       setIsProgressEditOpen(false);
+      toast.success("Project progress updated successfully");
 
       queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
       queryClient.invalidateQueries({ queryKey: ["projects", "public"] });

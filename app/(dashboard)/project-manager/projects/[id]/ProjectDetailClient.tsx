@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 import { ProjectManageHeader } from "@/app/components/projects/manage/ProjectManagerHeader";
 import { OverviewTab } from "@/app/components/projects/manage/tabs/OveviewTab";
@@ -113,7 +114,7 @@ export default function ProjectDetailClient({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("Please select an image smaller than 5MB");
+      toast.error("Please select an image smaller than 5MB");
       return;
     }
 
@@ -141,10 +142,11 @@ export default function ProjectDetailClient({
 
       if (updateError) throw updateError;
 
+      toast.success("Cover photo updated!");
       router.refresh(); 
     } catch (error) {
       console.error("Upload failed:", error);
-      alert("Failed to update cover photo.");
+      toast.error("Failed to update cover photo.");
     } finally {
       setIsUploading(false);
     }

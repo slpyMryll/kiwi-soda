@@ -2,29 +2,38 @@
 import { useState } from "react";
 import { updatePasswordAction } from "@/lib/actions/auth";
 import { Lock, Eye, EyeOff } from "lucide-react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
+
 export default function UpdatePasswordPage() {
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const handleAction = async (formData: FormData) => {
     const result = await updatePasswordAction(formData);
-    if (result?.error) alert(result.error);
-    else alert("Password updated successfully! Redirecting...");
+    if (result?.error) {
+      toast.error(result.error);
+    } else if (result?.path) {
+      toast.success("Password updated successfully!");
+      setTimeout(() => {
+        router.push(result.path);
+      }, 200);
+    }
   };
 
   return (
      <main className="min-h-screen w-full bg-surface-brand flex flex-col-reverse lg:flex-row items-stretch justify-center lg:px-14 lg:py-1 lg:gap-14">
       <section className="relative flex-1 bg-white rounded-t-[40px] lg:rounded-2xl px-8 py-10 lg:px-14 lg:py-8 shadow-2xl self-end lg:self-center w-full max-w-2xl mx-auto z-10 transition-all duration-500">
-        <Link
-          href="/forgot-password"
+        <button
+          onClick={() => window.history.length > 1 ? router.back() : router.push("/forgot-password")}
           className="absolute top-6 left-6 flex items-center gap-1 text-sm font-bold text-gray-400 hover:text-green-dark transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           Back
-        </Link>
+        </button>
          <div className="hidden lg:flex gap-3 mb-8 mt-4">
           <img src="logov3.png" alt="OnTrack" className="w-9 h-9" />
           <h1 className="text-header text-3xl font-bold">OnTrack</h1>

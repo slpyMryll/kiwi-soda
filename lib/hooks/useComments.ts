@@ -5,6 +5,7 @@ import { getProjectComments } from "@/lib/actions/project-details";
 import { postComment, editComment, deleteComment } from "@/lib/actions/project";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 export function useComments(projectId: string, initialComments?: any[]) {
   const queryClient = useQueryClient();
@@ -37,18 +38,36 @@ export function useComments(projectId: string, initialComments?: any[]) {
   const addMutation = useMutation({
     mutationFn: ({ content, parentId }: { content: string, parentId?: string }) => 
       postComment(projectId, content, parentId || null),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success("Comment posted successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to post comment");
+    }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ commentId, content }: { commentId: string, content: string }) => 
       editComment(commentId, content),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success("Comment updated successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update comment");
+    }
   });
 
   const removeMutation = useMutation({
     mutationFn: (commentId: string) => deleteComment(commentId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success("Comment deleted successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete comment");
+    }
   });
 
   return {
