@@ -45,7 +45,7 @@ export function CommentList({
   }
 
   return (
-    <div className="space-y-6 mt-8">
+    <div className="space-y-4 mt-8">
       {topLevel.map((comment: any) => (
         <CommentItem 
           key={comment.id} 

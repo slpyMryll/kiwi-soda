@@ -191,9 +191,21 @@ export async function getSingleProjectForFeed(projectId: string): Promise<Projec
       ),
       project_milestones ( id, title, end_date, status, progress ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
-      comments ( count )
+      comments ( 
+        id, 
+        user_id,
+        content, 
+        created_at, 
+        parent_id,
+        is_hidden,
+        profiles (
+          full_name,
+          avatar_url
+        )
+      )
     `)
     .eq('id', projectId)
+    .order("created_at", { foreignTable: "comments", ascending: false })
     .single();
 
   if (error || !projectData) return null;
@@ -226,7 +238,16 @@ export async function getSingleProjectForFeed(projectId: string): Promise<Projec
     spentBudget: Number(projectData.spent_budget || 0),
     progress: projectData.progress || 0,
     tags: projectData.tags || [],
-    commentsCount: projectData.comments?.[0]?.count || 0,
+    comments: (projectData.comments || []).map((c: any) => ({
+      id: c.id,
+      user_id: c.user_id,
+      content: c.content,
+      created_at: c.created_at,
+      parent_id: c.parent_id,
+      is_hidden: c.is_hidden,
+      profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
+    })),
+    commentsCount: projectData.comments?.length || 0,
     membersCount: teamMembers.length,
     isFollowing, 
     deadline: new Date(projectData.deadline),

@@ -9,6 +9,7 @@ import { Project } from "@/types/projects";
 import { getInfiniteProjects, getSingleProjectForFeed } from "@/lib/actions/project-feed";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Inbox } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import dynamic from "next/dynamic";
 
@@ -109,34 +110,39 @@ export function InfiniteProjectFeed({
 
   return (
     <>
-      <div className={`relative flex flex-col gap-6 mt-6 mx-auto w-full transition-opacity duration-300 ${isFetching && !isFetchingNextPage ? 'opacity-50' : 'opacity-100'}`}>
+      <div className={cn(
+        "relative flex flex-col gap-6 mt-6 mx-auto w-full transition-all duration-300",
+        isFetching && !isFetchingNextPage ? "opacity-60 grayscale-[20%]" : "opacity-100"
+      )}>
         
         {isFetching && !isFetchingNextPage && (
-          <div className="absolute inset-0 z-50 flex justify-center pointer-events-none">
-            <div className="sticky top-24 h-fit inline-flex items-center gap-2 bg-white/95 px-4 py-2 rounded-full shadow-lg border border-gray-100 animate-in fade-in pointer-events-auto mt-2">
+          <div className="absolute inset-x-0 -top-2 z-50 flex justify-center pointer-events-none">
+            <div className="sticky top-24 h-fit inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-100 animate-in fade-in slide-in-from-top-2 pointer-events-auto">
                <Loader2 className="w-4 h-4 animate-spin text-[#1B4332]" />
-               <span className="text-xs font-bold text-[#1B4332]">Updating...</span>
+               <span className="text-xs font-bold text-[#1B4332]">Updating results...</span>
             </div>
           </div>
         )}
 
-        {projects.map((project, index) => (
-           <div key={`${project.id}-${index}`} className="animate-in fade-in slide-in-from-top-4 duration-500">
-             <ProjectCard 
-               userRole={userRole} 
-               project={project}
-               isPriority={index < 2}
-               onReadMore={userRole === "guest" ? () => setSelectedProject({
-                 ...project,
-                 comments: project.comments || [],
-                 milestones: project.milestones || [],
-                 budgetUpdates: project.budgetUpdates || [],
-                 members: project.members || [],
-                 tags: project.tags || []
-               }) : undefined} 
-             />
-           </div>
-        ))}
+        <div className="grid grid-cols-1 gap-6">
+          {projects.map((project, index) => (
+             <div key={`${project.id}-${index}`} className="animate-in fade-in slide-in-from-top-4 duration-500">
+               <ProjectCard 
+                 userRole={userRole} 
+                 project={project}
+                 isPriority={index < 2}
+                 onReadMore={userRole === "guest" ? () => setSelectedProject({
+                   ...project,
+                   comments: project.comments || [],
+                   milestones: project.milestones || [],
+                   budgetUpdates: project.budgetUpdates || [],
+                   members: project.members || [],
+                   tags: project.tags || []
+                 }) : undefined} 
+               />
+             </div>
+          ))}
+        </div>
         
         <div ref={ref} className="h-10 w-full flex justify-center items-center">
           {isFetchingNextPage && <Loader2 className="w-6 h-6 animate-spin text-[#1B4332]" />}

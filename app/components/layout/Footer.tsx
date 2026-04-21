@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Facebook, Instagram } from 'lucide-react'
 import { getSystemSettings } from "@/lib/actions/system"
+import Image from 'next/image'
 
 const footerLinks = {
   discover: [
@@ -95,7 +96,7 @@ export async function Footer() {
           
           <div className="flex items-center justify-center md:justify-start gap-2 w-full md:w-1/3">
             <div className="bg-white rounded-full p-0.5">
-              <img src="/logov3.png" alt={`${orgName} Logo`} className="w-8 h-8 rounded-full" />
+              <Image src="/logov3.png" alt={`${orgName} Logo`} width={32} height={32} className="rounded-full" />
             </div>
             <span className="font-bold text-white md:hidden">{orgName}</span>
           </div>
@@ -108,13 +109,23 @@ export async function Footer() {
 
           <div className="flex items-center justify-center md:justify-end gap-3 w-full md:w-1/3">
             {settings.social_fb && (
-              <a href={settings.social_fb} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <a 
+                href={settings.social_fb} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                aria-label={`Visit our Facebook page`}
+              >
                 <Facebook className="w-4 h-4 text-white" fill="currentColor" />
               </a>
             )}
             
             {settings.contact_email && (
-              <a href={`mailto:${settings.contact_email}`} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <a 
+                href={`mailto:${settings.contact_email}`} 
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                aria-label={`Send us an email`}
+              >
                 <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
                 </svg>
@@ -122,7 +133,13 @@ export async function Footer() {
             )}
 
             {settings.social_ig && (
-              <a href={settings.social_ig} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+              <a 
+                href={settings.social_ig} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                aria-label={`Visit our Instagram profile`}
+              >
                 <Instagram className="w-4 h-4 text-white" />
               </a>
             )}

@@ -40,7 +40,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
         <div className="flex items-center gap-3">
           <Sheet>
             <SheetTrigger asChild>
-              <button aria-label="Open navigation menu" className="hidden md:flex lg:hidden p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors">
+              <button aria-label="Open navigation menu" className="flex lg:hidden p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors">
                 <Menu className="w-6 h-6 text-white" />
               </button>
             </SheetTrigger>
@@ -51,7 +51,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
               <div className="p-6 bg-surface-brand text-white flex items-center justify-between border-b border-white/10 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="bg-white rounded-full p-0.5 shrink-0">
-                    <img src="/logov3.png" alt="OnTrack Logo" className="w-8 h-8 rounded-full" />
+                    <Image src="/logov3.png" alt="OnTrack Logo" width={32} height={32} className="rounded-full" />
                   </div>
                   <span className="text-xl font-bold tracking-tight">OnTrack</span>
                 </div>
@@ -100,7 +100,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
 
           <Link href="/" className="flex items-center gap-2 group">
             <div className="bg-white rounded-full p-0.5 shrink-0 transition-transform group-hover:scale-105 hidden sm:block">
-              <img src="/logov3.png" alt="OnTrack Logo" className="w-8 h-8 rounded-full" />
+              <Image src="/logov3.png" alt="OnTrack Logo" width={32} height={32} className="rounded-full" />
             </div>
             <span className="text-xl font-bold tracking-tight text-white">OnTrack</span>
           </Link>
@@ -120,7 +120,12 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
 
                   <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden shrink-0 border border-white/10">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt={`${profile.full_name}'s profile picture`} className="w-full h-full object-cover" />
+                      <img 
+                        src={profile.avatar_url} 
+                        alt={`${profile.full_name}'s profile picture`} 
+                        className="w-full h-full object-cover" 
+                        referrerPolicy="no-referrer"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white bg-[#1B4332]">
                         {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
@@ -138,7 +143,12 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                     </div>
                     <div className="w-12 h-12 rounded-full border-2 border-[#2C5243] overflow-hidden shrink-0 ml-4">
                       {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt={`${profile?.full_name || "User"}'s large profile picture`} className="w-full h-full object-cover" />
+                        <img 
+                          src={profile.avatar_url} 
+                          alt={`${profile?.full_name || "User"}'s large profile picture`} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white bg-[#1B4332]">
                           {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
