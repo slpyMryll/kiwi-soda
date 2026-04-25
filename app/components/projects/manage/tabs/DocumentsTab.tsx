@@ -11,6 +11,7 @@ import {
   File as FileBlank,
   FileSpreadsheet,
   Pin,
+  PinOff,
 } from "lucide-react";
 import {
   Dialog,
@@ -19,9 +20,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { uploadDocument, deleteDocument } from "@/lib/actions/project-details";
+import { uploadDocument, deleteDocument, togglePinDocument } from "@/lib/actions/project-details";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function DocumentsTab({ project }: { project: any }) {
   const [open, setOpen] = useState(false);
@@ -33,7 +35,13 @@ export function DocumentsTab({ project }: { project: any }) {
   const [localDocuments, setLocalDocuments] = useState(project.documents || []);
 
   useEffect(() => {
-    setLocalDocuments(project.documents || []);
+    // Sort documents: Pinned first, then by date descending
+    const sorted = [...(project.documents || [])].sort((a: any, b: any) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+    setLocalDocuments(sorted);
   }, [project.documents]);
 
   useEffect(() => {
@@ -56,14 +64,35 @@ export function DocumentsTab({ project }: { project: any }) {
               url: payload.new.file_url,
               size: payload.new.file_size,
               type: payload.new.file_type,
-              uploadedBy: "Project Team", // Optimistic until hard refresh
+              uploadedBy: "Project Team", 
               date: new Date(payload.new.created_at).toLocaleDateString(),
+              isPinned: payload.new.is_pinned || false,
             };
-            setLocalDocuments((prev: any) => [newDoc, ...prev]);
+            setLocalDocuments((prev: any) => {
+              const updated = [newDoc, ...prev];
+              return updated.sort((a: any, b: any) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
+              });
+            });
           } else if (payload.eventType === "DELETE") {
             setLocalDocuments((prev: any) =>
               prev.filter((d: any) => d.id !== payload.old.id),
             );
+          } else if (payload.eventType === "UPDATE") {
+            setLocalDocuments((prev: any) => {
+              const updated = prev.map((d: any) => 
+                d.id === payload.new.id 
+                  ? { ...d, isPinned: payload.new.is_pinned } 
+                  : d
+              );
+              return updated.sort((a: any, b: any) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
+              });
+            });
           }
         },
       )
@@ -133,14 +162,41 @@ export function DocumentsTab({ project }: { project: any }) {
   const handleDelete = async (docId: string, url: string) => {
     if (!confirm("Are you sure you want to delete this document?")) return;
 
+    // Optimistic update
+    const previousDocs = [...localDocuments];
+    setLocalDocuments(prev => prev.filter(d => d.id !== docId));
+
     setIsLoading(true);
     const res = await deleteDocument(project.id, docId, url);
     setIsLoading(false);
 
     if (res?.error) {
+      setLocalDocuments(previousDocs); // Rollback
       toast.error(`Delete Error: ${res.error}`);
     } else {
       toast.success("Document deleted successfully");
+    }
+  };
+
+  const handleTogglePin = async (docId: string, currentStatus: boolean) => {
+    // Optimistic update
+    const previousDocs = [...localDocuments];
+    setLocalDocuments(prev => {
+      const updated = prev.map(d => d.id === docId ? { ...d, isPinned: !currentStatus } : d);
+      return updated.sort((a: any, b: any) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+    });
+
+    const res = await togglePinDocument(project.id, docId, currentStatus);
+
+    if (res?.error) {
+      setLocalDocuments(previousDocs); // Rollback
+      toast.error(`Error: ${res.error}`);
+    } else {
+      toast.success(currentStatus ? "Document unpinned" : "Document pinned");
     }
   };
 
@@ -283,7 +339,12 @@ export function DocumentsTab({ project }: { project: any }) {
           localDocuments.map((doc: any) => (
             <div
               key={doc.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl border border-gray-200 bg-white hover:border-[#1B4332] hover:shadow-sm transition-all group gap-3 sm:gap-4"
+              className={cn(
+                "flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl border transition-all group gap-3 sm:gap-4 bg-white",
+                doc.isPinned 
+                  ? "border-[#1B4332] bg-green-50/30 shadow-sm" 
+                  : "border-gray-200 hover:border-[#1B4332] hover:shadow-sm"
+              )}
             >
               <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1 w-full">
                 <div className="shrink-0 p-2 sm:p-2 bg-gray-50 rounded-lg">
@@ -291,25 +352,41 @@ export function DocumentsTab({ project }: { project: any }) {
                 </div>
 
                 <div className="flex flex-col gap-1 min-w-0 flex-1">
-                  <h4
-                    className="text-sm font-bold text-[#153B44] break-all leading-tight pr-2"
-                    title={doc.name}
-                  >
-                    {doc.name}
-                  </h4>
+                  <div className="flex items-center gap-2">
+                    <h4
+                      className="text-sm font-bold text-[#153B44] break-all leading-tight pr-2"
+                      title={doc.name}
+                    >
+                      {doc.name}
+                    </h4>
+                    {doc.isPinned && (
+                      <Pin className="w-3 h-3 text-[#1B4332] fill-[#1B4332] shrink-0" />
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] sm:text-xs font-medium text-gray-500">
                     <span className="whitespace-nowrap">
                       {formatBytes(doc.size)}
                     </span>
                     <span className="hidden sm:inline">•</span>
                     <span className="whitespace-nowrap">{doc.date}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="whitespace-nowrap text-[#1B4332]">by {doc.uploadedBy}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 shrink-0 self-end sm:self-auto w-full sm:w-auto border-t sm:border-0 border-gray-100 pt-3 sm:pt-0 mt-1 sm:mt-0">
-                <button className="p-2 sm:p-2.5 text-gray-400 hover:text-[#1B4332] bg-gray-50 hover:bg-green-50 rounded-lg transition-colors border border-gray-100 sm:border-transparent">
-                  <Pin className="w-4 h-4" />
+                <button 
+                  onClick={() => handleTogglePin(doc.id, doc.isPinned)}
+                  className={cn(
+                    "p-2 sm:p-2.5 rounded-lg transition-colors border border-gray-100 sm:border-transparent",
+                    doc.isPinned 
+                      ? "text-[#1B4332] bg-green-100 hover:bg-green-200" 
+                      : "text-gray-400 hover:text-[#1B4332] bg-gray-50 hover:bg-green-50"
+                  )}
+                  title={doc.isPinned ? "Unpin Document" : "Pin Document"}
+                >
+                  {doc.isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
                 </button>
                 <a
                   href={`${doc.url}?download=${encodeURIComponent(doc.name)}`}

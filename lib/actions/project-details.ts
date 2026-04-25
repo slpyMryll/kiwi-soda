@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { notifyProjectFollowers } from "./follow";
+import { revalidatePath } from "next/cache";
 
 export async function addProjectMember(projectId: string, formData: FormData) {
   const supabase = await createClient();
@@ -27,6 +28,7 @@ export async function addProjectMember(projectId: string, formData: FormData) {
     action_link: `/project-manager/projects/${projectId}`,
   });
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -93,6 +95,7 @@ export async function assignTask(projectId: string, formData: FormData) {
     });
   }
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -135,6 +138,8 @@ export async function addMilestone(projectId: string, formData: FormData) {
     `/viewer/projects/${projectId}`,
     "milestone_update",
   );
+
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -161,6 +166,8 @@ export async function updateProjectDetails(
           ? "Permission Denied: Only the PM can edit."
           : error.message,
     };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -183,6 +190,8 @@ export async function updateProjectDescription(
           ? "Permission Denied: Only the PM can edit."
           : error.message,
     };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -214,6 +223,8 @@ export async function updateMilestone(
       `/viewer/projects/${projectId}`,
       "milestone_update",
     );
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -225,6 +236,8 @@ export async function deleteMilestone(projectId: string, milestoneId: string) {
     .eq("id", milestoneId)
     .eq("project_id", projectId);
   if (error) return { error: error.message };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -259,6 +272,8 @@ export async function uploadDocument(projectId: string, formData: FormData) {
   });
 
   if (dbError) return { error: dbError.message };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -278,6 +293,22 @@ export async function deleteDocument(
     .eq("id", documentId)
     .eq("project_id", projectId);
   if (error) return { error: error.message };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
+  return { success: true };
+}
+
+export async function togglePinDocument(projectId: string, documentId: string, currentStatus: boolean) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("project_documents")
+    .update({ is_pinned: !currentStatus })
+    .eq("id", documentId)
+    .eq("project_id", projectId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -313,6 +344,8 @@ export async function updateProjectProgress(
       `/viewer/projects/${projectId}`,
       "progress_update",
     );
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -374,6 +407,7 @@ export async function updateProjectBudget(
     });
   }
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true, log };
 }
 
@@ -435,6 +469,7 @@ export async function addExpense(projectId: string, formData: FormData) {
     });
   }
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true, log };
 }
 
@@ -490,6 +525,8 @@ export async function approveExpense(logId: string, projectId: string) {
       `/viewer/projects/${projectId}`,
       "budget_update",
     );
+    
+    revalidatePath(`/project-manager/projects/${projectId}`);
     return { success: true, log: updatedLog };
   } else {
     const amountToApprove = log!.new_amount - log!.old_amount;
@@ -527,6 +564,8 @@ export async function approveExpense(logId: string, projectId: string) {
       `/viewer/projects/${projectId}`,
       "expense_update",
     );
+    
+    revalidatePath(`/project-manager/projects/${projectId}`);
     return { success: true, log: updatedLog };
   }
 }
@@ -563,6 +602,7 @@ export async function rejectExpense(logId: string, projectId: string) {
     });
   }
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true, log: updatedLog };
 }
 
@@ -640,6 +680,7 @@ export async function adjustExpense(logId: string, projectId: string) {
     .select("*, profiles:changed_by(full_name)")
     .single();
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return {
     success: true,
     updatedOldLog,
