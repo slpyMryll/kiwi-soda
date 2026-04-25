@@ -2,8 +2,9 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { BellRing } from "lucide-react";
 
 export interface Notification {
   id: string;
@@ -19,7 +20,7 @@ export interface Notification {
 
 export function useNotifications(userId?: string) {
   const queryClient = useQueryClient();
-  const queryKey = ["notifications", userId];
+  const queryKey = useMemo(() => ["notifications", userId], [userId]);
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey,
@@ -48,12 +49,34 @@ export function useNotifications(userId?: string) {
     const channel = supabase
       .channel(`notifications-${userId}`)
       .on("postgres_changes", { 
-        event: "*", 
+        event: "INSERT", 
         schema: "public", 
         table: "notifications", 
         filter: `user_id=eq.${userId}` 
-      }, () => {
+      }, (payload) => {
+        // Show a live toast for new notifications
+        const newNotif = payload.new as Notification;
+        toast(newNotif.message, {
+          icon: <BellRing className="w-4 h-4 text-[#1B4332]" />,
+          duration: 5000,
+          action: newNotif.action_link ? {
+            label: 'View',
+            onClick: () => window.location.href = newNotif.action_link!
+          } : undefined
+        });
+        
         queryClient.invalidateQueries({ queryKey });
+      })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${userId}`
+      }, (payload) => {
+        // Handle updates/deletes silently
+        if (payload.eventType !== "INSERT") {
+          queryClient.invalidateQueries({ queryKey });
+        }
       })
       .subscribe();
 
@@ -73,7 +96,7 @@ export function useNotifications(userId?: string) {
       queryClient.invalidateQueries({ queryKey });
       toast.success("Notification marked as read");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || "Failed to mark notification as read");
     }
   });
@@ -89,7 +112,7 @@ export function useNotifications(userId?: string) {
       queryClient.invalidateQueries({ queryKey });
       toast.success("All notifications marked as read");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || "Failed to mark all as read");
     }
   });
