@@ -21,8 +21,10 @@ export default function Home() {
 
   const handleGoogleSignIn = async () => {
     const origin = window.location.origin;
-    const result = await signInWithGoogle(origin);
-    if (result?.error) toast.error(result.error);
+    toast.promise(signInWithGoogle(origin), {
+      loading: 'Redirecting to Google...',
+      error: (err) => err?.message || "Google Sign-In failed"
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -32,20 +34,22 @@ export default function Home() {
     if (!isEmailValid || !isPasswordValid) return;
 
     setIsSigningIn(true);
-    
     const formData = new FormData(e.currentTarget);
-    const result = await signInWithEmail(formData);
-    
-    if (result?.error) {
-      toast.error(result.error);
-      setIsSigningIn(false); 
-    } else if (result?.path) {
-      toast.success("Welcome back!");
-      // Give the toast a tiny bit of time to render before navigation starts
-      setTimeout(() => {
-        router.push(result.path);
-      }, 200);
-    }
+
+    toast.promise(signInWithEmail(formData), {
+      loading: 'Signing you in...',
+      success: (result) => {
+        if (result?.path) {
+          router.push(result.path);
+          return "Welcome back!";
+        }
+        return "Login successful";
+      },
+      error: (err) => {
+        setIsSigningIn(false);
+        return err?.message || "Login failed. Please check your credentials.";
+      }
+    });
   };
   
   return (
