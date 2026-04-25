@@ -26,7 +26,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // 1. Define Public Routes
-  const publicRoutes = ['/', '/login', '/forgot-password', '/robots.txt', '/sitemap.xml', '/favicon.ico']
+  const publicRoutes = ['/', '/login', '/forgot-password', '/robots.txt', '/sitemap.xml', '/favicon.ico', '/about', '/team', '/privacy', '/terms', '/cookies']
   const isPublicRoute = 
     publicRoutes.includes(pathname) || 
     pathname.startsWith('/auth') || 
