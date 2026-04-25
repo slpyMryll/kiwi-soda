@@ -7,12 +7,12 @@ const footerLinks = {
   discover: [
     { name: 'Home', href: '/' },
     { name: 'Explore Projects', href: '/viewer' },
-    { name: 'How it Works', href: '#' },
+    { name: 'How it Works', href: '/about' },
   ],
   organization: [
-    { name: 'About Us', href: '#' },
-    { name: 'Our Team', href: '#' },
-    { name: 'Contact', href: 'mailto:support@vsu.edu.ph' },
+    { name: 'About Us', href: '/about' },
+    { name: 'Our Team', href: '/team' },
+    { name: 'Contact', href: 'mailto:ontrack.techsupport@gmail.com' },
   ],
   legal: [
     { name: 'Privacy Policy', href: '/privacy' },
