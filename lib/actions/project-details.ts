@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notifyProjectFollowers } from "./follow";
 import { revalidatePath } from "next/cache";
+import { NotificationDispatcher } from "@/lib/services/notification-dispatcher";
 
 export async function addProjectMember(projectId: string, formData: FormData) {
   const supabase = await createClient();
@@ -22,10 +23,13 @@ export async function addProjectMember(projectId: string, formData: FormData) {
 
   if (error && error.code !== "23505") return { error: error.message };
 
-  await supabase.from("notifications").insert({
-    user_id: profileId,
+  await NotificationDispatcher.dispatch({
+    userIds: [profileId],
     message: `You have been added to a new project team.`,
-    action_link: `/project-manager/projects/${projectId}`,
+    actionLink: `/project-manager/projects/${projectId}`,
+    type: 'team_update',
+    category: 'general',
+    projectId
   });
 
   revalidatePath(`/project-manager/projects/${projectId}`);
@@ -137,6 +141,7 @@ export async function addMilestone(projectId: string, formData: FormData) {
     `New Milestone Added: "${title}"`,
     `/viewer/projects/${projectId}`,
     "milestone_update",
+    "followed_project_updates"
   );
 
   revalidatePath(`/project-manager/projects/${projectId}`);
@@ -222,6 +227,7 @@ export async function updateMilestone(
       `Milestone Updated: "${title}" is now ${status}`,
       `/viewer/projects/${projectId}`,
       "milestone_update",
+      "followed_project_updates"
     );
   
   revalidatePath(`/project-manager/projects/${projectId}`);
@@ -343,6 +349,7 @@ export async function updateProjectProgress(
       `Project progress is now at ${progress}%`,
       `/viewer/projects/${projectId}`,
       "progress_update",
+      "followed_project_updates"
     );
   
   revalidatePath(`/project-manager/projects/${projectId}`);
@@ -397,13 +404,17 @@ export async function updateProjectBudget(
       `Total budget was adjusted to ₱${newAmount.toLocaleString()}`,
       `/viewer/projects/${projectId}`,
       "budget_update",
+      "budget_alerts"
     );
 
   if (status === "Pending" && project?.manager_id) {
-    await supabase.from("notifications").insert({
-      user_id: project.manager_id,
+    await NotificationDispatcher.dispatch({
+      userIds: [project.manager_id],
       message: `A member requested to adjust the total budget to ₱${newAmount.toLocaleString()}.`,
-      action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+      actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+      type: 'budget_update',
+      category: 'budget_alerts',
+      projectId
     });
   }
 
@@ -460,12 +471,16 @@ export async function addExpense(projectId: string, formData: FormData) {
       `New expense recorded: ₱${amount.toLocaleString()} for ${category}`,
       `/viewer/projects/${projectId}`,
       "expense_update",
+      "budget_alerts"
     );
   } else if (status === "Pending" && project?.manager_id) {
-    await supabase.from("notifications").insert({
-      user_id: project.manager_id,
+    await NotificationDispatcher.dispatch({
+      userIds: [project.manager_id],
       message: `Pending Approval: Expense request for ₱${amount.toLocaleString()} (${category}).`,
-      action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+      actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+      type: 'budget_update',
+      category: 'budget_alerts',
+      projectId
     });
   }
 
@@ -511,10 +526,13 @@ export async function approveExpense(logId: string, projectId: string) {
       .eq("id", projectId);
 
     if (log.changed_by && log.changed_by !== user.id) {
-      await supabase.from("notifications").insert({
-        user_id: log.changed_by,
+      await NotificationDispatcher.dispatch({
+        userIds: [log.changed_by],
         message: `Your Total Budget adjustment request was Approved.`,
-        action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+        actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+        type: 'budget_update',
+        category: 'budget_alerts',
+        projectId
       });
     }
 
@@ -524,6 +542,7 @@ export async function approveExpense(logId: string, projectId: string) {
       `A budget adjustment request was approved.`,
       `/viewer/projects/${projectId}`,
       "budget_update",
+      "budget_alerts"
     );
     
     revalidatePath(`/project-manager/projects/${projectId}`);
@@ -550,10 +569,13 @@ export async function approveExpense(logId: string, projectId: string) {
       .eq("id", projectId);
 
     if (log!.changed_by && log!.changed_by !== user.id) {
-      await supabase.from("notifications").insert({
-        user_id: log!.changed_by,
+      await NotificationDispatcher.dispatch({
+        userIds: [log!.changed_by],
         message: `Your expense request for ₱${amountToApprove.toLocaleString()} was Approved!`,
-        action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+        actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+        type: 'budget_update',
+        category: 'budget_alerts',
+        projectId
       });
     }
 
@@ -563,6 +585,7 @@ export async function approveExpense(logId: string, projectId: string) {
       `An expense request for ₱${amountToApprove.toLocaleString()} was approved.`,
       `/viewer/projects/${projectId}`,
       "expense_update",
+      "budget_alerts"
     );
     
     revalidatePath(`/project-manager/projects/${projectId}`);
@@ -595,10 +618,13 @@ export async function rejectExpense(logId: string, projectId: string) {
 
   if (updatedLog?.changed_by && updatedLog.changed_by !== user.id) {
     const amountToReject = updatedLog.new_amount - updatedLog.old_amount;
-    await supabase.from("notifications").insert({
-      user_id: updatedLog.changed_by,
+    await NotificationDispatcher.dispatch({
+      userIds: [updatedLog.changed_by],
       message: `Your budget request for ₱${amountToReject.toLocaleString()} was Rejected.`,
-      action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+      actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+      type: 'budget_update',
+      category: 'budget_alerts',
+      projectId
     });
   }
 
