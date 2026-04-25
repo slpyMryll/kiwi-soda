@@ -6,13 +6,13 @@ import Image from 'next/image'
 const footerLinks = {
   discover: [
     { name: 'Home', href: '/' },
-    { name: 'Explore Projects', href: '#' },
+    { name: 'Explore Projects', href: '/viewer' },
     { name: 'How it Works', href: '#' },
   ],
   organization: [
     { name: 'About Us', href: '#' },
     { name: 'Our Team', href: '#' },
-    { name: 'Contact', href: '#' },
+    { name: 'Contact', href: 'mailto:support@vsu.edu.ph' },
   ],
   legal: [
     { name: 'Privacy Policy', href: '/privacy' },

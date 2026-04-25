@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ContentRail } from "./components/landing/ContentRail";
 import { Footer } from "./components/layout/Footer";
@@ -6,7 +5,6 @@ import { Header } from "./components/layout/Header";
 import { HeroBanner } from "./components/dashboard/HeroBanner";
 import { ProjectFilters } from "./components/dashboard/ProjectFilters";
 import { InfiniteProjectFeed } from "./components/dashboard/InfiniteProjectFeed";
-import { redirect } from "next/navigation";
 import { getAllTerms, getActiveTerm } from "@/lib/actions/project";
 
 export default async function LandingPage({
@@ -22,9 +20,23 @@ export default async function LandingPage({
 
   const activeTermId = resolvedParams?.term || currentActiveTerm?.id || "";
 
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+
+  let profile = null;
+  if (user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("role, full_name, avatar_url")
+      .eq("id", user.id)
+      .single();
+    profile = data;
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-bg-main">
-      <Header user={null} profile={null} />
+      <Header user={user} profile={profile} role={profile?.role} />
 
       <div className="flex flex-1 relative">
         <div className="hidden lg:block">
@@ -53,7 +65,7 @@ export default async function LandingPage({
             <ProjectFilters termId={activeTermId}/>
 
             <InfiniteProjectFeed
-              userRole="guest"
+              userRole={profile?.role || "guest"}
               termId={activeTermId}
             />
           </div>
