@@ -164,7 +164,7 @@ export function DocumentsTab({ project }: { project: any }) {
 
     // Optimistic update
     const previousDocs = [...localDocuments];
-    setLocalDocuments(prev => prev.filter(d => d.id !== docId));
+    setLocalDocuments((prev: any[]) => prev.filter((d: any) => d.id !== docId));
 
     setIsLoading(true);
     const res = await deleteDocument(project.id, docId, url);
@@ -181,8 +181,8 @@ export function DocumentsTab({ project }: { project: any }) {
   const handleTogglePin = async (docId: string, currentStatus: boolean) => {
     // Optimistic update
     const previousDocs = [...localDocuments];
-    setLocalDocuments(prev => {
-      const updated = prev.map(d => d.id === docId ? { ...d, isPinned: !currentStatus } : d);
+    setLocalDocuments((prev: any[]) => {
+      const updated = prev.map((d: any) => d.id === docId ? { ...d, isPinned: !currentStatus } : d);
       return updated.sort((a: any, b: any) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
