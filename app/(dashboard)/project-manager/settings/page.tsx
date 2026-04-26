@@ -29,7 +29,7 @@ export default async function PMSettingsPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen w-full">
-      <SettingsClient role="project-manager" initialData={initialData} />
+      <SettingsClient role="project-manager" initialData={initialData} userId={user.id} />
     </div>
   );
 }
