@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { notifyProjectFollowers } from "./follow";
+import { revalidatePath } from "next/cache";
+import { NotificationDispatcher } from "@/lib/services/notification-dispatcher";
 
 export async function addProjectMember(projectId: string, formData: FormData) {
   const supabase = await createClient();
@@ -21,12 +23,16 @@ export async function addProjectMember(projectId: string, formData: FormData) {
 
   if (error && error.code !== "23505") return { error: error.message };
 
-  await supabase.from("notifications").insert({
-    user_id: profileId,
+  await NotificationDispatcher.dispatch({
+    userIds: [profileId],
     message: `You have been added to a new project team.`,
-    action_link: `/project-manager/projects/${projectId}`,
+    actionLink: `/project-manager/projects/${projectId}`,
+    type: 'team_update',
+    category: 'general',
+    projectId
   });
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -69,6 +75,15 @@ export async function assignTask(projectId: string, formData: FormData) {
 
   if (taskError) return { error: taskError.message };
 
+  await NotificationDispatcher.dispatch({
+    userIds: [assignedTo],
+    message: `You have been assigned a new task: "${title}".`,
+    actionLink: `/project-manager/tasks?taskId=${newTask.id}`,
+    type: 'task_assignment',
+    category: 'general',
+    projectId
+  });
+
   if (cost > 0) {
     const { data: project } = await supabase
       .from("projects")
@@ -93,6 +108,7 @@ export async function assignTask(projectId: string, formData: FormData) {
     });
   }
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -134,7 +150,10 @@ export async function addMilestone(projectId: string, formData: FormData) {
     `New Milestone Added: "${title}"`,
     `/viewer/projects/${projectId}`,
     "milestone_update",
+    "followed_project_updates"
   );
+
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -161,6 +180,8 @@ export async function updateProjectDetails(
           ? "Permission Denied: Only the PM can edit."
           : error.message,
     };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -183,6 +204,8 @@ export async function updateProjectDescription(
           ? "Permission Denied: Only the PM can edit."
           : error.message,
     };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -213,7 +236,10 @@ export async function updateMilestone(
       `Milestone Updated: "${title}" is now ${status}`,
       `/viewer/projects/${projectId}`,
       "milestone_update",
+      "followed_project_updates"
     );
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -225,6 +251,8 @@ export async function deleteMilestone(projectId: string, milestoneId: string) {
     .eq("id", milestoneId)
     .eq("project_id", projectId);
   if (error) return { error: error.message };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -259,6 +287,8 @@ export async function uploadDocument(projectId: string, formData: FormData) {
   });
 
   if (dbError) return { error: dbError.message };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -278,6 +308,22 @@ export async function deleteDocument(
     .eq("id", documentId)
     .eq("project_id", projectId);
   if (error) return { error: error.message };
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
+  return { success: true };
+}
+
+export async function togglePinDocument(projectId: string, documentId: string, currentStatus: boolean) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("project_documents")
+    .update({ is_pinned: !currentStatus })
+    .eq("id", documentId)
+    .eq("project_id", projectId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -312,7 +358,10 @@ export async function updateProjectProgress(
       `Project progress is now at ${progress}%`,
       `/viewer/projects/${projectId}`,
       "progress_update",
+      "followed_project_updates"
     );
+  
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true };
 }
 
@@ -364,16 +413,21 @@ export async function updateProjectBudget(
       `Total budget was adjusted to ₱${newAmount.toLocaleString()}`,
       `/viewer/projects/${projectId}`,
       "budget_update",
+      "budget_alerts"
     );
 
   if (status === "Pending" && project?.manager_id) {
-    await supabase.from("notifications").insert({
-      user_id: project.manager_id,
+    await NotificationDispatcher.dispatch({
+      userIds: [project.manager_id],
       message: `A member requested to adjust the total budget to ₱${newAmount.toLocaleString()}.`,
-      action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+      actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+      type: 'budget_update',
+      category: 'budget_alerts',
+      projectId
     });
   }
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true, log };
 }
 
@@ -426,15 +480,20 @@ export async function addExpense(projectId: string, formData: FormData) {
       `New expense recorded: ₱${amount.toLocaleString()} for ${category}`,
       `/viewer/projects/${projectId}`,
       "expense_update",
+      "budget_alerts"
     );
   } else if (status === "Pending" && project?.manager_id) {
-    await supabase.from("notifications").insert({
-      user_id: project.manager_id,
+    await NotificationDispatcher.dispatch({
+      userIds: [project.manager_id],
       message: `Pending Approval: Expense request for ₱${amount.toLocaleString()} (${category}).`,
-      action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+      actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+      type: 'budget_update',
+      category: 'budget_alerts',
+      projectId
     });
   }
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true, log };
 }
 
@@ -476,10 +535,13 @@ export async function approveExpense(logId: string, projectId: string) {
       .eq("id", projectId);
 
     if (log.changed_by && log.changed_by !== user.id) {
-      await supabase.from("notifications").insert({
-        user_id: log.changed_by,
+      await NotificationDispatcher.dispatch({
+        userIds: [log.changed_by],
         message: `Your Total Budget adjustment request was Approved.`,
-        action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+        actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+        type: 'budget_update',
+        category: 'budget_alerts',
+        projectId
       });
     }
 
@@ -489,7 +551,10 @@ export async function approveExpense(logId: string, projectId: string) {
       `A budget adjustment request was approved.`,
       `/viewer/projects/${projectId}`,
       "budget_update",
+      "budget_alerts"
     );
+    
+    revalidatePath(`/project-manager/projects/${projectId}`);
     return { success: true, log: updatedLog };
   } else {
     const amountToApprove = log!.new_amount - log!.old_amount;
@@ -513,10 +578,13 @@ export async function approveExpense(logId: string, projectId: string) {
       .eq("id", projectId);
 
     if (log!.changed_by && log!.changed_by !== user.id) {
-      await supabase.from("notifications").insert({
-        user_id: log!.changed_by,
+      await NotificationDispatcher.dispatch({
+        userIds: [log!.changed_by],
         message: `Your expense request for ₱${amountToApprove.toLocaleString()} was Approved!`,
-        action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+        actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+        type: 'budget_update',
+        category: 'budget_alerts',
+        projectId
       });
     }
 
@@ -526,7 +594,10 @@ export async function approveExpense(logId: string, projectId: string) {
       `An expense request for ₱${amountToApprove.toLocaleString()} was approved.`,
       `/viewer/projects/${projectId}`,
       "expense_update",
+      "budget_alerts"
     );
+    
+    revalidatePath(`/project-manager/projects/${projectId}`);
     return { success: true, log: updatedLog };
   }
 }
@@ -556,13 +627,17 @@ export async function rejectExpense(logId: string, projectId: string) {
 
   if (updatedLog?.changed_by && updatedLog.changed_by !== user.id) {
     const amountToReject = updatedLog.new_amount - updatedLog.old_amount;
-    await supabase.from("notifications").insert({
-      user_id: updatedLog.changed_by,
+    await NotificationDispatcher.dispatch({
+      userIds: [updatedLog.changed_by],
       message: `Your budget request for ₱${amountToReject.toLocaleString()} was Rejected.`,
-      action_link: `/project-manager/projects/${projectId}?tab=Budget`,
+      actionLink: `/project-manager/projects/${projectId}?tab=Budget`,
+      type: 'budget_update',
+      category: 'budget_alerts',
+      projectId
     });
   }
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return { success: true, log: updatedLog };
 }
 
@@ -640,6 +715,7 @@ export async function adjustExpense(logId: string, projectId: string) {
     .select("*, profiles:changed_by(full_name)")
     .single();
 
+  revalidatePath(`/project-manager/projects/${projectId}`);
   return {
     success: true,
     updatedOldLog,

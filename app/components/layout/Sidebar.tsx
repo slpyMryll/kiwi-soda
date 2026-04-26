@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { NAV_CONFIG } from "@/types/navigation";
+import { usePathname } from "next/navigation";
+import { NAV_CONFIG, UserRole } from "@/types/navigation";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
-  role: "viewer" | "project-manager" | "admin";
+  role: UserRole;
 }
 
 const getShortName = (name?: string) => {
@@ -26,7 +26,6 @@ const getShortName = (name?: string) => {
 
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
@@ -34,7 +33,7 @@ export function Sidebar({ role }: SidebarProps) {
   const navItems = NAV_CONFIG[role] || NAV_CONFIG.viewer;
 
   return (
-    <aside className="fixed bottom-0 left-0 z-40 w-full bg-white border-t border-gray-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] flex md:hidden lg:flex lg:shadow-none lg:sticky lg:top-18 lg:w-64 lg:bg-bg-main lg:h-[calc(100vh-72px)] lg:border-t-0 lg:border-r lg:border-gray-200/60 lg:flex-col pb-[env(safe-area-inset-bottom)] lg:pb-0">
+    <aside className="fixed bottom-0 left-0 z-40 w-full h-14 bg-white border-t border-gray-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] flex md:hidden lg:flex lg:shadow-none lg:sticky lg:top-18 lg:w-64 lg:bg-bg-main lg:h-[calc(100vh-72px)] lg:border-t-0 lg:border-r lg:border-gray-200/60 lg:flex-col pb-[env(safe-area-inset-bottom)] lg:pb-0">
       <nav className="flex w-full justify-around items-center px-2 py-2 overflow-x-auto no-scrollbar md:flex-col md:justify-start md:flex-1 md:py-6 md:px-4 md:space-y-1.5 md:items-stretch md:overflow-visible">
         {navItems.map((item, index) => {
           if (item.divider) {
@@ -47,15 +46,11 @@ export function Sidebar({ role }: SidebarProps) {
           }
 
           const Icon = item.icon;
-          const isRootPath = item.href === `/${role}`;
-          
-          const isActive = isMounted && (isRootPath
-            ? pathname === item.href
-            : pathname.startsWith(item.href || ""));
+          const isActive = isMounted && (item.href === `/${role}` ? pathname === item.href : pathname.startsWith(item.href || ""));
 
           return (
             <Link
-              key={item.name}
+              key={item.href}
               href={item.href!}
               prefetch={true}
               aria-label={`Navigate to ${item.name}`}
@@ -68,12 +63,14 @@ export function Sidebar({ role }: SidebarProps) {
                   : "w-10 justify-center px-0 text-gray-500 hover:text-gray-900 md:w-full md:justify-start md:px-4 md:gap-3 md:hover:bg-white md:hover:shadow-sm"
               )}
             >
-              <Icon
-                className={cn(
-                  "w-5 h-5 shrink-0 transition-colors duration-300",
-                  isActive ? "text-[#1B4332]" : "text-gray-400"
-                )}
-              />
+              {Icon && (
+                <Icon
+                  className={cn(
+                    "w-5 h-5 shrink-0 transition-colors duration-300",
+                    isActive ? "text-[#1B4332]" : "text-gray-400"
+                  )}
+                />
+              )}
               <span
                 className={cn(
                   "font-bold whitespace-nowrap overflow-hidden transition-all duration-300",

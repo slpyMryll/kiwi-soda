@@ -60,9 +60,11 @@ export interface ProjectCardProps {
 
 export interface ProjectComment {
   id: string;
+  user_id?: string;
   content: string;
   created_at: string | Date;
   parent_id: string | null;
+  is_hidden?: boolean;
   profiles?: {
     full_name?: string;
     avatar_url?: string;

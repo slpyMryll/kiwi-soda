@@ -318,6 +318,37 @@ export const getAllTerms = cache(async () => {
   return data || [];
 });
 
+export async function getTrendingTags(limit = 5) {
+  const supabase = await createClient();
+  const { data: projects, error } = await supabase
+    .from("projects")
+    .select("tags")
+    .eq("live_status", "Live");
+
+  if (error || !projects) return [];
+
+  const tagCounts: Record<string, number> = {};
+  const originalTags: Record<string, string> = {};
+
+  projects.forEach((p) => {
+    if (Array.isArray(p.tags)) {
+      p.tags.forEach((tag: string) => {
+        const lowerTag = tag.toLowerCase();
+        tagCounts[lowerTag] = (tagCounts[lowerTag] || 0) + 1;
+        // Keep track of the first encountered version for display
+        if (!originalTags[lowerTag]) {
+          originalTags[lowerTag] = tag;
+        }
+      });
+    }
+  });
+
+  return Object.keys(tagCounts)
+    .sort((a, b) => tagCounts[b] - tagCounts[a])
+    .slice(0, limit)
+    .map((tag) => originalTags[tag]);
+}
+
 export async function getProjectsByManager(
   userId: string, 
   params: { q?: string; status?: string; sort?: string; page?: number; dateFilter?: string }

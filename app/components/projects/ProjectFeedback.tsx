@@ -52,12 +52,12 @@ export function ProjectFeedback({ comments: initialComments, projectId, isGuest 
         Student Feedback ({comments.length})
       </h2>
       
-      <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100">
+      <div className="bg-gray-50/50 p-3 sm:p-5 rounded-2xl border border-gray-100">
         {isGuest ? (
           <div className="relative">
             <div className="flex gap-3">
               <div className="w-8 h-8 rounded-full bg-[#FFB703] text-black font-bold flex items-center justify-center shrink-0">?</div>
-              <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 min-h-25 flex items-center justify-center text-center shadow-sm">
+              <div className="flex-1 bg-white border border-gray-200 rounded-xl p-3 min-h-20 flex items-center justify-center text-center shadow-sm">
                 <p 
                   className="text-sm text-gray-400 font-medium cursor-pointer hover:text-gray-600 transition-colors" 
                   onClick={() => router.push('/login')}
@@ -81,7 +81,7 @@ export function ProjectFeedback({ comments: initialComments, projectId, isGuest 
                 placeholder="Share your thoughts or feedback..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl p-4 min-h-25 text-sm focus:outline-none focus:border-[#1B4332] resize-none shadow-sm"
+                className="w-full bg-white border border-gray-200 rounded-xl p-3 min-h-20 text-sm focus:outline-none focus:border-[#1B4332] resize-none shadow-sm"
               />
               <div className="flex justify-end mt-3">
                 <button 

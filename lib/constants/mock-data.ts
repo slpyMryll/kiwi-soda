@@ -20,9 +20,9 @@ export const MOCK_TRENDING_TOPICS = [
 ];
 
 export const HOW_IT_WORKS_STEPS = [
-  { id: 1, label: "Submit a Proposal"},
-  { id: 2, label: "Review & Approval" },
-  { id: 3, label: "Track Progress"},
+  { id: 1, label: "Explore Projects", description: "Browse USSC initiatives and financial reports." },
+  { id: 2, label: "Track Progress", description: "Monitor real-time milestones and budgets." },
+  { id: 3, label: "Engage & Follow", description: "Provide feedback and stay informed." },
 ];
 
 export const MOCK_PROJECTS: Project[] = [

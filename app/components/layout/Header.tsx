@@ -8,9 +8,10 @@ import { logout } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { ContentRail } from "../landing/ContentRail";
 import { NAV_CONFIG } from "@/types/navigation";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "./NotificationBell";
+import { toast } from "sonner";
 
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -27,6 +28,7 @@ interface HeaderProps {
 
 export function Header({ user, profile, role = "viewer" }: HeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const navItems = NAV_CONFIG[role] || NAV_CONFIG.viewer;
   const [isMounted, setIsMounted] = useState(false);
 
@@ -34,13 +36,36 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
     setIsMounted(true);
   }, []);
 
+  const handleLogout = async () => {
+    const toastId = toast.loading("Logging out...");
+    
+    try {
+      const result = await logout();
+      if (result.success) {
+        toast.success("Logged out successfully", { id: toastId });
+        router.push("/login");
+        router.refresh();
+      } else {
+        toast.error("Logout failed", { id: toastId });
+      }
+    } catch (err: any) {
+      // Check if it's a redirect error (though we removed redirect from server action, 
+      // it's good for robustness)
+      if (err?.message?.includes('NEXT_REDIRECT')) {
+        toast.success("Logged out successfully", { id: toastId });
+        return;
+      }
+      toast.error("An unexpected error occurred", { id: toastId });
+    }
+  };
+
   return (
     <header className="w-full bg-surface-brand text-white h-18 sticky top-0 z-50 border-b border-white/10 shadow-md">
       <div className="h-full mx-auto px-4 lg:px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Sheet>
             <SheetTrigger asChild>
-              <button aria-label="Open navigation menu" className="hidden md:flex lg:hidden p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors">
+              <button aria-label="Open navigation menu" className="flex lg:hidden p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors">
                 <Menu className="w-6 h-6 text-white" />
               </button>
             </SheetTrigger>
@@ -51,7 +76,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
               <div className="p-6 bg-surface-brand text-white flex items-center justify-between border-b border-white/10 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="bg-white rounded-full p-0.5 shrink-0">
-                    <img src="/logov3.png" alt="OnTrack Logo" className="w-8 h-8 rounded-full" />
+                    <Image src="/logov3.png" alt="OnTrack Logo" width={32} height={32} className="rounded-full" />
                   </div>
                   <span className="text-xl font-bold tracking-tight">OnTrack</span>
                 </div>
@@ -78,7 +103,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                             isActive ? "bg-linear-to-r from-[#e1f0c2] to-transparent text-[#1B4332]" : "text-gray-500 hover:bg-white hover:text-gray-900"
                           )}
                         >
-                          <Icon className={cn("w-5 h-5", isActive ? "text-[#1B4332]" : "text-gray-400")} />
+                          {Icon && <Icon className={cn("w-5 h-5", isActive ? "text-[#1B4332]" : "text-gray-400")} />}
                           <span>{item.name}</span>
                         </Link>
                       </SheetClose>
@@ -100,7 +125,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
 
           <Link href="/" className="flex items-center gap-2 group">
             <div className="bg-white rounded-full p-0.5 shrink-0 transition-transform group-hover:scale-105 hidden sm:block">
-              <img src="/logov3.png" alt="OnTrack Logo" className="w-8 h-8 rounded-full" />
+              <Image src="/logov3.png" alt="OnTrack Logo" width={32} height={32} className="rounded-full" />
             </div>
             <span className="text-xl font-bold tracking-tight text-white">OnTrack</span>
           </Link>
@@ -120,7 +145,12 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
 
                   <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden shrink-0 border border-white/10">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt={`${profile.full_name}'s profile picture`} className="w-full h-full object-cover" />
+                      <img 
+                        src={profile.avatar_url} 
+                        alt={`${profile.full_name}'s profile picture`} 
+                        className="w-full h-full object-cover" 
+                        referrerPolicy="no-referrer"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white bg-[#1B4332]">
                         {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
@@ -138,7 +168,12 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                     </div>
                     <div className="w-12 h-12 rounded-full border-2 border-[#2C5243] overflow-hidden shrink-0 ml-4">
                       {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt={`${profile?.full_name || "User"}'s large profile picture`} className="w-full h-full object-cover" />
+                        <img 
+                          src={profile.avatar_url} 
+                          alt={`${profile?.full_name || "User"}'s large profile picture`} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white bg-[#1B4332]">
                           {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
@@ -167,7 +202,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                   <DropdownMenuSeparator className="bg-gray-200 my-1" />
                   <DropdownMenuItem 
                     aria-label="Log out of your account"
-                    onClick={() => logout()} 
+                    onClick={handleLogout} 
                     className="py-3 px-3 cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600 rounded-lg transition-colors"
                   >
                     <LogOut className="mr-3 w-5 h-5" strokeWidth={2.5} />

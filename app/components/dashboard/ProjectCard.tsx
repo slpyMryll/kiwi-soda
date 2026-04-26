@@ -238,6 +238,7 @@ export function ProjectCard({
           {onReadMore ? (
             <button
               onClick={handleReadMore}
+              aria-label={`Read more about ${project.title}`}
               className="w-full sm:w-auto flex justify-center items-center gap-2 border border-gray-300 rounded-full px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors"
             >
               Read More <ArrowRight className="w-4 h-4" />
@@ -245,6 +246,7 @@ export function ProjectCard({
           ) : (
             <Link
               href={projectHref}
+              aria-label={`Read more about ${project.title}`}
               onMouseEnter={() => router.prefetch(projectHref)}
               className="w-full sm:w-auto flex justify-center items-center gap-2 border border-gray-300 rounded-full px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors"
             >

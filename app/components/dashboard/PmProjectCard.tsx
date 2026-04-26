@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toggleProjectLiveStatus, deleteProject } from "@/lib/actions/project";
 import { ProgressBar } from "../ui/ProgressBar";
+import { toast } from "sonner";
 
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -66,8 +67,12 @@ export function PmProjectCard(project: Project) {
     setIsPending(true);
     const res = await toggleProjectLiveStatus(id, liveStatus);
     setIsPending(false);
-    if (res.error) alert(`Error: ${res.error}`);
-    else setIsToggleModalOpen(false);
+    if (res.error) {
+      toast.error(`Error: ${res.error}`);
+    } else {
+      toast.success(liveStatus === "Live" ? "Project unpublished" : "Project published live!");
+      setIsToggleModalOpen(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -76,8 +81,9 @@ export function PmProjectCard(project: Project) {
     setIsPending(false);
 
     if (res.error) {
-      alert(`Delete Error: ${res.error}`);
+      toast.error(`Delete Error: ${res.error}`);
     } else {
+      toast.success("Project deleted successfully");
       setIsDeleteDialogOpen(false);
     }
   };
@@ -183,6 +189,7 @@ export function PmProjectCard(project: Project) {
           </div>
           <Link
             href={`/project-manager/projects/${id}`}
+            aria-label={`Manage ${title}`}
             className="flex items-center justify-center p-1.5 sm:p-2 rounded-full bg-gray-50 hover:bg-[#BFFFE3] text-gray-400 hover:text-[#153B44] transition-colors shrink-0 cursor-pointer"
           >
             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />

@@ -6,6 +6,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { getBorderClass } from "@/lib/utils/ui-helpers";
 import { validateVsuEmail } from "@/lib/utils/validation";
+import { toast } from "sonner";
 
 export default function Home() {
   const router = useRouter();
@@ -20,8 +21,10 @@ export default function Home() {
 
   const handleGoogleSignIn = async () => {
     const origin = window.location.origin;
-    const result = await signInWithGoogle(origin);
-    if (result?.error) alert(result.error);
+    toast.promise(signInWithGoogle(origin), {
+      loading: 'Redirecting to Google...',
+      error: (err) => err?.message || "Google Sign-In failed"
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -31,14 +34,22 @@ export default function Home() {
     if (!isEmailValid || !isPasswordValid) return;
 
     setIsSigningIn(true);
-    
     const formData = new FormData(e.currentTarget);
-    const result = await signInWithEmail(formData);
-    
-    if (result?.error) {
-      alert(result.error);
-      setIsSigningIn(false); 
-    }
+
+    toast.promise(signInWithEmail(formData), {
+      loading: 'Signing you in...',
+      success: (result) => {
+        if (result?.path) {
+          router.push(result.path);
+          return "Welcome back!";
+        }
+        return "Login successful";
+      },
+      error: (err) => {
+        setIsSigningIn(false);
+        return err?.message || "Login failed. Please check your credentials.";
+      }
+    });
   };
   
   return (

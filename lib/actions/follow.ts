@@ -5,12 +5,15 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from 'next/headers'
 import { revalidatePath } from "next/cache";
 
+import { NotificationDispatcher } from "@/lib/services/notification-dispatcher";
+
 export async function notifyProjectFollowers(
   projectId: string,
   actorId: string,
   message: string,
   actionLink: string,
-  type: string = 'project_update'
+  type: string = 'project_update',
+  category: 'followed_project_updates' | 'budget_alerts' | 'general' = 'followed_project_updates'
 ) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY!;
@@ -41,16 +44,18 @@ export async function notifyProjectFollowers(
 
   if (!followers || followers.length === 0) return;
 
-  const notifications = followers.map((f: any) => ({
-    user_id: f.user_id,
-    actor_id: actorId,
-    message: formattedMessage,
-    action_link: actionLink,
-    entity_id: projectId,
-    type,
-  }));
+  const userIds = followers.map((f: any) => f.user_id);
 
-  await supabaseAdmin.from("notifications").insert(notifications);
+  // Use the centralized dispatcher to enforce preferences
+  await NotificationDispatcher.dispatch({
+    userIds,
+    actorId,
+    message: formattedMessage,
+    actionLink,
+    type,
+    category,
+    projectId,
+  });
 }
 
 export async function toggleFollow(projectId: string) {
@@ -88,7 +93,7 @@ export async function toggleFollow(projectId: string) {
       if (insertError) return { error: insertError.message };
 
       revalidatePath("/viewer/projects");
-      revalidatePath("/following");
+      revalidatePath("/viewer/following");
       revalidatePath(`/viewer/projects/${projectId}`);
       return { success: true, following: true };
     }
@@ -102,7 +107,7 @@ export async function toggleFollow(projectId: string) {
     if (deleteError) return { error: deleteError.message };
 
     revalidatePath("/viewer/projects");
-    revalidatePath("/following");
+    revalidatePath("/viewer/following");
     revalidatePath(`/viewer/projects/${projectId}`);
     return { success: true, following: false };
   } catch (error: any) {

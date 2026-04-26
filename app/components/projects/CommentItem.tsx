@@ -82,9 +82,9 @@ export function CommentItem({
   };
 
   return (
-    <div className={cn("flex flex-col gap-2 sm:gap-3 animate-in fade-in zoom-in-95", depth > 0 && "ml-3 sm:ml-8 mt-3 border-l-2 border-gray-100 pl-3 sm:pl-4")}>
+    <div className={cn("flex flex-col gap-1.5 sm:gap-2 animate-in fade-in zoom-in-95", depth > 0 && "ml-3 sm:ml-8 mt-2 border-l-2 border-gray-100 pl-3 sm:pl-4")}>
       <div className={cn(
-        "flex gap-2 sm:gap-3 p-3 sm:p-4 bg-white border rounded-2xl shadow-sm transition-shadow",
+        "flex gap-2 sm:gap-3 p-2.5 sm:p-3 bg-white border rounded-2xl shadow-sm transition-shadow",
         isHidden ? "border-red-100 bg-red-50/20" : "border-gray-100 hover:shadow-md"
       )}>
         <div className={cn(
@@ -92,7 +92,12 @@ export function CommentItem({
           isHidden ? "bg-red-200" : "bg-[#1B4332]"
         )}>
           {!isHidden && comment.profiles?.avatar_url ? (
-            <img src={comment.profiles.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+            <img 
+              src={comment.profiles.avatar_url} 
+              alt="avatar" 
+              className="w-full h-full object-cover" 
+              referrerPolicy="no-referrer"
+            />
           ) : (
             isHidden ? <ShieldAlert className="w-4 h-4 text-red-500" /> : (comment.profiles?.full_name?.charAt(0) || "U")
           )}
@@ -143,7 +148,7 @@ export function CommentItem({
           )}
           
           {!isHidden && !isEditing && (
-            <div className="flex gap-4 mt-2 sm:mt-3">
+            <div className="flex gap-4 mt-1.5 sm:mt-2">
               <button 
                 onClick={() => isGuest ? window.location.href = '/login' : setIsReplyOpen(!isReplyOpen)}
                 className="text-[11px] sm:text-xs font-semibold text-gray-400 hover:text-[#1B4332] flex items-center gap-1.5 transition-colors"
@@ -172,7 +177,7 @@ export function CommentItem({
           )}
 
           {isReplyOpen && !isHidden && (
-            <div className="mt-3 flex flex-col gap-2 animate-in slide-in-from-top-2">
+            <div className="mt-2.5 flex flex-col gap-2 animate-in slide-in-from-top-2">
               <textarea 
                 autoFocus
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 sm:p-3 text-xs sm:text-sm focus:outline-none focus:border-[#1B4332] resize-none"

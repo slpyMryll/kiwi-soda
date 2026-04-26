@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { ROLE_REDIRECTS, UserRole } from '@/types/navigation'
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -26,13 +28,16 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // 1. Define Public Routes
-  const publicRoutes = ['/', '/login', '/forgot-password', '/auth']
-  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith('/auth'))
+  const publicRoutes = ['/', '/login', '/forgot-password', '/robots.txt', '/sitemap.xml', '/favicon.ico', '/about', '/team', '/privacy', '/terms', '/cookies']
+  const isPublicRoute = 
+    publicRoutes.includes(pathname) || 
+    pathname.startsWith('/auth') || 
+    pathname.startsWith('/viewer/projects/')
 
   // 2. Fetch profile data if user exists - Try cookie cache first
   const roleCookie = request.cookies.get('on-track-role')?.value;
-  let userRole = roleCookie || 'viewer';
-  let hasCompletedOnboarding = !!roleCookie; // If we have a role cookie, they've likely onboarded
+  let userRole = (roleCookie as UserRole) || 'viewer';
+  let hasCompletedOnboarding = !!roleCookie;
 
   // If no cookie, we MUST hit the database once to seed the cache
   if (user && !roleCookie) {
@@ -42,7 +47,7 @@ export async function updateSession(request: NextRequest) {
       .eq('id', user.id)
       .single()
     
-    userRole = String(profile?.role || 'viewer');
+    userRole = (profile?.role as UserRole) || 'viewer';
     hasCompletedOnboarding = profile?.has_completed_onboarding || false;
 
     // Seed the cookie for the next request
@@ -57,13 +62,8 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Helper for role-based paths
-  const getRolePath = (role: string) => {
-    const rolePaths: Record<string, string> = {
-      admin: '/admin',
-      'project-manager': '/project-manager',
-      viewer: '/viewer', 
-    }
-    return rolePaths[role] || '/viewer'
+  const getRolePath = (role: UserRole) => {
+    return ROLE_REDIRECTS[role] || '/viewer'
   }
 
   // 3. GUARD: Redirect unauthenticated users to login

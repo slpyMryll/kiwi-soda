@@ -41,7 +41,10 @@ export function NotificationBell({ userId }: { userId?: string }) {
 
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger className="p-2 rounded-full hover:bg-white/10 transition-colors relative outline-none focus:ring-2 focus:ring-white/20">
+      <DropdownMenuTrigger 
+        aria-label={`Notifications (${unreadCount} unread)`}
+        className="p-2 rounded-full hover:bg-white/10 transition-colors relative outline-none focus:ring-2 focus:ring-white/20"
+      >
         <Bell className={cn("w-5 h-5 transition-colors", unreadCount > 0 ? "text-white" : "text-white/80")} />
         {unreadCount > 0 && (
           <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#153B44] animate-in zoom-in"></span>

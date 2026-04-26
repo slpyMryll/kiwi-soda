@@ -71,7 +71,7 @@ export default async function ManageProjectPage({
       tasks ( id, title, assigned_to, due_date, status, cost, profiles ( full_name ) ),
       budget_logs ( id, budget_change_reason, changed_at, new_amount, old_amount, is_initial, status, profiles:changed_by ( full_name ) ),
       project_milestones ( id, title, end_date, status, progress ),
-      project_documents ( id, name, file_url, file_size, file_type, created_at, profiles:uploaded_by ( full_name ) ),
+      project_documents ( id, name, file_url, file_size, file_type, is_pinned, created_at, profiles:uploaded_by ( full_name ) ),
       comments ( id, user_id, content, created_at, parent_id, profiles ( full_name, avatar_url ) )
     `
     )
@@ -171,7 +171,12 @@ export default async function ManageProjectPage({
       type: d?.file_type || "unknown",
       uploadedBy: d?.profiles?.full_name || "Unknown",
       date: formatDate(d?.created_at),
-    })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+      isPinned: d?.is_pinned || false,
+    })).sort((a: any, b: any) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    }),
   };
 
   return (

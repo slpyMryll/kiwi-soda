@@ -2,9 +2,10 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 
 import { cookies } from 'next/headers'
+
+import { ROLE_REDIRECTS, UserRole } from '@/types/navigation'
 
 async function getRoleRedirectPath(supabase: any, userId: string) {
   const { data: profile } = await supabase
@@ -15,7 +16,7 @@ async function getRoleRedirectPath(supabase: any, userId: string) {
 
   if (!profile?.has_completed_onboarding) return '/onboarding'
 
-  const role = profile.role || 'viewer';
+  const role = (profile.role as UserRole) || 'viewer';
   
   // Cache the role in a cookie for the middleware to read instantly
   const cookieStore = await cookies();
@@ -26,13 +27,7 @@ async function getRoleRedirectPath(supabase: any, userId: string) {
     httpOnly: true 
   });
 
-  const rolePaths: Record<string, string> = {
-    admin: '/admin',
-    'project-manager': '/project-manager',
-    viewer: '/viewer',
-  }
-
-  return rolePaths[role] || '/viewer'
+  return ROLE_REDIRECTS[role] || '/viewer'
 }
 
 export async function signInWithGoogle(origin: string) {
@@ -62,20 +57,18 @@ export async function signInWithEmail(formData: FormData) {
   if (authError || !user) return { error: authError?.message || "Login failed" }
 
   const path = await getRoleRedirectPath(supabase, user.id)
-  redirect(path)
+  return { success: true, path }
 }
 
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
-  
+
   const cookieStore = await cookies();
   cookieStore.delete('on-track-role');
-  
-  revalidatePath('/', 'layout')
-  redirect('/login')
-}
 
+  return { success: true };
+}
 export async function resetPassword(email: string, origin: string) {
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -94,5 +87,5 @@ export async function updatePasswordAction(formData: FormData) {
   if (error || !user) return { error: error?.message || 'Update failed' };
 
   const path = await getRoleRedirectPath(supabase, user.id);
-  redirect(path);
+  return { success: true, path };
 }

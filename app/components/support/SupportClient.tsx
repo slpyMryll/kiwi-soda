@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { 
   Search, 
   ChevronDown, 
@@ -8,17 +8,26 @@ import {
   Send,
   HelpCircle,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Trash2, 
+  Paperclip
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SUPPORT_FAQS } from "@/lib/constants/faqs";
+import emailjs from "@emailjs/browser";
+import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 
-export function SupportClient({ role }: { role: "viewer" | "project-manager" | "admin" }) {
+export function SupportClient({ userEmail, userId }: { userEmail?: string; userId?: string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(0); 
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -30,17 +39,103 @@ export function SupportClient({ role }: { role: "viewer" | "project-manager" | "
     faq.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const validateAndSetFile = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+    setAttachment(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) validateAndSetFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) validateAndSetFile(file);
+  };
+
+  const handleRemoveAttachment = () => {
+    setAttachment(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmitReport = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    setTimeout(() => {
-      setIsSubmitting(false);
+    const formData = new FormData(e.currentTarget);
+    const supabase = createClient();
+    let publicAttachmentUrl = "";
+
+    try {
+      // 1. Handle Attachment Upload if exists
+      if (attachment && userId) {
+        const fileExt = attachment.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('support-attachments')
+          .upload(filePath, attachment);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('support-attachments')
+          .getPublicUrl(filePath);
+        
+        publicAttachmentUrl = publicUrl;
+      }
+
+      // 2. Prepare EmailJS Params
+      const templateParams = {
+        from_email: userEmail || "Guest User",
+        subject: formData.get("subject"),
+        issue_type: formData.get("issueType"),
+        priority: formData.get("priority"),
+        message: formData.get("description"),
+        attachment_url: publicAttachmentUrl || "No attachment provided",
+        to_email: "ontrack.techsupport@gmail.com"
+      };
+
+      // 3. Send Email
+      await emailjs.send(
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "",
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "",
+        templateParams,
+        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ""
+      );
+
       setIsSuccess(true);
-      
-      setTimeout(() => setIsSuccess(false), 3000);
+      toast.success("Support ticket sent successfully!");
+      setAttachment(null);
       (e.target as HTMLFormElement).reset();
-    }, 1500);
+      setTimeout(() => setIsSuccess(false), 5000);
+    } catch (error: any) {
+      console.error("Support Error:", error);
+      toast.error(error.message || "Failed to send report. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -81,7 +176,7 @@ export function SupportClient({ role }: { role: "viewer" | "project-manager" | "
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1.5">Issue Type</label>
-                    <select required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#153B44]/20 focus:border-[#153B44] transition-all">
+                    <select name="issueType" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#153B44]/20 focus:border-[#153B44] transition-all">
                       <option value="">Select a category...</option>
                       <option value="bug">Bug / Technical Issue</option>
                       <option value="account">Account / Login Problem</option>
@@ -93,7 +188,7 @@ export function SupportClient({ role }: { role: "viewer" | "project-manager" | "
 
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1.5">Priority</label>
-                    <select required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#153B44]/20 focus:border-[#153B44] transition-all">
+                    <select name="priority" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#153B44]/20 focus:border-[#153B44] transition-all">
                       <option value="low">Low - General Inquiry</option>
                       <option value="medium">Medium - Needs Attention</option>
                       <option value="high">High - Blocking my work</option>
@@ -104,6 +199,7 @@ export function SupportClient({ role }: { role: "viewer" | "project-manager" | "
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1.5">Subject</label>
                   <input 
+                    name="subject"
                     type="text" 
                     required 
                     placeholder="Brief summary of the issue"
@@ -114,6 +210,7 @@ export function SupportClient({ role }: { role: "viewer" | "project-manager" | "
                 <div>
                   <label className="text-sm font-bold text-gray-700 block mb-1.5">Description</label>
                   <textarea 
+                    name="description"
                     required 
                     rows={6}
                     placeholder="Please provide as much detail as possible so we can help you faster..."
@@ -122,11 +219,58 @@ export function SupportClient({ role }: { role: "viewer" | "project-manager" | "
                 </div>
 
                 <div>
-                  <label className="text-sm font-bold text-gray-700 block mb-1.5">Attachments <span className="text-gray-400 font-normal">(Optional)</span></label>
-                  <div className="border-2 border-dashed border-gray-200 rounded-xl px-4 py-6 text-center hover:bg-gray-50 transition-colors cursor-pointer">
-                    <p className="text-sm text-gray-500 font-medium">Click to upload or drag & drop</p>
-                    <p className="text-xs text-gray-400 mt-1">SVG, PNG, JPG or GIF (max. 5MB)</p>
-                  </div>
+                  <label className="text-sm font-bold text-gray-700 block mb-1.5">
+                    Attachments <span className="text-gray-400 font-normal">(Optional)</span>
+                  </label>
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+
+                  {!attachment ? (
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={cn(
+                        "border-2 border-dashed rounded-xl px-4 py-6 text-center transition-all cursor-pointer group",
+                        isDragging 
+                          ? "border-[#153B44] bg-[#E6F4EA]" 
+                          : "border-gray-200 hover:bg-gray-50 hover:border-[#153B44]/30"
+                      )}
+                    >
+                      <Paperclip className={cn(
+                        "w-5 h-5 mx-auto mb-2 transition-colors",
+                        isDragging ? "text-[#153B44]" : "text-gray-400 group-hover:text-[#153B44]"
+                      )} />
+                      <p className="text-sm text-gray-500 font-medium">Click to upload or drag & drop</p>
+                      <p className="text-xs text-gray-400 mt-1">Images, PDF or DOC (max. 5MB)</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="w-8 h-8 rounded-lg bg-[#E6F4EA] flex items-center justify-center shrink-0">
+                          <Paperclip className="w-4 h-4 text-[#1B4332]" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <p className="text-xs font-bold text-gray-900 truncate">{attachment.name}</p>
+                          <p className="text-[10px] text-gray-500">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={handleRemoveAttachment}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <button 
@@ -165,7 +309,7 @@ export function SupportClient({ role }: { role: "viewer" | "project-manager" | "
             <div className="flex flex-col gap-3">
               {filteredFaqs.length === 0 ? (
                 <div className="p-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                  <p className="text-gray-500 text-sm">No topics found matching "{searchQuery}"</p>
+                  <p className="text-gray-500 text-sm">No topics found matching &quot;{searchQuery}&quot;</p>
                 </div>
               ) : (
                 filteredFaqs.map((faq, index) => {
@@ -206,6 +350,17 @@ export function SupportClient({ role }: { role: "viewer" | "project-manager" | "
                   );
                 })
               )}
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+              <p className="text-sm text-gray-500 mb-2">Still need help?</p>
+              <a 
+                href="mailto:ontrack.techsupport@gmail.com" 
+                className="text-[#153B44] font-bold hover:underline flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                ontrack.techsupport@gmail.com
+              </a>
             </div>
           </div>
         </div>

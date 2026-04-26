@@ -7,9 +7,10 @@ import {
   ArrowUpZA,
   Calendar,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getInfiniteProjects } from "@/lib/actions/project-feed";
 import {
@@ -31,6 +32,7 @@ export function ProjectFilters({ termId, followingOnly = false }: ProjectFilters
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const [isPending, startTransition] = useTransition();
 
   const currentStatus = searchParams.get("status") || "all";
   const currentSort = searchParams.get("sort") || "newest";
@@ -38,6 +40,7 @@ export function ProjectFilters({ termId, followingOnly = false }: ProjectFilters
   const currentQuery = searchParams.get("q") || "";
 
   const [searchQuery, setSearchQuery] = useState(currentQuery);
+  const [pendingFilter, setPendingFilter] = useState<string | null>(null);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -59,8 +62,18 @@ export function ProjectFilters({ termId, followingOnly = false }: ProjectFilters
       }
     });
     
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    // Set pending state for the specific filter clicked
+    const filterKey = updates.status || updates.sort || updates.date;
+    if (filterKey) setPendingFilter(filterKey);
+
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    });
   };
+
+  useEffect(() => {
+    if (!isPending) setPendingFilter(null);
+  }, [isPending]);
 
   const prefetchTab = (targetStatus: string) => {
     if (currentStatus === targetStatus) return;
@@ -83,7 +96,7 @@ export function ProjectFilters({ termId, followingOnly = false }: ProjectFilters
   };
 
   const getTabClass = (isActive: boolean) =>
-    `px-4 py-3 text-sm transition-colors border-b-2 ${
+    `px-4 py-3 text-sm transition-all border-b-2 flex items-center gap-2 relative ${
       isActive
         ? "font-bold text-[#1B4332] border-[#1B4332]"
         : "font-semibold text-gray-500 hover:text-gray-900 border-transparent"
@@ -95,14 +108,19 @@ export function ProjectFilters({ termId, followingOnly = false }: ProjectFilters
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
           
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search projects by title or keywords..."
-            aria-label="Search projects by title or keywords"
-            className="w-full bg-gray-200/50 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 transition-all"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search projects by title or keywords..."
+              aria-label="Search projects by title or keywords"
+              className="w-full bg-gray-200/50 border-none rounded-xl py-3.5 pl-12 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4332]/20 transition-all"
+            />
+            {isPending && searchQuery !== currentQuery && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-[#1B4332]" />
+            )}
+          </div>
         </div>
 
         <DropdownMenu modal={false}>
@@ -110,7 +128,11 @@ export function ProjectFilters({ termId, followingOnly = false }: ProjectFilters
             aria-label="Sort and filter options"
             className="bg-gray-200/50 hover:bg-gray-200 p-3.5 rounded-xl text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center shrink-0 focus:outline-none"
           >
-            <SlidersHorizontal className="w-5 h-5" />
+            {isPending && (pendingFilter === currentSort || pendingFilter === currentDate) ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <SlidersHorizontal className="w-5 h-5" />
+            )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 p-2 bg-white rounded-xl shadow-lg border border-gray-200">
             <DropdownMenuLabel className="font-bold text-gray-900">Sort By Date</DropdownMenuLabel>
@@ -150,21 +172,27 @@ export function ProjectFilters({ termId, followingOnly = false }: ProjectFilters
           onClick={() => updateQueryParams({ status: "all" })}
           onMouseEnter={() => prefetchTab("all")}
           className={getTabClass(currentStatus === "all")}
+          disabled={isPending}
         >
+          {pendingFilter === "all" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           All
         </button>
         <button
           onClick={() => updateQueryParams({ status: "ongoing" })}
           onMouseEnter={() => prefetchTab("ongoing")}
           className={getTabClass(currentStatus === "ongoing")}
+          disabled={isPending}
         >
+          {pendingFilter === "ongoing" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           Ongoing
         </button>
         <button
           onClick={() => updateQueryParams({ status: "completed" })}
           onMouseEnter={() => prefetchTab("completed")}
           className={getTabClass(currentStatus === "completed")}
+          disabled={isPending}
         >
+          {pendingFilter === "completed" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           Completed
         </button>
       </div>

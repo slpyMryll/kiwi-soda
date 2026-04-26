@@ -15,42 +15,116 @@ import {
   Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { updateNotificationSettings } from "@/lib/actions/user";
+import { toast } from "sonner";
+import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
+
+interface NotificationSettings {
+  email_alerts: boolean;
+  push_alerts: boolean;
+  in_app_alerts: boolean;
+  budget_alerts?: boolean;
+  overdue_task_alerts?: boolean;
+  followed_project_updates?: boolean;
+  weekly_digest?: boolean;
+}
 
 interface SettingsClientProps {
   role: "viewer" | "project-manager" | "admin";
+  initialData: NotificationSettings;
+  userId: string;
 }
 
-export function SettingsClient({ role }: SettingsClientProps) {
+const Toggle = ({ checked, onChange, disabled }: { checked: boolean, onChange: () => void, disabled?: boolean }) => (
+  <button
+    type="button"
+    disabled={disabled}
+    className={cn(
+      "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#153B44] focus:ring-offset-2",
+      checked ? "bg-[#52B788]" : "bg-gray-200",
+      disabled && "opacity-50 cursor-not-allowed"
+    )}
+    onClick={onChange}
+  >
+    <span className={cn("pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out", checked ? "translate-x-5" : "translate-x-0")} />
+  </button>
+);
+
+export function SettingsClient({ role, initialData, userId }: SettingsClientProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const { registerPush, unregisterPush } = usePushNotifications();
 
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [pushAlerts, setPushAlerts] = useState(false);
-  const [inAppAlerts, setInAppAlerts] = useState(true);
-  const [roleSetting1, setRoleSetting1] = useState(true);
-  const [roleSetting2, setRoleSetting2] = useState(true);
+  const [emailAlerts, setEmailAlerts] = useState(initialData.email_alerts);
+  const [pushAlerts, setPushAlerts] = useState(initialData.push_alerts);
+  const [inAppAlerts, setInAppAlerts] = useState(initialData.in_app_alerts);
+  
+  // Role specific settings
+  const [budgetAlerts, setBudgetAlerts] = useState(initialData.budget_alerts ?? true);
+  const [overdueTaskAlerts, setOverdueTaskAlerts] = useState(initialData.overdue_task_alerts ?? true);
+  const [followedProjectUpdates, setFollowedProjectUpdates] = useState(initialData.followed_project_updates ?? true);
+  const [weeklyDigest, setWeeklyDigest] = useState(initialData.weekly_digest ?? true);
 
-  const handleSaveSettings = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setIsSuccess(true);
-      setTimeout(() => setIsSuccess(false), 3000);
-    }, 1000);
+  const hasChanges = 
+    emailAlerts !== initialData.email_alerts ||
+    pushAlerts !== initialData.push_alerts ||
+    inAppAlerts !== initialData.in_app_alerts ||
+    (role === 'project-manager' && (
+      budgetAlerts !== initialData.budget_alerts ||
+      overdueTaskAlerts !== initialData.overdue_task_alerts
+    )) ||
+    (role === 'viewer' && (
+      followedProjectUpdates !== initialData.followed_project_updates ||
+      weeklyDigest !== initialData.weekly_digest
+    ));
+
+  const handlePushToggle = async () => {
+    const newValue = !pushAlerts;
+    
+    if (newValue) {
+      const success = await registerPush(userId);
+      if (success) setPushAlerts(true);
+    } else {
+      const success = await unregisterPush(userId);
+      if (success) setPushAlerts(false);
+    }
   };
 
-  const Toggle = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
-    <button
-      type="button"
-      className={cn(
-        "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#153B44] focus:ring-offset-2",
-        checked ? "bg-[#52B788]" : "bg-gray-200"
-      )}
-      onClick={onChange}
-    >
-      <span className={cn("pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out", checked ? "translate-x-5" : "translate-x-0")} />
-    </button>
-  );
+  const handleSaveSettings = async () => {
+    if (!hasChanges) {
+      toast.info("No changes to save.");
+      return;
+    }
+
+    setIsSaving(true);
+    
+    const settings = {
+      email_alerts: emailAlerts,
+      push_alerts: pushAlerts,
+      in_app_alerts: inAppAlerts,
+      ...(role === 'project-manager' ? {
+        budget_alerts: budgetAlerts,
+        overdue_task_alerts: overdueTaskAlerts,
+      } : {
+        followed_project_updates: followedProjectUpdates,
+        weekly_digest: weeklyDigest,
+      })
+    };
+
+    toast.promise(updateNotificationSettings(settings), {
+      loading: 'Saving preferences...',
+      success: () => {
+        setIsSaving(false);
+        setIsSuccess(true);
+        setTimeout(() => setIsSuccess(false), 3000);
+        return 'Preferences saved successfully!';
+      },
+      error: (err) => {
+        setIsSaving(false);
+        return err?.message || 'Failed to save preferences.';
+      }
+    });
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 pb-12 animate-in fade-in duration-500">
@@ -66,11 +140,12 @@ export function SettingsClient({ role }: SettingsClientProps) {
         
         <button 
           onClick={handleSaveSettings}
-          disabled={isSaving || isSuccess}
-          className="bg-[#153B44] hover:bg-[#1B4B57] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-80 min-w-[140px]"
+          disabled={isSaving || !hasChanges}
+          className="bg-[#153B44] hover:bg-[#1B4B57] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-gray-400 min-w-[140px]"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
            isSuccess ? <><CheckCircle2 className="w-4 h-4 text-[#52B788]" /> Saved!</> : 
+           !hasChanges ? "No Changes" :
            <><Save className="w-4 h-4" /> Save Changes</>}
         </button>
       </div>
@@ -91,7 +166,7 @@ export function SettingsClient({ role }: SettingsClientProps) {
                   <p className="text-xs text-gray-500 mt-0.5">Receive major updates directly to your registered VSU email.</p>
                 </div>
               </div>
-              <Toggle checked={emailAlerts} onChange={() => setEmailAlerts(!emailAlerts)} />
+              <Toggle checked={emailAlerts} onChange={() => setEmailAlerts(!emailAlerts)} disabled={isSaving} />
             </div>
 
             <div className="flex items-center justify-between gap-4">
@@ -102,7 +177,7 @@ export function SettingsClient({ role }: SettingsClientProps) {
                   <p className="text-xs text-gray-500 mt-0.5">Receive native push alerts on your desktop or mobile device.</p>
                 </div>
               </div>
-              <Toggle checked={pushAlerts} onChange={() => setPushAlerts(!pushAlerts)} />
+              <Toggle checked={pushAlerts} onChange={handlePushToggle} disabled={isSaving} />
             </div>
 
             <div className="flex items-center justify-between gap-4">
@@ -113,7 +188,7 @@ export function SettingsClient({ role }: SettingsClientProps) {
                   <p className="text-xs text-gray-500 mt-0.5">Show alerts in the navigation bell while you are using the platform.</p>
                 </div>
               </div>
-              <Toggle checked={inAppAlerts} onChange={() => setInAppAlerts(!inAppAlerts)} />
+              <Toggle checked={inAppAlerts} onChange={() => setInAppAlerts(!inAppAlerts)} disabled={isSaving} />
             </div>
           </div>
         </div>
@@ -138,14 +213,14 @@ export function SettingsClient({ role }: SettingsClientProps) {
                     <h3 className="font-bold text-gray-900 text-sm">Budget Approval Alerts</h3>
                     <p className="text-xs text-gray-500 mt-0.5">Notify me immediately when a team member requests a budget expense.</p>
                   </div>
-                  <Toggle checked={roleSetting1} onChange={() => setRoleSetting1(!roleSetting1)} />
+                  <Toggle checked={budgetAlerts} onChange={() => setBudgetAlerts(!budgetAlerts)} disabled={isSaving} />
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="font-bold text-gray-900 text-sm">Overdue Task Warnings</h3>
                     <p className="text-xs text-gray-500 mt-0.5">Send a daily summary of tasks that have missed their deadlines.</p>
                   </div>
-                  <Toggle checked={roleSetting2} onChange={() => setRoleSetting2(!roleSetting2)} />
+                  <Toggle checked={overdueTaskAlerts} onChange={() => setOverdueTaskAlerts(!overdueTaskAlerts)} disabled={isSaving} />
                 </div>
               </>
             ) : (
@@ -153,16 +228,16 @@ export function SettingsClient({ role }: SettingsClientProps) {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="font-bold text-gray-900 text-sm">Followed Project Updates</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">Notify me when a project I follow adds a new milestone or document.</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Notify me when a project I follow adds an update.</p>
                   </div>
-                  <Toggle checked={roleSetting1} onChange={() => setRoleSetting1(!roleSetting1)} />
+                  <Toggle checked={followedProjectUpdates} onChange={() => setFollowedProjectUpdates(!followedProjectUpdates)} disabled={isSaving} />
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="font-bold text-gray-900 text-sm">Weekly Activity Digest</h3>
                     <p className="text-xs text-gray-500 mt-0.5">Send a weekly summary of new USSC initiatives and completed projects.</p>
                   </div>
-                  <Toggle checked={roleSetting2} onChange={() => setRoleSetting2(!roleSetting2)} />
+                  <Toggle checked={weeklyDigest} onChange={() => setWeeklyDigest(!weeklyDigest)} disabled={isSaving} />
                 </div>
               </>
             )}
