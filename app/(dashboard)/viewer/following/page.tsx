@@ -24,32 +24,32 @@ export default async function ViewerFollowingPage({
   const activeTermId = resolvedParams?.term || currentActiveTerm?.id || "";
 
   return (
-    <main className="mx-auto px-4 lg:px-12 w-full flex-1 relative pb-24 bg-bg-main">
+    <main className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen w-full">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-[#153B44]">
+            My Following
+          </h1>
+          <p className="text-sm text-gray-500">
+            Stay updated on the projects you are following
+          </p>
+        </div>
 
-      <div className="mb-4 mt-4">
-        <h1 className="text-2xl font-bold text-[#153B44]">
-          My Following
-        </h1>
-        <p className="text-sm text-gray-500">
-          Stay updated on the projects you are following
-        </p>
+        <FollowedStats
+          complete={stats?.complete || 0}
+          ongoing={stats?.ongoing || 0}
+          followed={stats?.followed || 0}
+          updates={stats?.updates || 0}
+        />
+
+        <ProjectFilters termId={activeTermId} followingOnly={true} />
+
+        <InfiniteProjectFeed
+          userRole="viewer"
+          termId={activeTermId}
+          followingOnly={true}
+        />
       </div>
-
-      <FollowedStats
-        complete={stats?.complete || 0}
-        ongoing={stats?.ongoing || 0}
-        followed={stats?.followed || 0}
-        updates={stats?.updates || 0}
-      />
-
-      <ProjectFilters termId={activeTermId} followingOnly={true} />
-
-      <InfiniteProjectFeed
-        userRole="viewer"
-        termId={activeTermId}
-        followingOnly={true}
-      />
-
     </main>
   );
 }
