@@ -10,17 +10,26 @@ import {
   ShieldCheck,
   ShieldAlert,
   Users,
-  CalendarDays
+  CalendarDays,
+  LucideIcon
 } from "lucide-react";
 
 export type NavItem = {
   name?: string;
   href?: string;
-  icon?: any;
+  icon?: LucideIcon;
   divider?: boolean;
 };
 
-export const NAV_CONFIG: Record<string, NavItem[]> = {
+export type UserRole = "admin" | "project-manager" | "viewer";
+
+export const ROLE_REDIRECTS: Record<UserRole, string> = {
+  admin: "/admin",
+  "project-manager": "/project-manager",
+  viewer: "/viewer",
+};
+
+export const NAV_CONFIG: Record<UserRole, NavItem[]> = {
   viewer: [
     { name: "Explore Feed", href: "/viewer", icon: Compass },
     { name: "My Following", href: "/viewer/following", icon: Heart },

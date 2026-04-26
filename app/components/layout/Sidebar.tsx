@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { NAV_CONFIG } from "@/types/navigation";
+import { usePathname } from "next/navigation";
+import { NAV_CONFIG, UserRole } from "@/types/navigation";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
-  role: "viewer" | "project-manager" | "admin";
+  role: UserRole;
 }
 
 const getShortName = (name?: string) => {
@@ -26,7 +26,6 @@ const getShortName = (name?: string) => {
 
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
@@ -47,15 +46,11 @@ export function Sidebar({ role }: SidebarProps) {
           }
 
           const Icon = item.icon;
-          const isRootPath = item.href === `/${role}`;
-          
-          const isActive = isMounted && (isRootPath
-            ? pathname === item.href
-            : pathname.startsWith(item.href || ""));
+          const isActive = isMounted && (item.href === `/${role}` ? pathname === item.href : pathname.startsWith(item.href || ""));
 
           return (
             <Link
-              key={item.name}
+              key={item.href}
               href={item.href!}
               prefetch={true}
               aria-label={`Navigate to ${item.name}`}
@@ -68,12 +63,14 @@ export function Sidebar({ role }: SidebarProps) {
                   : "w-10 justify-center px-0 text-gray-500 hover:text-gray-900 md:w-full md:justify-start md:px-4 md:gap-3 md:hover:bg-white md:hover:shadow-sm"
               )}
             >
-              <Icon
-                className={cn(
-                  "w-5 h-5 shrink-0 transition-colors duration-300",
-                  isActive ? "text-[#1B4332]" : "text-gray-400"
-                )}
-              />
+              {Icon && (
+                <Icon
+                  className={cn(
+                    "w-5 h-5 shrink-0 transition-colors duration-300",
+                    isActive ? "text-[#1B4332]" : "text-gray-400"
+                  )}
+                />
+              )}
               <span
                 className={cn(
                   "font-bold whitespace-nowrap overflow-hidden transition-all duration-300",
