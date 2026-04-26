@@ -3,6 +3,38 @@
 All notable changes to the **OnTrack** project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [KS.010.007] - 2026-4-26
+
+### Added
+
+* Unified notification system supporting in-app toasts, push notifications, and email alerts
+* Real-time notification pipeline using Supabase Edge Functions and Web Push API
+* Automated trending tags based on live project data (case-insensitive grouping)
+* Structured onboarding guide with 3-step “How It Works” section
+* Drag-and-drop file attachment system with Supabase Storage integration
+* EmailJS integration for automated support email reporting
+* Persistent document pinning system with real-time sync
+
+### Changed
+
+* Replaced native `alert()` dialogs with Sonner toast notifications across the app
+* Refactored authentication flow for faster login/logout transitions
+* Centralized role-to-path navigation mapping for improved maintainability
+* Optimized follow system with optimistic updates for real-time consistency
+* Improved comment system layout and initial load behavior
+* Updated notification handling to support user preference toggles (in-app, email, push)
+* Enhanced PM dashboard feedback across tasks, budget, and document actions
+* Improved mobile navigation and header structure for better responsiveness
+
+### Fixed
+
+* Comment visibility issue on initial project load
+* Follow state desynchronization between cards, details, and dashboard
+* Avatar display inconsistencies in header
+* Requirement for manual refresh after document deletion
+* UI delay issues in authentication feedback
+* Push notification registration errors due to configuration issues
+
 ## [KS.010.006] - 2026-04-13
 
 ### Added

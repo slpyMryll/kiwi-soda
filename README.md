@@ -6,12 +6,26 @@
 
 | Initial Release Code | Date Released |
 | -------------------- | ------------- |
+| KS.010.007           | [2026-04-26]  |
 | KS.010.006           | [2026-04-19]  |
 | KS.010.005           | [2026-04-13]  |
 | KS.010.004           | [2026-04-06]  |
 | KS.010.003           | [2026-03-15]  |
 | KS.010.002           | [2026-03-08]  |
 | KS.010.001           | [2025-02-27]  |
+
+## KS.010.007 Release Notes
+
+**What's New**
+
+* **Core Features:**
+  * Unified Notification System: Centralized all notifications into a single dispatcher that supports in-app toasts, browser push alerts, and email notifications with full user preference control.
+  * Real-Time Updates Across Platform: Implemented instant UI synchronization for follows, comments, alerts, and project changes without requiring page refresh.
+  * Authentication and Feedback System Upgrade: Replaced default browser alerts with professional toast notifications and optimized login/logout flows for faster, smoother user experience.
+  * Advanced Notification Pipeline: Built a scalable event-driven system using Supabase real-time, Edge Functions, and push subscriptions for reliable multi-channel delivery.
+  * Profile and Social Interaction Improvements:Enhanced avatar upload with instant updates across the UI and ensured consistent follow/comment state synchronization.
+  * Document and Project Management Enhancements:Enabled real-time document actions, persistent pinning, and improved PM dashboard responsiveness.
+  * Discoverable and Onboarding System: Added automated trending tags and improved onboarding flow with a structured 3-step "How It Works" guide for new users.
 
 ## KS.010.006 Release Notes
 
