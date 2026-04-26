@@ -103,7 +103,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                             isActive ? "bg-linear-to-r from-[#e1f0c2] to-transparent text-[#1B4332]" : "text-gray-500 hover:bg-white hover:text-gray-900"
                           )}
                         >
-                          <Icon className={cn("w-5 h-5", isActive ? "text-[#1B4332]" : "text-gray-400")} />
+                          {Icon && <Icon className={cn("w-5 h-5", isActive ? "text-[#1B4332]" : "text-gray-400")} />}
                           <span>{item.name}</span>
                         </Link>
                       </SheetClose>
