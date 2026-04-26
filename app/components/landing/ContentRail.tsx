@@ -64,7 +64,7 @@ export function ContentRail({
         </div>
       </div>
 
-      <div className="p-6 border-t border-gray-200 bg-[#F8F9FA]">
+      <div className="p-6 border-t border-gray-200 bg-surface-accent">
         <h3 className="text-sm font-bold text-gray-900 mb-2">Join the Community</h3>
         <p className="text-[11px] text-gray-600 mb-4 leading-relaxed">
           Follow projects, receive live updates, and contribute to student-led initiatives.
