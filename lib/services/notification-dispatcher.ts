@@ -27,24 +27,34 @@ export class NotificationDispatcher {
       cookies: { getAll() { return []; }, setAll() {} },
     });
 
-    // 1. Fetch preferences for all target users
-    const { data: profiles } = await supabaseAdmin
+    // 1. Fetch preferences and emails for all target users
+    const { data: profiles, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('id, in_app_alerts, email_alerts, push_alerts, budget_alerts, overdue_task_alerts, followed_project_updates, weekly_digest')
+      .select('id, full_name, in_app_alerts, email_alerts, push_alerts, budget_alerts, overdue_task_alerts, followed_project_updates, weekly_digest')
       .in('id', options.userIds);
 
-    if (!profiles) return;
+    if (profileError || !profiles) {
+      console.error("Error fetching notification profiles:", profileError);
+      return;
+    }
+
+    // Since profiles might not have email, we fetch from auth.users (requires service role)
+    const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (usersError) {
+      console.error("Error fetching target users for email:", usersError);
+    }
+
+    const emailMap = new Map(users?.map(u => [u.id, u.email]) || []);
 
     const inAppPayloads = [];
 
     // 2. Evaluate preferences and prepare payloads per channel
     for (const profile of profiles) {
-      // Check if the specific category is enabled for this user
-      // Cast profile to any to access dynamic category keys
-      const profileData = profile as any;
+      const profileData = profile as Record<string, any>;
       const isCategoryEnabled = options.category === 'general' || profileData[options.category] === true;
 
-      if (!isCategoryEnabled) continue; // Skip if category is disabled
+      if (!isCategoryEnabled) continue;
 
       // --- In-App Channel ---
       if (profileData.in_app_alerts) {
@@ -58,14 +68,54 @@ export class NotificationDispatcher {
         });
       }
 
-      // --- Email Channel (Placeholder for Future Implementation) ---
-      if (profileData.email_alerts) {
-        // e.g., EmailService.queue(...)
+      // --- Email Channel ---
+      const userEmail = emailMap.get(profile.id);
+      if (profileData.email_alerts && userEmail) {
+        // Call the Edge Function to send the email
+        // We use fetch instead of supabase.functions.invoke to handle the async nature easily
+        fetch(`${supabaseUrl}/functions/v1/send-email-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`
+          },
+          body: JSON.stringify({
+            to: userEmail,
+            subject: options.message.length > 50 ? `${options.message.substring(0, 50)}...` : options.message,
+            html: `
+              <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                <h2 style="color: #1B4332;">OnTrack Notification</h2>
+                <p>Hello ${profile.full_name || 'there'},</p>
+                <p>${options.message}</p>
+                <br>
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${options.actionLink}" 
+                   style="display: inline-block; padding: 12px 24px; background: #1B4332; color: #fff; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                   View Details
+                </a>
+                <p style="font-size: 12px; color: #999; margin-top: 30px;">
+                  You received this because you have email notifications enabled in your OnTrack settings.
+                </p>
+              </div>
+            `
+          })
+        }).catch(err => console.error(`Failed to send email to ${userEmail}:`, err));
       }
 
-      // --- Push Channel (Placeholder for Future Implementation) ---
+      // --- Push Channel ---
       if (profileData.push_alerts) {
-        // e.g., WebPushService.send(...)
+        fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`
+          },
+          body: JSON.stringify({
+            userIds: [profile.id],
+            title: "OnTrack Update",
+            body: options.message,
+            url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${options.actionLink}`
+          })
+        }).catch(err => console.error(`Failed to send push to ${profile.id}:`, err));
       }
     }
 
