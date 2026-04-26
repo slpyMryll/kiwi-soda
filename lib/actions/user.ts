@@ -73,3 +73,34 @@ export async function updateProfile(formData: FormData) {
   
   return { success: true, avatar_url }
 }
+
+export async function updateNotificationSettings(settings: {
+  email_alerts?: boolean;
+  push_alerts?: boolean;
+  in_app_alerts?: boolean;
+  budget_alerts?: boolean;
+  overdue_task_alerts?: boolean;
+  followed_project_updates?: boolean;
+  weekly_digest?: boolean;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      ...settings,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/viewer/settings');
+  revalidatePath('/project-manager/settings');
+  revalidatePath('/admin/settings');
+  
+  return { success: true };
+}
