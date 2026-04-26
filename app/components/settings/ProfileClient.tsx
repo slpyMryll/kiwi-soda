@@ -8,8 +8,12 @@ import {
   CheckCircle2, 
   Shield, 
   Trash2, 
-  Upload 
+  Camera 
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { updateProfile } from "@/lib/actions/user";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface ProfileData {
   id: string;
@@ -26,43 +30,95 @@ interface ProfileClientProps {
 }
 
 export function ProfileClient({ role, initialData }: ProfileClientProps) {
+  const router = useRouter();
   const [fullName, setFullName] = useState(initialData.full_name || "");
   const [username, setUsername] = useState(initialData.username || "");
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatar_url || "");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [shouldRemoveAvatar, setShouldRemoveAvatar] = useState(false);
   
-  const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Check if anything has actually changed compared to initial data
+  const hasChanges = 
+    fullName !== initialData.full_name || 
+    username !== initialData.username || 
+    avatarFile !== null || 
+    (shouldRemoveAvatar && initialData.avatar_url !== null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
+    // Prevent duplicate selection of the same file
+    if (avatarFile && avatarFile.name === file.name && avatarFile.size === file.size) {
+      return;
+    }
+
+    setAvatarFile(file);
+    setShouldRemoveAvatar(false);
     
-    setTimeout(() => {
-      const fakeUrl = URL.createObjectURL(file);
-      setAvatarUrl(fakeUrl);
-      setIsUploading(false);
-    }, 1500);
+    // Create preview URL
+    const localUrl = URL.createObjectURL(file);
+    setAvatarUrl(localUrl);
   };
 
   const handleRemoveAvatar = () => {
     setAvatarUrl("");
+    setAvatarFile(null);
+    setShouldRemoveAvatar(true);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasChanges) {
+      toast.info("No changes detected.");
+      return;
+    }
+    
     setIsSaving(true);
     
-    setTimeout(() => {
+    try {
+      const formData = new FormData();
+      formData.append('full_name', fullName);
+      formData.append('username', username);
+      formData.append('current_avatar_url', initialData.avatar_url || "");
+      
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
+      
+      if (shouldRemoveAvatar) {
+        formData.append('remove_avatar', 'true');
+      }
+
+      const result = await updateProfile(formData);
+      
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        setIsSuccess(true);
+        toast.success("Profile updated successfully!");
+        if (result.avatar_url !== undefined) {
+           setAvatarUrl(result.avatar_url || "");
+        }
+        setAvatarFile(null);
+        
+        // Force refresh to update header and other layout components
+        router.refresh();
+        
+        setTimeout(() => setIsSuccess(false), 3000);
+      }
+    } catch (err) {
+      toast.error("An unexpected error occurred.");
+      console.error(err);
+    } finally {
       setIsSaving(false);
-      setIsSuccess(true);
-      setTimeout(() => setIsSuccess(false), 3000);
-    }, 1200);
+    }
   };
 
   return (
@@ -79,55 +135,63 @@ export function ProfileClient({ role, initialData }: ProfileClientProps) {
       <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
         <form onSubmit={handleSave}>
           <div className="p-6 sm:p-8 flex flex-col gap-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+              <div 
+                className="relative group cursor-pointer shrink-0" 
+                onClick={() => fileInputRef.current?.click()}
+                title="Change Avatar"
+              >
+                <div className="w-32 h-32 rounded-full bg-gray-50 border-4 border-white shadow-md flex items-center justify-center overflow-hidden relative transition-transform hover:scale-[1.02]">
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    <img 
+                      src={avatarUrl} 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover" 
+                      referrerPolicy="no-referrer"
+                    />
                   ) : (
-                    <User className="w-10 h-10 text-gray-300" />
+                    <User className="w-12 h-12 text-gray-300" />
                   )}
-                </div>
-                {isUploading && (
-                  <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-full backdrop-blur-[1px]">
-                    <Loader2 className="w-6 h-6 animate-spin text-[#153B44]" />
+                  
+                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-8 h-8 text-white mb-1" />
+                    <span className="text-[10px] text-white font-bold uppercase tracking-wider">Upload</span>
                   </div>
-                )}
+                </div>
+                
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                />
               </div>
-              
-              <div className="flex flex-col gap-3">
-                <h3 className="text-sm font-bold text-gray-900">Profile Picture</h3>
-                <div className="flex flex-wrap items-center gap-3">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                  />
+
+              <div className="flex flex-col items-center md:items-start gap-1 flex-1">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center md:text-left">
+                  {fullName || "Student Name"}
+                </h2>
+                <p className="text-gray-500 font-medium text-sm sm:text-base">
+                  {initialData.email}
+                </p>
+                <Badge variant="outline" className="mt-2 bg-[#E6F4EA] text-[#1B4332] border-[#1B4332]/10 px-4 py-1.5 capitalize font-bold text-xs sm:text-sm">
+                  {role.replace('-', ' ')}
+                </Badge>
+                
+                {(avatarUrl || avatarFile) && (
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 text-sm font-bold rounded-xl transition-all flex items-center gap-2 shadow-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveAvatar();
+                    }}
+                    className="mt-4 flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-600 transition-colors"
                   >
-                    <Upload className="w-4 h-4" />
-                    Upload New
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Remove Picture
                   </button>
-                  {avatarUrl && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveAvatar}
-                      className="px-4 py-2.5 text-red-600 hover:bg-red-50 text-sm font-bold rounded-xl transition-colors flex items-center gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Remove
-                    </button>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500">
-                  Recommended size: 256x256px. Maximum file size: 5MB.
-                </p>
+                )}
               </div>
             </div>
 
@@ -198,12 +262,12 @@ export function ProfileClient({ role, initialData }: ProfileClientProps) {
           <div className="px-6 py-5 bg-gray-50 border-t border-gray-100 flex items-center justify-end rounded-b-3xl">
             <button
               type="submit"
-              disabled={isSaving || isUploading}
-              className="bg-[#153B44] hover:bg-[#1B4B57] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-80 min-w-[150px]"
+              disabled={isSaving || !hasChanges}
+              className="bg-[#153B44] hover:bg-[#1B4B57] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-gray-400 min-w-[150px]"
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> :
                isSuccess ? <><CheckCircle2 className="w-4 h-4 text-[#52B788]" /> Saved!</> :
-               "Save Changes"}
+               !hasChanges ? "No Changes" : "Save Changes"}
             </button>
           </div>
         </form>
