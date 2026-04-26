@@ -5,7 +5,7 @@ import { Header } from "./components/layout/Header";
 import { HeroBanner } from "./components/dashboard/HeroBanner";
 import { ProjectFilters } from "./components/dashboard/ProjectFilters";
 import { InfiniteProjectFeed } from "./components/dashboard/InfiniteProjectFeed";
-import { getAllTerms, getActiveTerm } from "@/lib/actions/project";
+import { getAllTerms, getActiveTerm, getTrendingTags } from "@/lib/actions/project";
 
 export default async function LandingPage({
   searchParams,
@@ -13,9 +13,10 @@ export default async function LandingPage({
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
   const resolvedParams = await searchParams;
-  const [terms, currentActiveTerm] = await Promise.all([
+  const [terms, currentActiveTerm, trendingTags] = await Promise.all([
     getAllTerms(),
-    getActiveTerm()
+    getActiveTerm(),
+    getTrendingTags()
   ]);
 
   const activeTermId = resolvedParams?.term || currentActiveTerm?.id || "";
@@ -41,11 +42,7 @@ export default async function LandingPage({
       <div className="flex flex-1 relative">
         <div className="hidden lg:block">
           <ContentRail
-            trendingTopics={[
-              "#Budget Transparency",
-              "#Student Projects",
-              "#SSC",
-            ]}
+            trendingTopics={trendingTags}
           />
         </div>
 
