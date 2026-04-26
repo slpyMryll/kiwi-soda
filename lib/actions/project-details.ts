@@ -75,6 +75,15 @@ export async function assignTask(projectId: string, formData: FormData) {
 
   if (taskError) return { error: taskError.message };
 
+  await NotificationDispatcher.dispatch({
+    userIds: [assignedTo],
+    message: `You have been assigned a new task: "${title}".`,
+    actionLink: `/project-manager/tasks?taskId=${newTask.id}`,
+    type: 'task_assignment',
+    category: 'general',
+    projectId
+  });
+
   if (cost > 0) {
     const { data: project } = await supabase
       .from("projects")
