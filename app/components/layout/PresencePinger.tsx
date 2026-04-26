@@ -17,7 +17,18 @@ export function PresencePinger() {
       }
     };
 
+    const registerServiceWorker = async () => {
+      if ("serviceWorker" in navigator) {
+        try {
+          await navigator.serviceWorker.register("/sw.js");
+        } catch (error) {
+          console.error("Service Worker registration failed:", error);
+        }
+      }
+    };
+
     pingPresence(); 
+    registerServiceWorker();
     
     const interval = setInterval(pingPresence, 4 * 60 * 1000); 
 

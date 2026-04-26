@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { updateNotificationSettings } from "@/lib/actions/user";
 import { toast } from "sonner";
+import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 
 interface NotificationSettings {
   email_alerts: boolean;
@@ -31,6 +32,7 @@ interface NotificationSettings {
 interface SettingsClientProps {
   role: "viewer" | "project-manager" | "admin";
   initialData: NotificationSettings;
+  userId: string;
 }
 
 const Toggle = ({ checked, onChange, disabled }: { checked: boolean, onChange: () => void, disabled?: boolean }) => (
@@ -48,9 +50,10 @@ const Toggle = ({ checked, onChange, disabled }: { checked: boolean, onChange: (
   </button>
 );
 
-export function SettingsClient({ role, initialData }: SettingsClientProps) {
+export function SettingsClient({ role, initialData, userId }: SettingsClientProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const { registerPush, unregisterPush } = usePushNotifications();
 
   const [emailAlerts, setEmailAlerts] = useState(initialData.email_alerts);
   const [pushAlerts, setPushAlerts] = useState(initialData.push_alerts);
@@ -74,6 +77,18 @@ export function SettingsClient({ role, initialData }: SettingsClientProps) {
       followedProjectUpdates !== initialData.followed_project_updates ||
       weeklyDigest !== initialData.weekly_digest
     ));
+
+  const handlePushToggle = async () => {
+    const newValue = !pushAlerts;
+    
+    if (newValue) {
+      const success = await registerPush(userId);
+      if (success) setPushAlerts(true);
+    } else {
+      const success = await unregisterPush(userId);
+      if (success) setPushAlerts(false);
+    }
+  };
 
   const handleSaveSettings = async () => {
     if (!hasChanges) {
@@ -162,7 +177,7 @@ export function SettingsClient({ role, initialData }: SettingsClientProps) {
                   <p className="text-xs text-gray-500 mt-0.5">Receive native push alerts on your desktop or mobile device.</p>
                 </div>
               </div>
-              <Toggle checked={pushAlerts} onChange={() => setPushAlerts(!pushAlerts)} disabled={isSaving} />
+              <Toggle checked={pushAlerts} onChange={handlePushToggle} disabled={isSaving} />
             </div>
 
             <div className="flex items-center justify-between gap-4">

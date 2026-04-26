@@ -29,7 +29,7 @@ export default async function ViewerSettingsPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F9FA] min-h-screen w-full">
-      <SettingsClient role="viewer" initialData={initialData} />
+      <SettingsClient role="viewer" initialData={initialData} userId={user.id} />
     </div>
   );
 }
