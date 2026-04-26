@@ -5,4 +5,5 @@ export interface ContentRailProps {
 export interface HIWSteps{
     id: number;
     label: string;
+    description?: string;
 }
