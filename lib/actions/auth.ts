@@ -2,7 +2,6 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 
 import { cookies } from 'next/headers'
 
@@ -68,14 +67,12 @@ export async function signInWithEmail(formData: FormData) {
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
-  
+
   const cookieStore = await cookies();
   cookieStore.delete('on-track-role');
-  
-  revalidatePath('/', 'layout')
-  redirect('/login')
-}
 
+  return { success: true };
+}
 export async function resetPassword(email: string, origin: string) {
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {

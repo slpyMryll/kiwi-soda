@@ -8,7 +8,7 @@ import { logout } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { ContentRail } from "../landing/ContentRail";
 import { NAV_CONFIG } from "@/types/navigation";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "./NotificationBell";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ interface HeaderProps {
 
 export function Header({ user, profile, role = "viewer" }: HeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const navItems = NAV_CONFIG[role] || NAV_CONFIG.viewer;
   const [isMounted, setIsMounted] = useState(false);
 
@@ -36,10 +37,26 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
   }, []);
 
   const handleLogout = async () => {
-    toast.success("Logged out successfully");
-    setTimeout(async () => {
-      await logout();
-    }, 200);
+    const toastId = toast.loading("Logging out...");
+    
+    try {
+      const result = await logout();
+      if (result.success) {
+        toast.success("Logged out successfully", { id: toastId });
+        router.push("/login");
+        router.refresh();
+      } else {
+        toast.error("Logout failed", { id: toastId });
+      }
+    } catch (err: any) {
+      // Check if it's a redirect error (though we removed redirect from server action, 
+      // it's good for robustness)
+      if (err?.message?.includes('NEXT_REDIRECT')) {
+        toast.success("Logged out successfully", { id: toastId });
+        return;
+      }
+      toast.error("An unexpected error occurred", { id: toastId });
+    }
   };
 
   return (
