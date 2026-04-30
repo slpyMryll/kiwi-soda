@@ -34,7 +34,8 @@ export function ProjectTopBar({
             onClick={() => router.back()} 
             className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors"
           >
-            <ChevronLeft className="w-4 h-4" /> Back to Feed
+            <ChevronLeft className="w-4 h-4" /> 
+            <span className="hidden sm:inline">Back to Feed</span>
           </button>
         )}
         <div className="flex flex-wrap gap-2">
