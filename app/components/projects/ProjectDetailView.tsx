@@ -66,8 +66,18 @@ export function ProjectDetailView({
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    // Sync the query data if the initialProject (from server) is newer or different (especially isFollowing)
+    if (initialProject) {
+      queryClient.setQueryData(["project", initialProject.id], (old: any) => {
+        if (!old) return initialProject;
+        return { ...old, isFollowing: initialProject.isFollowing };
+      });
+    }
+  }, [initialProject?.id, initialProject?.isFollowing, queryClient]);
+
   const { data: project = initialProject } = useQuery({
-    queryKey: ["project", initialProject.id],
+    queryKey: ["project", initialProject.id, initialProject.isFollowing],
     queryFn: () => getSingleProjectForFeed(initialProject.id),
     initialData: initialProject,
     enabled: !isPreview,
