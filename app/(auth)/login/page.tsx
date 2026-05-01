@@ -70,7 +70,7 @@ export default function Home() {
           <h1 className="text-header text-3xl font-bold">OnTrack</h1>
         </div>
 
-        <div className="text-center lg:text-left mb-8">
+        <div className="text-center lg:text-left mb-8 mt-12 lg:mt-0">
           <h1 className="text-2xl lg:text-3xl font-bold text-green-dark mb-2">
             Welcome to OnTrack
           </h1>

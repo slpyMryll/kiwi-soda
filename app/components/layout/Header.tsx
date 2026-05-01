@@ -65,7 +65,13 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
         <div className="flex items-center gap-3">
           <Sheet>
             <SheetTrigger asChild>
-              <button aria-label="Open navigation menu" className="flex lg:hidden p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors">
+              <button 
+                aria-label="Open navigation menu" 
+                className={cn(
+                  "p-2 -ml-2 rounded-md hover:bg-white/10 transition-colors lg:hidden",
+                  user ? "hidden md:flex" : "flex"
+                )}
+              >
                 <Menu className="w-6 h-6 text-white" />
               </button>
             </SheetTrigger>
@@ -100,10 +106,10 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                         <Link
                           href={item.href!}
                           className={cn("flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm",
-                            isActive ? "bg-linear-to-r from-[#e1f0c2] to-transparent text-[#1B4332]" : "text-gray-500 hover:bg-white hover:text-gray-900"
+                            isActive ? "bg-surface-accent text-green-dark" : "text-gray-500 hover:bg-white hover:text-gray-900"
                           )}
                         >
-                          {Icon && <Icon className={cn("w-5 h-5", isActive ? "text-[#1B4332]" : "text-gray-400")} />}
+                          {Icon && <Icon className={cn("w-5 h-5", isActive ? "text-green-dark" : "text-gray-400")} />}
                           <span>{item.name}</span>
                         </Link>
                       </SheetClose>

@@ -205,7 +205,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
           </div>
           <div className="relative w-full sm:w-40">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1B4332] shadow-sm bg-white appearance-none cursor-pointer">
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#1B4332] shadow-sm bg-white appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
               <option value="all">All Terms</option>
               <option value="active">Active Only</option>
               <option value="archived">Archived</option>
@@ -401,7 +401,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
               <form onSubmit={handleAddSingleOfficer} className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col md:flex-row gap-3 items-end">
                 <div className="w-full md:w-1/2">
                   <label className="block text-xs font-bold text-gray-500 mb-1">Select Project Manager</label>
-                  <select required value={newOfficerProfile} onChange={e => setNewOfficerProfile(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                  <select required value={newOfficerProfile} onChange={e => setNewOfficerProfile(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                     <option value="">Select user...</option>
                     {availablePMs
                       .filter(pm => !editingTerm.officers?.some((o: any) => o.profiles?.id === pm.id))
@@ -482,7 +482,7 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
                   {officers.map((officer, idx) => (
                     <div key={idx} className="flex flex-col md:flex-row gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 items-start md:items-center">
                       <div className="w-full md:w-[50%]">
-                        <select value={officer.profile_id} onChange={e => updateOfficer(idx, 'profile_id', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                        <select value={officer.profile_id} onChange={e => updateOfficer(idx, 'profile_id', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                           <option value="">Select Project Manager...</option>
                           {availablePMs.map(pm => {
                             const isSelectedElsewhere = officers.some((o, i) => i !== idx && o.profile_id === pm.id);

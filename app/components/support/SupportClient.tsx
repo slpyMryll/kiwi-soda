@@ -176,7 +176,7 @@ export function SupportClient({ userEmail, userId }: { userEmail?: string; userI
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1.5">Issue Type</label>
-                    <select name="issueType" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#153B44]/20 focus:border-[#153B44] transition-all">
+                    <select name="issueType" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#153B44]/20 focus:border-[#153B44] transition-all appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                       <option value="">Select a category...</option>
                       <option value="bug">Bug / Technical Issue</option>
                       <option value="account">Account / Login Problem</option>
@@ -188,7 +188,7 @@ export function SupportClient({ userEmail, userId }: { userEmail?: string; userI
 
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1.5">Priority</label>
-                    <select name="priority" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#153B44]/20 focus:border-[#153B44] transition-all">
+                    <select name="priority" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#153B44]/20 focus:border-[#153B44] transition-all appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                       <option value="low">Low - General Inquiry</option>
                       <option value="medium">Medium - Needs Attention</option>
                       <option value="high">High - Blocking my work</option>
