@@ -3,6 +3,25 @@
 All notable changes to the **OnTrack** project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [KS.010.008] - 2026-5-28
+
+### Added
+
+* Standardized dropdown components across the platform for a more consistent user experience
+* Improved dashboard timeline progress visuals to better represent actual project statuses
+* Enhanced  icon and color styling to better match contextual actions and states
+
+### Changed
+
+* Optimized mobile navigation and spacing for improved responsiveness and usability
+* Updated dashboard icons and UI visuals for a cleaner and  more polished interface
+* Refined overall UI consistency across dropdowns, timelines, and dashboard components
+
+### Fixed
+
+* Resolved a follow state synchronization issue where the Project Detail view incorrectly displayed an outdated "unfollowed" state after navigating from the Following page
+* Fixed inconsistencies between follow button states  and actual user follow status across views.
+
 ## [KS.010.007] - 2026-4-26
 
 ### Added
