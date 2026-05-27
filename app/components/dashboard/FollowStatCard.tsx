@@ -1,4 +1,4 @@
-import { Folder, Activity, Edit3, TrendingUp } from "lucide-react";
+import { CheckCircle2, Activity, Heart, Bell } from "lucide-react";
 
 interface FollowedStatsProps {
   complete: number;
@@ -17,28 +17,28 @@ export function FollowedStats({
     {
       label: "Completed",
       value: complete.toString(),
-      icon: Folder,
-      color: "text-blue-500",
-      bg: "bg-blue-100",
+      icon: CheckCircle2,
+      color: "text-green-500",
+      bg: "bg-green-100",
     },
     {
       label: "Ongoing",
       value: ongoing.toString(),
       icon: Activity,
-      color: "text-green-500",
-      bg: "bg-green-100",
+      color: "text-blue-500",
+      bg: "bg-blue-100",
     },
     {
       label: "Following",
       value: followed.toString(),
-      icon: Edit3,
-      color: "text-gray-500",
-      bg: "bg-gray-200",
+      icon: Heart,
+      color: "text-red-500",
+      bg: "bg-red-100",
     },
     {
       label: "New Activities",
       value: updates.toString(),
-      icon: TrendingUp,
+      icon: Bell,
       color: "text-orange-500",
       bg: "bg-orange-100",
     },

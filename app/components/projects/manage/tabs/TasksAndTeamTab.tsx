@@ -345,7 +345,7 @@ export function TasksAndTeamTab({
                   </div>
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1">Assign To</label>
-                    <select name="assignedTo" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]">
+                    <select name="assignedTo" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                       <option value="">Select a project member...</option>
                       {localMembers.map((m: any) => (<option key={m.id} value={m.id}>{m.name}</option>))}
                     </select>
@@ -371,7 +371,7 @@ export function TasksAndTeamTab({
                     <label className="text-sm font-bold text-gray-700 block mb-1">
                       Expense Category <span className="text-gray-400 font-normal">(If cost applied)</span>
                     </label>
-                    <select name="category" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]">
+                    <select name="category" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                       <option value="Task Allocation">Task Allocation (Default)</option>
                       {USSC_BUDGET_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
                     </select>
@@ -396,7 +396,7 @@ export function TasksAndTeamTab({
                   </div>
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1">Assign To</label>
-                    <select name="assignedTo" defaultValue={editingTask.assigned_to} required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]">
+                    <select name="assignedTo" defaultValue={editingTask.assigned_to} required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                       <option value="">Select a project member...</option>
                       {localMembers.map((m: any) => (<option key={m.id} value={m.id}>{m.name}</option>))}
                     </select>
@@ -528,7 +528,7 @@ export function TasksAndTeamTab({
                 <form onSubmit={handleAddMember} className="space-y-4 mt-4">
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1">Select Officer</label>
-                    <select name="profileId" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332]">
+                    <select name="category" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                       <option value="">Select from Council...</option>
                       {availablePMs.filter((pm: any) => !localMembers.find((m: any) => m.id === pm.id)).map((pm: any) => (
                         <option key={pm.id} value={pm.id}>{pm.full_name}</option>

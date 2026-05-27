@@ -1,4 +1,4 @@
-import { Folder, Activity, Edit3, TrendingUp } from "lucide-react";
+import { Briefcase, Globe, FileEdit, BarChart3 } from "lucide-react";
 
 interface ProjectStatsProps {
   total: number;
@@ -17,28 +17,28 @@ export function ProjectStats({
     {
       label: "Total Projects",
       value: total.toString(),
-      icon: Folder,
+      icon: Briefcase,
       color: "text-blue-500",
       bg: "bg-blue-100",
     },
     {
       label: "Live Projects",
       value: live.toString(),
-      icon: Activity,
+      icon: Globe,
       color: "text-green-500",
       bg: "bg-green-100",
     },
     {
       label: "Draft Projects",
       value: draft.toString(),
-      icon: Edit3,
+      icon: FileEdit,
       color: "text-gray-500",
       bg: "bg-gray-200",
     },
     {
       label: "Avg Progress",
       value: `${Math.round(avgProgress)}%`,
-      icon: TrendingUp,
+      icon: BarChart3,
       color: "text-orange-500",
       bg: "bg-orange-100",
     },

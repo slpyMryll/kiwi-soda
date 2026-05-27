@@ -211,14 +211,17 @@ export default function ProjectDetailClient({
           href="/project-manager/projects"
           className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#1B4332] transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Projects
+          <ArrowLeft className="w-4 h-4" /> 
+          <span className="hidden sm:inline">Back to Projects</span>
         </Link>
 
         <button
           onClick={() => setIsPreviewOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-[#1B4332] rounded-lg font-bold text-sm hover:bg-gray-50 transition-colors shadow-sm"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-[#1B4332] rounded-lg font-bold text-xs sm:text-sm hover:bg-gray-50 transition-colors shadow-sm"
         >
-          <Eye className="w-4 h-4" /> Preview Public View
+          <Eye className="w-4 h-4" /> 
+          <span className="hidden sm:inline">Preview Public View</span>
+          <span className="sm:hidden">Preview</span>
         </button>
       </div>
 
