@@ -6,6 +6,7 @@
 
 | Initial Release Code | Date Released |
 | -------------------- | ------------- |
+| KS.010.008           | [2026-05-28]  |
 | KS.010.007           | [2026-04-26]  |
 | KS.010.006           | [2026-04-19]  |
 | KS.010.005           | [2026-04-13]  |
@@ -13,6 +14,16 @@
 | KS.010.003           | [2026-03-15]  |
 | KS.010.002           | [2026-03-08]  |
 | KS.010.001           | [2025-02-27]  |
+
+## KS.010.008 Release Notes
+
+**What's New**
+
+* Core Improvements:
+  * Standardized dropdown components for improved platform consistency
+  * Optimized mobile navigation and spacing for better responsiveness
+  * Updated dashboard icons and timeline progress visuals to better reflect actual status
+  * Improved iconography and contextual color usage for a  more polished visual experience
 
 ## KS.010.007 Release Notes
 
