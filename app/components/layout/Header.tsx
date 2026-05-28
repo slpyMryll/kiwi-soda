@@ -99,7 +99,7 @@ export function Header({ user, profile, role = "viewer" }: HeaderProps) {
                     if (item.divider) return <div key={`divider-${index}`} className="h-px bg-gray-200/80 my-4 ml-4 mr-4" />;
 
                     const Icon = item.icon;
-                    const isActive = isMounted && (item.href === `/${role}` ? pathname === item.href : pathname.startsWith(item.href || ""));
+                    const isActive = item.href === `/${role}` ? pathname === item.href : pathname.startsWith(item.href || "");
 
                     return (
                       <SheetClose asChild key={item.name}>
