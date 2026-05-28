@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toggleProjectLiveStatus, deleteProject } from "@/lib/actions/project";
 import { ProgressBar } from "../ui/ProgressBar";
+import { DeleteConfirmModal } from "../ui/DeleteConfirmModal";
 import { toast } from "sonner";
 
 import { useRouter } from "next/navigation";
@@ -243,43 +244,14 @@ export function PmProjectCard(project: Project) {
         </div>
       )}
 
-      {isDeleteDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4 mx-auto">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
-              Delete Project?
-            </h3>
-            <p className="text-sm text-center text-gray-500 mb-6">
-              Are you sure you want to delete{" "}
-              <span className="font-bold text-gray-700">"{title}"</span>? This
-              action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsDeleteDialogOpen(false)}
-                disabled={isPending}
-                className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isPending}
-                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center disabled:opacity-70"
-              >
-                {isPending ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  "Delete"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmModal
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Project?"
+        itemName={title}
+        confirmText="delete this project"
+      />
     </>
   );
 }
