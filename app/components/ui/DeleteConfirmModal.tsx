@@ -49,7 +49,7 @@ export function DeleteConfirmModal({
         </p>
         
         <div className="mb-6">
-          <label className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">
+          <label className="text-[10px] font-bold text-gray-400 mb-1.5 block">
             Type <span className="text-red-600">&quot;{confirmText}&quot;</span> to confirm
           </label>
           <input
