@@ -1,29 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Loader2 } from "lucide-react";
 import { createProject } from "@/lib/actions/project";
+import { toast } from "sonner";
 
 export function CreateProjectModal() {
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
-  async function onSubmit(formData: FormData) {
-    setIsLoading(true);
-    setError("");
-    
-    const result = await createProject(formData);
-    
-    if (result.error) {
-      setError(result.error);
-      setIsLoading(false);
-    } else {
-      setIsLoading(false);
-      setOpen(false); 
-    }
-  }
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    startTransition(async () => {
+      setError("");
+      try {
+        const result = await createProject(formData);
+
+        if (result.error) {
+          setError(result.error);
+          toast.error(result.error);
+        } else {
+          toast.success("Project created successfully!");
+          setOpen(false); 
+        }
+      } catch {
+        setError("An unexpected error occurred");
+        toast.error("An unexpected error occurred");
+      }
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -33,26 +42,25 @@ export function CreateProjectModal() {
           New Project
         </button>
       </DialogTrigger>
-      
-      {/* 🔥 FIX: Added max-h-[90vh] and overflow-y-auto to prevent stretching */}
+
       <DialogContent className="sm:max-w-125 bg-white rounded-2xl p-6 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[#1B4332]">Create New Project</DialogTitle>
         </DialogHeader>
-        
-        <form action={onSubmit} className="space-y-4 mt-4">
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {error && <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg font-medium">{error}</div>}
-          
+
           <div>
             <label className="text-sm font-bold text-gray-700 mb-1 block">Project Title</label>
             <input name="title" required placeholder="e.g., Campus Eco-Drive" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] transition-colors" />
           </div>
-          
+
           <div>
             <label className="text-sm font-bold text-gray-700 mb-1 block">Description</label>
             <textarea name="description" required rows={3} placeholder="Briefly describe the project goals..." className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] transition-colors resize-none" />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-bold text-gray-700 mb-1 block">Total Budget (₱)</label>
@@ -63,7 +71,7 @@ export function CreateProjectModal() {
               <input name="deadline" type="date" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] transition-colors text-gray-700" />
             </div>
           </div>
-          
+
           <div>
             <label className="text-sm font-bold text-gray-700 mb-1 block">
               Cover Photo <span className="text-gray-400 font-normal">(optional)</span>
@@ -82,8 +90,8 @@ export function CreateProjectModal() {
           </div>
 
           <div className="pt-4">
-            <button type="submit" disabled={isLoading} className="w-full bg-[#1B4332] hover:bg-green-900 text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center disabled:opacity-70">
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Project"}
+            <button type="submit" disabled={isPending} className="w-full bg-[#1B4332] hover:bg-green-900 text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center disabled:opacity-70">
+              {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Project"}
             </button>
           </div>
         </form>
