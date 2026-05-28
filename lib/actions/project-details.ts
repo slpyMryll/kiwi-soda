@@ -77,6 +77,7 @@ export async function assignTask(projectId: string, formData: FormData) {
 
   await NotificationDispatcher.dispatch({
     userIds: [assignedTo],
+    actorId: user.id,
     message: `You have been assigned a new task: "${title}".`,
     actionLink: `/project-manager/tasks?taskId=${newTask.id}`,
     type: 'task_assignment',

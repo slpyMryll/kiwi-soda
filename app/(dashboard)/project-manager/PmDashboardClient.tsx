@@ -45,7 +45,6 @@ export function PmDashboardClient({
           event: "*",
           schema: "public",
           table: "projects",
-          filter: `manager_id=eq.${userId}`,
         },
         async (payload) => {
           if (payload.eventType === "DELETE") {
@@ -54,6 +53,10 @@ export function PmDashboardClient({
           }
 
           const record = payload.new;
+          
+          // Only update/add if it belongs to this manager
+          if (record.manager_id !== userId) return;
+
           const { count: membersCount } = await supabase
             .from("project_members")
             .select("*", { count: "exact", head: true })
@@ -102,17 +105,22 @@ export function PmDashboardClient({
           event: "*",
           schema: "public",
           table: "tasks",
-          filter: `assigned_to=eq.${userId}`,
         },
         (payload) => {
+          if (payload.eventType === "DELETE") {
+            setTasks((prev) => prev.filter((t) => t.id !== payload.old.id));
+            return;
+          }
+
+          const record = payload.new;
+          if (record.assigned_to !== userId) return;
+
           if (payload.eventType === "INSERT")
-            setTasks((prev) => [...prev, payload.new]);
+            setTasks((prev) => [...prev, record]);
           else if (payload.eventType === "UPDATE")
             setTasks((prev) =>
-              prev.map((t) => (t.id === payload.new.id ? payload.new : t)),
+              prev.map((t) => (t.id === record.id ? record : t)),
             );
-          else if (payload.eventType === "DELETE")
-            setTasks((prev) => prev.filter((t) => t.id !== payload.old.id));
         },
       )
       .subscribe();

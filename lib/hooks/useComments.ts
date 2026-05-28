@@ -26,8 +26,9 @@ export function useComments(projectId: string, initialComments?: any[]) {
         event: '*',
         schema: 'public', 
         table: 'comments', 
-        filter: `project_id=eq.${projectId}` 
-      }, () => {
+      }, (payload) => {
+        if (payload.eventType !== 'DELETE' && payload.new.project_id !== projectId) return;
+        
         queryClient.invalidateQueries({ queryKey });
       })
       .subscribe();
