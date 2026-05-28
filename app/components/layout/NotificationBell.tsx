@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Check, Info, BellRing } from "lucide-react";
+import { Bell, Check, Info, BellRing, Loader2 } from "lucide-react";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
@@ -15,7 +15,7 @@ import {
 
 export function NotificationBell({ userId }: { userId?: string }) {
   const router = useRouter();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(userId);
+  const { notifications, unreadCount, markAsRead, markAllAsRead, isMarkingAllAsRead } = useNotifications(userId);
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
@@ -67,13 +67,15 @@ export function NotificationBell({ userId }: { userId?: string }) {
           </div>
           {unreadCount > 0 &&
             <button
+              disabled={isMarkingAllAsRead}
               onClick={(e) => {
                 e.stopPropagation();
                 markAllAsRead();
               }}
-              className="text-xs font-semibold text-[#153B44] hover:text-[#1B4B57] transition-colors flex items-center gap-1"
+              className="text-xs font-semibold text-[#153B44] hover:text-[#1B4B57] transition-colors flex items-center gap-1 disabled:opacity-50"
             >
-              <Check className="w-3 h-3" /> Mark all read
+              {isMarkingAllAsRead ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+              Mark all read
             </button>
           }
         </div>
