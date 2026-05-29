@@ -29,7 +29,7 @@ export function HeroBanner({ terms, currentTermId }: { terms: Term[], currentTer
     setIsMounted(true);
   }, []);
 
-  const activeTerm = terms?.find(t => t.id === currentTermId) || terms?.[0];
+  const activeTerm = terms?.find(t => t.id === currentTermId);
 
   const handleTermSelect = (termId: string) => {
     const params = new URLSearchParams(searchParams.toString());
