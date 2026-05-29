@@ -353,7 +353,14 @@ export function SupportClient({ userEmail, userId }: { userEmail?: string; userI
             </div>
 
             <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-              <p className="text-sm text-gray-500 mb-2">Still need help?</p>
+              <p className="text-sm text-gray-500 mb-2">Want to contact a Project Manager?</p>
+              <p className="text-xs text-gray-400 px-4 mb-4">
+                The best way to reach a PM is by leaving a comment on their specific project page.
+              </p>
+              
+              <div className="h-px bg-gray-50 w-full mb-6" />
+
+              <p className="text-sm text-gray-500 mb-2">Technical issues?</p>
               <a 
                 href="mailto:ontrack.techsupport@gmail.com" 
                 className="text-[#153B44] font-bold hover:underline flex items-center justify-center gap-2"

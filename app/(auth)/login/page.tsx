@@ -56,9 +56,8 @@ export default function Home() {
     <main className="min-h-screen w-full bg-surface-brand flex flex-col-reverse lg:flex-row items-stretch justify-center lg:px-14 lg:py-1 lg:gap-14">
       <section className="relative flex-1 bg-white rounded-t-[40px] lg:rounded-2xl px-8 py-10 lg:px-14 lg:py-8 shadow-2xl self-end lg:self-center w-full max-w-2xl mx-auto z-10 transition-all duration-500">
         
-        {/* 🔥 FIX: Changed to router.back() for near-instant navigation using browser memory cache */}
         <button
-          onClick={() => window.history.length > 1 ? router.back() : router.push("/")}
+          onClick={() => router.push("/")}
           className="absolute top-6 left-6 flex items-center gap-1 text-sm font-bold text-gray-400 hover:text-green-dark transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
@@ -223,9 +222,9 @@ export default function Home() {
             </span>
             <div className="p-4 mt-6">
               <p className="text-white text-xl leading-relaxed font-inter opacity-90">
-                "Ontrack bridges the gap for students who want to know what the
+                &quot;Ontrack bridges the gap for students who want to know what the
                 council is doing with their contributions, ensuring every
-                project maintains the utmost security and visibility."
+                project maintains the utmost security and visibility.&quot;
               </p>
             </div>
           </div>

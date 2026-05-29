@@ -49,34 +49,25 @@ export function useNotifications(userId?: string) {
     const channel = supabase
       .channel(`notifications-${userId}`)
       .on("postgres_changes", { 
-        event: "INSERT", 
+        event: "*", 
         schema: "public", 
         table: "notifications", 
         filter: `user_id=eq.${userId}` 
       }, (payload) => {
-        // Show a live toast for new notifications
-        const newNotif = payload.new as Notification;
-        toast(newNotif.message, {
-          icon: <BellRing className="w-4 h-4 text-[#1B4332]" />,
-          duration: 5000,
-          action: newNotif.action_link ? {
-            label: 'View',
-            onClick: () => window.location.href = newNotif.action_link!
-          } : undefined
-        });
+        if (payload.eventType === "INSERT") {
+          const newNotif = payload.new as Notification;
+          
+          toast(newNotif.message, {
+            icon: <BellRing className="w-4 h-4 text-[#1B4332]" />,
+            duration: 5000,
+            action: newNotif.action_link ? {
+              label: 'View',
+              onClick: () => window.location.href = newNotif.action_link!
+            } : undefined
+          });
+        }
         
         queryClient.invalidateQueries({ queryKey });
-      })
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "notifications",
-        filter: `user_id=eq.${userId}`
-      }, (payload) => {
-        // Handle updates/deletes silently
-        if (payload.eventType !== "INSERT") {
-          queryClient.invalidateQueries({ queryKey });
-        }
       })
       .subscribe();
 
@@ -122,6 +113,7 @@ export function useNotifications(userId?: string) {
     unreadCount, 
     isLoading, 
     markAsRead: markAsReadMutation.mutateAsync, 
-    markAllAsRead: markAllAsReadMutation.mutateAsync 
+    markAllAsRead: markAllAsReadMutation.mutateAsync,
+    isMarkingAllAsRead: markAllAsReadMutation.isPending
   };
-}
+  }

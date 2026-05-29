@@ -79,14 +79,36 @@ export function SettingsClient({ role, initialData, userId }: SettingsClientProp
     ));
 
   const handlePushToggle = async () => {
-    const newValue = !pushAlerts;
+    const originalValue = pushAlerts;
+    const newValue = !originalValue;
     
-    if (newValue) {
-      const success = await registerPush(userId);
-      if (success) setPushAlerts(true);
-    } else {
-      const success = await unregisterPush(userId);
-      if (success) setPushAlerts(false);
+    setPushAlerts(newValue);
+    
+    const toastId = toast.loading(newValue ? "Enabling push notifications..." : "Disabling push notifications...");
+    
+    try {
+      if (newValue) {
+        const success = await registerPush(userId);
+        if (success) {
+          await updateNotificationSettings({ ...initialData, push_alerts: true });
+          toast.success("Push notifications enabled", { id: toastId });
+        } else {
+          setPushAlerts(originalValue);
+          toast.error("Failed to enable push notifications", { id: toastId });
+        }
+      } else {
+        const success = await unregisterPush(userId);
+        if (success) {
+          await updateNotificationSettings({ ...initialData, push_alerts: false });
+          toast.success("Push notifications disabled", { id: toastId });
+        } else {
+          setPushAlerts(originalValue);
+          toast.error("Failed to disable push notifications", { id: toastId });
+        }
+      }
+    } catch (err) {
+      setPushAlerts(originalValue);
+      toast.error("An unexpected error occurred", { id: toastId });
     }
   };
 

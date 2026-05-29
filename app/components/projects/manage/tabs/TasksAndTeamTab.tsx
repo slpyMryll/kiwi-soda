@@ -97,78 +97,83 @@ export function TasksAndTeamTab({
 
     const taskChannel = supabase
       .channel(`project-tasks-${projectId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "tasks", filter: `project_id=eq.${projectId}` },
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" },
         (payload) => {
-          const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
-          const newTask = {
-            id: payload.new.id,
-            title: payload.new.title,
-            assignee: pm ? pm.full_name : "Team Member",
-            dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A",
-            rawDueDate: payload.new.due_date,
-            status: payload.new.status,
-            cost: payload.new.cost,
-            assigned_to: payload.new.assigned_to,
-          };
-          
-          setLocalTasks((prev: any) => {
-            if (prev.some((t: any) => t.id === newTask.id)) return prev;
-            return [...prev, newTask];
-          });
-        }
-      )
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks", filter: `project_id=eq.${projectId}` },
-        (payload) => {
-          setLocalTasks((prev: any) =>
-            prev.map((t: any) => {
-              if (t.id === payload.new.id) {
-                const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
-                return {
-                  ...t,
-                  title: payload.new.title,
-                  status: payload.new.status,
-                  dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A",
-                  rawDueDate: payload.new.due_date,
-                  cost: payload.new.cost,
-                  assigned_to: payload.new.assigned_to,
-                  assignee: pm ? pm.full_name : t.assignee,
-                };
-              }
-              return t;
-            })
-          );
-        }
-      )
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "tasks" },
-        (payload) => {
-          setLocalTasks((prev: any) => prev.filter((t: any) => t.id !== payload.old.id));
+          if (payload.eventType === "DELETE") {
+            setLocalTasks((prev: any) => prev.filter((t: any) => t.id !== payload.old.id));
+            return;
+          }
+
+          if (payload.new.project_id !== projectId) return;
+
+          if (payload.eventType === "INSERT") {
+            const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
+            const newTask = {
+              id: payload.new.id,
+              title: payload.new.title,
+              assignee: pm ? pm.full_name : "Team Member",
+              dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A",
+              rawDueDate: payload.new.due_date,
+              status: payload.new.status,
+              cost: payload.new.cost,
+              assigned_to: payload.new.assigned_to,
+            };
+            
+            setLocalTasks((prev: any) => {
+              if (prev.some((t: any) => t.id === newTask.id)) return prev;
+              return [...prev, newTask];
+            });
+          } else if (payload.eventType === "UPDATE") {
+            setLocalTasks((prev: any) =>
+              prev.map((t: any) => {
+                if (t.id === payload.new.id) {
+                  const pm = availablePMs.find((p: any) => p.id === payload.new.assigned_to);
+                  return {
+                    ...t,
+                    title: payload.new.title,
+                    status: payload.new.status,
+                    dueDate: payload.new.due_date ? new Date(payload.new.due_date).toLocaleDateString() : "N/A",
+                    rawDueDate: payload.new.due_date,
+                    cost: payload.new.cost,
+                    assigned_to: payload.new.assigned_to,
+                    assignee: pm ? pm.full_name : t.assignee,
+                  };
+                }
+                return t;
+              })
+            );
+          }
         }
       )
       .subscribe();
 
     const memberChannel = supabase
       .channel(`project-members-${projectId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "project_members", filter: `project_id=eq.${projectId}` },
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_members" },
         (payload) => {
-          const pm = availablePMs.find((p: any) => p.id === payload.new.profile_id);
-          if (pm) {
-            const newMember = {
-              id: pm.id,
-              name: pm.full_name,
-              role: payload.new.project_role,
-              display_role: payload.new.project_role,
-              avatarUrl: pm.avatar_url || null,
-            };
-            setLocalMembers((prev: any) => {
-              if (prev.find((m: any) => m.id === newMember.id)) return prev;
-              return [...prev, newMember];
-            });
+          if (payload.eventType === "DELETE") {
+            setLocalMembers((prev: any) => prev.filter((m: any) => m.id !== payload.old.profile_id));
+            return;
           }
-        }
-      )
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "project_members", filter: `project_id=eq.${projectId}` },
-        (payload) => {
-          setLocalMembers((prev: any) => prev.filter((m: any) => m.id !== payload.old.profile_id));
+
+          if (payload.new.project_id !== projectId) return;
+
+          if (payload.eventType === "INSERT") {
+            const pm = availablePMs.find((p: any) => p.id === payload.new.profile_id);
+            if (pm) {
+              const newMember = {
+                id: pm.id,
+                name: pm.full_name,
+                role: payload.new.project_role,
+                display_role: payload.new.project_role,
+                avatarUrl: pm.avatar_url || null,
+              };
+              setLocalMembers((prev: any) => {
+                if (prev.find((m: any) => m.id === newMember.id)) return prev;
+                return [...prev, newMember];
+              });
+            }
+          }
         }
       )
       .subscribe();

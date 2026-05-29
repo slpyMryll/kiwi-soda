@@ -55,7 +55,8 @@ export function PmTasksClient({ initialTasks, currentUserId }: PmTasksClientProp
     if (!currentUserId) return;
 
     const channel = supabase.channel('my-tasks-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks', filter: `assigned_to=eq.${currentUserId}` }, async (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, async (payload) => {
+        if (payload.new.assigned_to !== currentUserId) return;
         const { data: fullTask } = await supabase.from('tasks').select('id, title, due_date, status, projects (id, title, manager_id)').eq('id', payload.new.id).single();
         if (fullTask) {
           const projectData = Array.isArray(fullTask.projects) ? fullTask.projects[0] : fullTask.projects;
@@ -67,7 +68,11 @@ export function PmTasksClient({ initialTasks, currentUserId }: PmTasksClientProp
           });
         }
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks', filter: `assigned_to=eq.${currentUserId}` }, async (payload) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, async (payload) => {
+        if (payload.new.assigned_to !== currentUserId) {
+          setTasks(prev => prev.filter(t => t.id !== payload.new.id));
+          return;
+        }
         const { data: fullTask } = await supabase.from('tasks').select('id, title, due_date, status, projects (id, title, manager_id)').eq('id', payload.new.id).single();
         if (fullTask) {
           const projectData = Array.isArray(fullTask.projects) ? fullTask.projects[0] : fullTask.projects;

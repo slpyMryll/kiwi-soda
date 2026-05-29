@@ -46,7 +46,7 @@ export function Sidebar({ role }: SidebarProps) {
           }
 
           const Icon = item.icon;
-          const isActive = isMounted && (item.href === `/${role}` ? pathname === item.href : pathname.startsWith(item.href || ""));
+          const isActive = item.href === `/${role}` ? pathname === item.href : pathname.startsWith(item.href || "");
 
           return (
             <Link

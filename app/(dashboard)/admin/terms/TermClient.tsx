@@ -10,6 +10,7 @@ import {
   removeOfficer, updateTermCover, getTermsAndOfficers, deleteTerm 
 } from "@/lib/actions/admin-management";
 import { createClient } from "@/lib/supabase/client";
+import { DeleteConfirmModal } from "@/app/components/ui/DeleteConfirmModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -27,6 +28,8 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
   const [viewMode, setViewMode] = useState<"grid" | "list">("list"); 
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [termToDelete, setTermToDelete] = useState<{id: string, name: string} | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [name, setName] = useState("");
@@ -97,15 +100,18 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
     }
   };
 
-  const handleDeleteTerm = async (id: string, termName: string) => {
-    if(!confirm(`Are you absolutely sure you want to delete "${termName}"? All associated data will be removed.`)) return;
+  const handleDeleteTerm = async () => {
+    if (!termToDelete) return;
     setIsProcessing(true);
-    const result = await deleteTerm(id);
+    const result = await deleteTerm(termToDelete.id);
     setIsProcessing(false);
     if (!result.success) {
       toast.error(`Error: ${result.error}`);
     } else {
       toast.success("Term deleted successfully");
+      setTerms(prev => prev.filter(t => t.id !== termToDelete.id));
+      setIsDeleteDialogOpen(false);
+      setTermToDelete(null);
     }
   };
 
@@ -243,7 +249,11 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
                 {!term.is_current && (
                   <button 
                     disabled={isProcessing}
-                    onClick={(e) => { e.stopPropagation(); handleDeleteTerm(term.id, term.name); }} 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setTermToDelete({id: term.id, name: term.name});
+                      setIsDeleteDialogOpen(true);
+                    }} 
                     className="p-2 bg-white shadow-md hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-all border border-gray-200 hover:border-red-200 disabled:opacity-50" 
                     title="Delete Term"
                   >
@@ -350,7 +360,14 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
                               <DropdownMenuItem disabled={isProcessing} onClick={() => handleActivateTerm(term.id)} className="py-2.5 px-3 cursor-pointer rounded-lg text-sm font-semibold text-green-600 hover:bg-green-50 transition-colors flex items-center gap-2">
                                 <CheckCircle2 className="w-4 h-4" /> Set as Active
                               </DropdownMenuItem>
-                              <DropdownMenuItem disabled={isProcessing} onClick={() => handleDeleteTerm(term.id, term.name)} className="py-2.5 px-3 cursor-pointer rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
+                              <DropdownMenuItem 
+                                disabled={isProcessing} 
+                                onClick={() => {
+                                  setTermToDelete({id: term.id, name: term.name});
+                                  setIsDeleteDialogOpen(true);
+                                }} 
+                                className="py-2.5 px-3 cursor-pointer rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                              >
                                 <Trash2 className="w-4 h-4" /> Delete Term
                               </DropdownMenuItem>
                             </>
@@ -514,7 +531,19 @@ export function TermsClient({ initialTerms, availablePMs }: { initialTerms: any[
             </div>
           </div>
         </div>
-      )}
+        )}
+
+      <DeleteConfirmModal
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setTermToDelete(null);
+        }}
+        onConfirm={handleDeleteTerm}
+        title="Delete Academic Term?"
+        itemName={termToDelete?.name || ""}
+        confirmText="delete this term"
+      />
     </div>
   );
 }

@@ -10,10 +10,10 @@ import {
   EyeOff,
   Trash2,
   Loader2,
-  AlertTriangle,
 } from "lucide-react";
 import { toggleProjectLiveStatus, deleteProject } from "@/lib/actions/project";
 import { ProgressBar } from "../ui/ProgressBar";
+import { DeleteConfirmModal } from "../ui/DeleteConfirmModal";
 import { toast } from "sonner";
 
 import { useRouter } from "next/navigation";
@@ -28,6 +28,7 @@ export function PmProjectCard(project: Project) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isToggleModalOpen, setIsToggleModalOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -76,14 +77,16 @@ export function PmProjectCard(project: Project) {
   };
 
   const handleDelete = async () => {
-    setIsPending(true);
+    setIsDeleting(true);
     const res = await deleteProject(id);
-    setIsPending(false);
 
     if (res.error) {
+      setIsDeleting(false);
       toast.error(`Delete Error: ${res.error}`);
     } else {
       toast.success("Project deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
+      router.refresh();
       setIsDeleteDialogOpen(false);
     }
   };
@@ -95,6 +98,8 @@ export function PmProjectCard(project: Project) {
     { label: "REMAINING", value: `₱${remainingBudget.toLocaleString()}` },
   ];
 
+  if (isDeleting) return null;
+
   return (
     <>
       <div 
@@ -102,7 +107,8 @@ export function PmProjectCard(project: Project) {
         onClick={(e) => {
           const target = e.target as HTMLElement;
           if (!target.closest('button') && !target.closest('a') && !target.closest('.relative.shrink-0')) {
-            router.push(`/project-manager/projects/${id}`);
+            const currentPath = window.location.pathname + window.location.search;
+            router.push(`/project-manager/projects/${id}?from=${encodeURIComponent(currentPath)}`);
           }
         }}
         className="bg-white p-4 sm:p-5 rounded-3xl border border-gray-300 flex flex-col justify-between gap-4 hover:shadow-lg transition-shadow relative cursor-pointer group"
@@ -188,7 +194,7 @@ export function PmProjectCard(project: Project) {
             <ProgressBar progress={progress} />
           </div>
           <Link
-            href={`/project-manager/projects/${id}`}
+            href={`/project-manager/projects/${id}?from=${isMounted ? encodeURIComponent(window.location.pathname + window.location.search) : ""}`}
             aria-label={`Manage ${title}`}
             className="flex items-center justify-center p-1.5 sm:p-2 rounded-full bg-gray-50 hover:bg-[#BFFFE3] text-gray-400 hover:text-[#153B44] transition-colors shrink-0 cursor-pointer"
           >
@@ -243,43 +249,14 @@ export function PmProjectCard(project: Project) {
         </div>
       )}
 
-      {isDeleteDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4 mx-auto">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
-              Delete Project?
-            </h3>
-            <p className="text-sm text-center text-gray-500 mb-6">
-              Are you sure you want to delete{" "}
-              <span className="font-bold text-gray-700">"{title}"</span>? This
-              action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsDeleteDialogOpen(false)}
-                disabled={isPending}
-                className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isPending}
-                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center disabled:opacity-70"
-              >
-                {isPending ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  "Delete"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmModal
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Project?"
+        itemName={title}
+        confirmText="delete this project"
+      />
     </>
   );
 }
