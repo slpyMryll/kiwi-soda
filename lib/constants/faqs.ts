@@ -15,8 +15,9 @@ export const SUPPORT_FAQS = [
     answer: "You can only assign tasks if you are the Project Manager, and the task cost must not exceed the remaining budget. Check your project's 'Budget' tab to ensure sufficient funds."
   },
   {
-    category: "Technical Support",
+    category: "Communication",
     question: "How do I contact a Project Manager?",
-    answer: "Navigate to the specific project page you are interested in. In the 'Tasks & Team' tab, you will find a list of all assigned officers and the lead Project Manager, along with their contact information."
+    answer: "Currently, the best way to contact a Project Manager is by leaving a comment on their specific project page. You can ask questions, provide feedback, or request information directly through the 'Discussion' or 'Comments' section of the project you are interested in."
   }
+
 ];
