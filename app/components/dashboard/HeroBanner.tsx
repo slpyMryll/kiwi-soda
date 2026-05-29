@@ -65,7 +65,7 @@ export function HeroBanner({ terms, currentTermId }: { terms: Term[], currentTer
         </div>
 
         {terms && terms.length > 0 ? (
-          <div className="self-start md:self-auto">
+          <div className="self-end md:self-auto">
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-semibold transition-colors outline-none cursor-pointer">
                 SY: {activeTerm?.name || "Select Term"} <ChevronDown className="w-4 h-4" />
