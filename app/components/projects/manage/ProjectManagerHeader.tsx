@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Edit2, Globe, Trash2, Loader2, AlertTriangle, EyeOff, Eye } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { Edit2, Globe, Trash2, Loader2, EyeOff, Eye } from "lucide-react";
 import { Project } from "@/types/projects";
 import { toggleProjectLiveStatus, deleteProject } from "@/lib/actions/project";
 import { updateProjectDetails } from "@/lib/actions/project-details";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DeleteConfirmModal } from "@/app/components/ui/DeleteConfirmModal";
 import { toast } from "sonner";
 
 export function ProjectManageHeader({ project }: { project: Project }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
   const [isToggleModalOpen, setIsToggleModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -31,14 +35,20 @@ export function ProjectManageHeader({ project }: { project: Project }) {
   const handleDelete = async () => {
     setIsPending(true);
     const res = await deleteProject(project.id);
-    setIsPending(false);
     
     if (res.error) {
+      setIsPending(false);
       toast.error(`Delete Error: ${res.error}`);
     } else {
       setIsDeleteModalOpen(false);
       toast.success("Project deleted successfully");
-      router.push("/project-manager/projects");
+      queryClient.invalidateQueries({ queryKey: ["pm-projects"] });
+      
+      const from = searchParams.get("from");
+      const redirectPath = from || "/project-manager";
+      
+      router.push(redirectPath);
+      router.refresh();
     }
   };
 
@@ -125,19 +135,14 @@ export function ProjectManageHeader({ project }: { project: Project }) {
         </div>
       )}
 
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4 mx-auto"><AlertTriangle className="w-6 h-6 text-red-600" /></div>
-            <h3 className="text-xl font-bold text-center text-gray-900 mb-2">Delete Project?</h3>
-            <p className="text-sm text-center text-gray-500 mb-6">Are you sure you want to delete <span className="font-bold text-gray-700">"{project.title}"</span>? This cannot be undone.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setIsDeleteModalOpen(false)} disabled={isPending} className="flex-1 py-2.5 bg-gray-100 font-semibold rounded-xl transition-colors">Cancel</button>
-              <button onClick={handleDelete} disabled={isPending} className="flex-1 py-2.5 bg-red-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center">{isPending ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Delete"}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Project?"
+        itemName={project.title}
+        confirmText="delete this project"
+      />
     </>
   );
 }

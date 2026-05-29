@@ -43,7 +43,7 @@ export function CreateProjectModal() {
         </button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-125 bg-white rounded-2xl p-6 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-125 bg-white rounded-2xl p-6 border-none shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[#1B4332]">Create New Project</DialogTitle>
         </DialogHeader>
