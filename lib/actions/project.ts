@@ -182,7 +182,8 @@ export async function deleteProject(projectId: string) {
     description: `Permanently deleted a project and its associated records`,
   });
 
-  revalidatePath("/project-manager/projects", "layout");
+  revalidatePath("/project-manager/projects");
+  revalidatePath("/project-manager");
   return { success: true };
 }
 
