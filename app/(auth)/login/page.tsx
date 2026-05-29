@@ -222,9 +222,9 @@ export default function Home() {
             </span>
             <div className="p-4 mt-6">
               <p className="text-white text-xl leading-relaxed font-inter opacity-90">
-                "Ontrack bridges the gap for students who want to know what the
+                &quot;Ontrack bridges the gap for students who want to know what the
                 council is doing with their contributions, ensuring every
-                project maintains the utmost security and visibility."
+                project maintains the utmost security and visibility.&quot;
               </p>
             </div>
           </div>
