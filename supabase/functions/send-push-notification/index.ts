@@ -51,11 +51,13 @@ serve(async (req) => {
           JSON.stringify({ title, body, url })
         );
         return { success: true };
-      } catch (err) {
+      } catch (err: any) {
         console.error("Push send error:", err);
-        // If subscription is expired/invalid, we could remove it here
         if (err.statusCode === 410 || err.statusCode === 404) {
-          // Cleanup logic would go here
+          await supabase
+            .from('push_subscriptions')
+            .delete()
+            .match({ subscription: sub.subscription });
         }
         return { success: false, error: err.message };
       }
