@@ -8,13 +8,17 @@ import { cookies } from 'next/headers'
 import { ROLE_REDIRECTS, UserRole } from '@/types/navigation'
 
 async function getRoleRedirectPath(supabase: any, userId: string) {
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('role, has_completed_onboarding')
     .eq('id', userId)
     .single()
 
-  if (!profile?.has_completed_onboarding) return '/onboarding'
+  if (error || !profile) {
+    return '/onboarding';
+  }
+
+  if (!profile.has_completed_onboarding) return '/onboarding'
 
   const role = (profile.role as UserRole) || 'viewer';
   
@@ -31,33 +35,47 @@ async function getRoleRedirectPath(supabase: any, userId: string) {
 }
 
 export async function signInWithGoogle(origin: string) {
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${origin}/auth/callback`,
-      queryParams: { hd: 'vsu.edu.ph', prompt: 'select_account' }
-    }
-  })
-  if (error) return { error: error.message }
-  if (data?.url) redirect(data.url)
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${origin}/auth/callback`,
+        queryParams: { hd: 'vsu.edu.ph', prompt: 'select_account' }
+      }
+    })
+    if (error) return { error: error.message }
+    if (data?.url) redirect(data.url)
+    return { error: "No redirect URL returned" }
+  } catch (err: any) {
+    if (err.message === 'NEXT_REDIRECT') throw err;
+    return { error: err.message || "Google Sign-In failed" }
+  }
 }
 
 export async function signInWithEmail(formData: FormData) {
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
+  try {
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
 
-  if (!email.toLowerCase().endsWith('@vsu.edu.ph')) {
-    return { error: "Access restricted to @vsu.edu.ph accounts only." }
+    if (!email || !password) {
+      return { error: "Email and password are required." }
+    }
+
+    if (!email.toLowerCase().endsWith('@vsu.edu.ph')) {
+      return { error: "Access restricted to @vsu.edu.ph accounts only." }
+    }
+
+    const supabase = await createClient()
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (authError || !data?.user) return { error: authError?.message || "Login failed" }
+
+    const path = await getRoleRedirectPath(supabase, data.user.id)
+    return { success: true, path }
+  } catch (err: any) {
+    return { error: err.message || "An unexpected error occurred during login" }
   }
-
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({ email, password })
-
-  if (authError || !user) return { error: authError?.message || "Login failed" }
-
-  const path = await getRoleRedirectPath(supabase, user.id)
-  return { success: true, path }
 }
 
 export async function logout() {

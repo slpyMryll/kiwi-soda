@@ -119,7 +119,7 @@ export function SettingsClient({ role, initialData, userId }: SettingsClientProp
     }
 
     setIsSaving(true);
-    
+
     const settings = {
       email_alerts: emailAlerts,
       push_alerts: pushAlerts,
@@ -133,19 +133,22 @@ export function SettingsClient({ role, initialData, userId }: SettingsClientProp
       })
     };
 
-    toast.promise(updateNotificationSettings(settings), {
-      loading: 'Saving preferences...',
-      success: () => {
+    const toastId = toast.loading('Saving preferences...');
+    try {
+      const result = await updateNotificationSettings(settings);
+      if (result?.error) {
+        toast.error(result.error, { id: toastId });
+        setIsSaving(false);
+      } else {
         setIsSaving(false);
         setIsSuccess(true);
         setTimeout(() => setIsSuccess(false), 3000);
-        return 'Preferences saved successfully!';
-      },
-      error: (err) => {
-        setIsSaving(false);
-        return err?.message || 'Failed to save preferences.';
+        toast.success('Preferences saved successfully!', { id: toastId });
       }
-    });
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save preferences.', { id: toastId });
+      setIsSaving(false);
+    }
   };
 
   return (
