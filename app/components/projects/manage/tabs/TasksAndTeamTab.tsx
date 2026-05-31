@@ -35,6 +35,7 @@ export function TasksAndTeamTab({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState("");
 
   const [localMembers, setLocalMembers] = useState(members);
   const [localTasks, setLocalTasks] = useState(tasks);
@@ -256,6 +257,7 @@ export function TasksAndTeamTab({
     else {
       toast.success("Member added to project!");
       setIsMemberModalOpen(false);
+      setSelectedMemberId("");
     }
   };
 
@@ -522,7 +524,7 @@ export function TasksAndTeamTab({
           <h2 className="text-lg font-bold text-gray-900">Team Members</h2>
 
           {isProjectLead && (
-            <Dialog open={isMemberModalOpen} onOpenChange={setIsMemberModalOpen}>
+            <Dialog open={isMemberModalOpen} onOpenChange={(open) => { setIsMemberModalOpen(open); if (!open) setSelectedMemberId(""); }}>
               <DialogTrigger asChild>
                 <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1B4332] hover:bg-green-900 text-white px-4 py-2.5 sm:py-2 rounded-lg text-sm font-semibold transition-colors">
                   <Plus className="w-4 h-4" /> Add Member
@@ -533,14 +535,20 @@ export function TasksAndTeamTab({
                 <form onSubmit={handleAddMember} className="space-y-4 mt-4">
                   <div>
                     <label className="text-sm font-bold text-gray-700 block mb-1">Select Officer</label>
-                    <select name="category" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
+                    <select 
+                      name="profileId" 
+                      value={selectedMemberId}
+                      onChange={(e) => setSelectedMemberId(e.target.value)}
+                      required
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B4332] appearance-none pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20fill%3D%27none%27%20viewBox%3D%270%200%2020%2020%27%3E%3Cpath%20stroke%3D%27%236b7280%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20stroke-width%3D%271.5%27%20d%3D%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
+                    >
                       <option value="">Select from Council...</option>
                       {availablePMs.filter((pm: any) => !localMembers.find((m: any) => m.id === pm.id)).map((pm: any) => (
                         <option key={pm.id} value={pm.id}>{pm.full_name}</option>
                       ))}
                     </select>
                   </div>
-                  <button type="submit" disabled={isLoading} className="w-full bg-[#1B4332] hover:bg-green-900 text-white font-bold py-3 rounded-xl flex justify-center disabled:opacity-70 transition-colors">
+                  <button type="submit" disabled={isLoading || !selectedMemberId} className="w-full bg-[#1B4332] hover:bg-green-900 text-white font-bold py-3 rounded-xl flex justify-center disabled:opacity-70 transition-colors">
                     {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Add to Project"}
                   </button>
                 </form>
