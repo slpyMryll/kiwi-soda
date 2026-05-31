@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, MoreVertical, ShieldAlert, Trash2, UserPlus, UserMinus, ShieldCheck, Activity } from "lucide-react";
+import { Search, MoreVertical, ShieldAlert, Trash2, UserPlus, UserMinus, ShieldCheck, Activity, Loader2 } from "lucide-react";
 import { updateUserRole, removeUser } from "@/lib/actions/admin-management";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ export function UserManagementClient({ initialUsers }: { initialUsers: any[] }) 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<{ type: string, userId: string, role?: string, name: string } | null>(null);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function UserManagementClient({ initialUsers }: { initialUsers: any[] }) 
 
   const confirmAction = async () => {
     if (!pendingAction) return;
+    setIsLoading(true);
     
     if (pendingAction.type === 'promote' || pendingAction.type === 'demote') {
       const originalUsers = [...users];
@@ -58,6 +60,7 @@ export function UserManagementClient({ initialUsers }: { initialUsers: any[] }) 
       }
     }
     
+    setIsLoading(false);
     setIsModalOpen(false);
     setPendingAction(null);
   };
@@ -101,12 +104,14 @@ export function UserManagementClient({ initialUsers }: { initialUsers: any[] }) 
               Are you sure you want to {pendingAction?.type === 'remove' ? 'permanently remove' : pendingAction?.type} <span className="font-bold text-gray-900">{pendingAction?.name}</span>?
             </p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-xl">Cancel</button>
+              <button onClick={() => setIsModalOpen(false)} disabled={isLoading} className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-xl disabled:opacity-50">Cancel</button>
               <button 
                 onClick={confirmAction} 
-                className={cn("px-4 py-2 text-sm font-bold text-white rounded-xl", pendingAction?.type === 'remove' ? "bg-red-600 hover:bg-red-700" : "bg-[#1B4332] hover:bg-green-900")}
+                disabled={isLoading}
+                className={cn("px-4 py-2 text-sm font-bold text-white rounded-xl flex items-center gap-2", pendingAction?.type === 'remove' ? "bg-red-600 hover:bg-red-700" : "bg-[#1B4332] hover:bg-green-900", isLoading && "opacity-70 cursor-not-allowed")}
               >
-                Confirm
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {isLoading ? "Processing..." : "Confirm"}
               </button>
             </div>
           </div>
