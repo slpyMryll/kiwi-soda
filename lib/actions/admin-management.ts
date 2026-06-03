@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { recordActivity } from "./system";
 
@@ -40,15 +40,59 @@ export async function updateUserRole(userId: string, newRole: string) {
 
 export async function removeUser(userId: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("profiles").delete().eq("id", userId);
+  const adminClient = await createAdminClient();
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+  if (!currentUser) return { success: false, error: "Unauthorized" };
   
-  if (error) return { success: false, error: error.message };
+  if (currentUser.id === userId) {
+    return { success: false, error: "You cannot delete your own account." };
+  }
+
+  const { data: projects } = await supabase
+    .from("projects")
+    .select("id, title")
+    .eq("manager_id", userId);
+
+  if (projects && projects.length > 0) {
+    return { 
+      success: false, 
+      error: `Cannot delete user: They are the manager of "${projects[0].title}"${projects.length > 1 ? ` and ${projects.length - 1} other projects` : ""}. Reassign or delete these projects first.` 
+    };
+  }
 
   await recordActivity({
     action_type: "USER_DELETED",
     entity_id: userId,
-    description: `Deleted user profile from the system`,
+    description: `Initiated permanent removal of user profile and platform dependencies.`,
   });
+
+  await supabase.from("system_settings").update({ updated_by: null }).eq("updated_by", userId);
+  await supabase.from("activity_logs").update({ actor_id: null }).eq("actor_id", userId);
+  await supabase.from("comments").update({ user_id: null }).eq("user_id", userId);
+  await supabase.from("budget_logs").update({ changed_by: null }).eq("changed_by", userId);
+  
+
+  await supabase.from("officers").delete().eq("profile_id", userId);
+  await supabase.from("project_members").delete().eq("profile_id", userId);
+  await supabase.from("notifications").delete().eq("user_id", userId);
+  await supabase.from("notifications").delete().eq("actor_id", userId);
+  await supabase.from("follows").delete().eq("user_id", userId);
+  await supabase.from("push_subscriptions").delete().eq("user_id", userId);
+
+  const { error: profileError } = await supabase.from("profiles").delete().eq("id", userId);
+  
+  if (profileError) {
+    console.error("Profile Deletion Error:", profileError);
+    return { success: false, error: profileError.message };
+  }
+
+  const { error: authError } = await adminClient.auth.admin.deleteUser(userId);
+  
+  if (authError) {
+    console.error("Auth Deletion Error:", authError);
+    return { success: false, error: `Profile deleted, but Auth removal failed: ${authError.message}` };
+  }
 
   revalidatePath("/admin/users");
   return { success: true };
