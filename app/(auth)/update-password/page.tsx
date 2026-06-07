@@ -1,9 +1,8 @@
 "use client";
 import { useState } from "react";
 import { updatePasswordAction } from "@/lib/actions/auth";
-import { Lock, Eye, EyeOff } from "lucide-react";
+import { Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
@@ -11,11 +10,14 @@ export default function UpdatePasswordPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   const handleAction = async (formData: FormData) => {
+    setIsPending(true);
     const result = await updatePasswordAction(formData);
     if (result?.error) {
       toast.error(result.error);
+      setIsPending(false);
     } else if (result?.path) {
       toast.success("Password updated successfully!");
       setTimeout(() => {
@@ -30,6 +32,7 @@ export default function UpdatePasswordPage() {
         <button
           onClick={() => window.history.length > 1 ? router.back() : router.push("/forgot-password")}
           className="absolute top-6 left-6 flex items-center gap-1 text-sm font-bold text-gray-400 hover:text-green-dark transition-colors group"
+          disabled={isPending}
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           Back
@@ -60,20 +63,33 @@ export default function UpdatePasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimum 8 characters"
-                className="w-full border-b-2 border-gray-300 py-4 pl-12 pr-12 text-sm focus:outline-none focus:border-green-dark"
+                disabled={isPending}
+                className="w-full border-b-2 border-gray-300 py-4 pl-12 pr-12 text-sm focus:outline-none focus:border-green-dark disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                disabled={isPending}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 disabled:opacity-50"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
           </div>
 
-          <button type="submit" className="w-full bg-[#1B4332] text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-green-900 transition-all">
-            Update Password
+          <button 
+            type="submit" 
+            disabled={isPending}
+            className="w-full bg-[#1B4332] text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-green-900 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Updating Password...
+              </>
+            ) : (
+              "Update Password"
+            )}
           </button>
         </form>
       </section>
@@ -94,9 +110,9 @@ export default function UpdatePasswordPage() {
             </span>
             <div className="p-4 mt-6">
               <p className="text-white text-xl leading-relaxed font-inter opacity-90">
-                "Ontrack bridges the gap for students who want to know what the
+                &quot;Ontrack bridges the gap for students who want to know what the
                 council is doing with their contributions, ensuring every
-                project maintains the utmost security and visibility."
+                project maintains the utmost security and visibility.&quot;
               </p>
             </div>
           </div>
