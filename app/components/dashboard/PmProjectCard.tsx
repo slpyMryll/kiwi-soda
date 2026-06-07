@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Project } from "@/types/projects";
 import {
@@ -19,7 +19,6 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSingleProjectForFeed } from "@/lib/actions/project-feed";
-import { useEffect } from "react";
 
 export function PmProjectCard(project: Project) {
   const router = useRouter();
@@ -30,10 +29,29 @@ export function PmProjectCard(project: Project) {
   const [isPending, setIsPending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    if (isMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMenuOpen]);
 
   const {
     id,
@@ -134,7 +152,11 @@ export function PmProjectCard(project: Project) {
               </div>
             </div>
 
-            <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+            <div 
+              ref={dropdownRef}
+              className="relative shrink-0" 
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 aria-label={`Project options for ${title}`}
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
