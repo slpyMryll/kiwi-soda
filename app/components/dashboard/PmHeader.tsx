@@ -44,7 +44,7 @@ export function PmHeader({
   ];
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3 relative z-[60]">
       <div className="flex flex-col">
         <h1 className="text-2xl font-bold text-[#153B44]">Dashboard</h1>
         <p className="text-sm text-gray-500">Welcome to Ontrack</p>
