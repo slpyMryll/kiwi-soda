@@ -73,8 +73,7 @@ export async function updateSession(request: NextRequest) {
 
   // 4. GUARD: Password Update
   if (pathname.startsWith('/update-password')) {
-    const isRecovery = (session as any)?.recovery;
-    if (!isRecovery) return NextResponse.redirect(new URL('/login', request.url))
+    if (!user) return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // 5. GUARD: Onboarding Page
