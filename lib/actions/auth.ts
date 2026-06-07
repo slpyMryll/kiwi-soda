@@ -89,8 +89,11 @@ export async function logout() {
 }
 export async function resetPassword(email: string, origin: string) {
   const supabase = await createClient()
+  const callbackUrl = new URL(`${origin}/auth/callback`)
+  callbackUrl.searchParams.set('next', '/update-password')
+  
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/update-password`,
+    redirectTo: callbackUrl.toString(),
   })
   if (error) return { error: error.message }
   return { success: true }
