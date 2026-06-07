@@ -1,9 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState, useMemo } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { resetPassword } from "@/lib/actions/auth";
-import { User, ChevronLeft } from "lucide-react";
+import { User, ChevronLeft, Loader2 } from "lucide-react";
 import { getBorderClass } from "@/lib/utils/ui-helpers";
 import { validateVsuEmail } from "@/lib/utils/validation";
 
@@ -12,13 +11,16 @@ export default function ForgotPassword() {
     const [messageChannel, setMessageChannel] = useState("");
     const isEmailValid = useMemo(() => validateVsuEmail(email), [email]);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isPending, setIsPending] = useState(false);
 
     const handleReset= async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitted(true);
         if (!isEmailValid) {
             setMessageChannel("Please enter a valid @vsu.edu.ph email.");
             return;
         }
+        setIsPending(true);
         const origin = window.location.origin;
         const result = await resetPassword(email, origin);
         if (result?.error) {
@@ -26,6 +28,7 @@ export default function ForgotPassword() {
         } else {
             setMessageChannel("If an account with that email exists, a reset link has been sent.");
         }
+        setIsPending(false);
     };
   return (
     <main className="min-h-screen w-full bg-surface-brand flex flex-col-reverse lg:flex-row items-stretch justify-center lg:px-14 lg:py-1 lg:gap-14">
@@ -67,18 +70,31 @@ export default function ForgotPassword() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your VSU email"
                 required
-                className={`w-full bg-white border-b-2 py-4 pl-12 pr-4 text-sm focus:outline-none transition-all ${getBorderClass(isEmailValid, email, isSubmitted)}`}
+                disabled={isPending}
+                className={`w-full bg-white border-b-2 py-4 pl-12 pr-4 text-sm focus:outline-none transition-all disabled:opacity-50 ${getBorderClass(isEmailValid, email, isSubmitted)}`}
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-[#1B4332] text-white font-bold py-4 rounded-2xl shadow-lg transition-all duration-300 lg:hover:bg-green-900 lg:hover:scale-[1.02] active:scale-95"
+            disabled={isPending}
+            className="w-full bg-[#1B4332] text-white font-bold py-4 rounded-2xl shadow-lg transition-all duration-300 lg:hover:bg-green-900 lg:hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center gap-2"
           >
-            Send Reset Link
+             {isPending ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Sending Reset Link...
+              </>
+            ) : (
+              "Send Reset Link"
+            )}
           </button>
-          <p>{messageChannel}</p>
+          {messageChannel && (
+             <p className="text-sm text-center mt-4 text-gray-600 animate-in fade-in slide-in-from-top-1">
+                {messageChannel}
+             </p>
+          )}
         </form>
       </section>
 
@@ -99,9 +115,9 @@ export default function ForgotPassword() {
             </span>
             <div className="p-4 mt-6">
               <p className="text-white text-xl leading-relaxed font-inter opacity-90">
-                "Ontrack bridges the gap for students who want to know what the
+                &quot;Ontrack bridges the gap for students who want to know what the
                 council is doing with their contributions, ensuring every
-                project maintains the utmost security and visibility."
+                project maintains the utmost security and visibility.&quot;
               </p>
             </div>
           </div>
