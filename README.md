@@ -6,6 +6,7 @@
 
 | Initial Release Code | Date Released |
 | -------------------- | ------------- |
+| KS.010.009           | [2026-06-10]  |
 | KS.010.008           | [2026-05-28]  |
 | KS.010.007           | [2026-04-26]  |
 | KS.010.006           | [2026-04-19]  |
@@ -14,6 +15,22 @@
 | KS.010.003           | [2026-03-15]  |
 | KS.010.002           | [2026-03-08]  |
 | KS.010.001           | [2025-02-27]  |
+
+## KS.010.009 Release Notes
+
+**What's New**
+
+* **Core Improvements:**
+  * Authentication Recovery Improvements: Enhanced password recovery flow to ensure users are reliably redirected to the password update page.
+  * Automated User Management: Streamlined account deletion by fully removing users and related dependencies across integrated systems.
+  * Real-time Data Synchronization: Implemented live database updates to keep client sessions synchronized without manual refreshes.
+  * Improved User Experience: Enhanced navigation, mobile responsiveness, loading states, and interaction feedback throughout the application.
+  * Administrative Workflow Enhancements: Added safeguards and validation to prevent duplicate actions and improve management operations.
+  * Project Collaboration Improvements: Strengthened project member management with improved validation and assignment workflows.
+  * AI Support Refinements: Updated AI assistance to provide more accurate, role-aware guidance and support information.
+  * Notification System Maintenance: Improved notification reliability through optimistic updates and automated push token cleanup.
+  * Content Management Enhancement: Added Markdown support for legal and informational pages to improve content formatting flexibility.
+  * Application Stability Improvements: Increased overall reliability through codebase cleanup, bug fixes, and comprehensive TypeScript validation.
 
 ## KS.010.008 Release Notes
 

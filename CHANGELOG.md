@@ -3,6 +3,38 @@
 All notable changes to the **OnTrack** project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [KS.010.009] - 2026-6-10
+
+### Added
+
+* Real-time database subscriptions for live data synchronization across active client sessions.
+* Click-outside functionality for project card action menus.
+* Loading spinners and disabled states for authentication forms.
+* Loading states and action locking for Admin Dashboard promotion/demotion actions.
+* Validation for the "Add to Project" workflow.
+* Markdown rendering support for Privacy Policy, Terms of Service, and Cookie Policy pages.
+* Optimistic UI updates for notification preference settings.
+* Scheduled Supabase Edge Function for automatic cleanup of expired and invalid push notification tokens.
+
+### Changed
+
+* Improved password recovery flow with encoded redirect URLs and enhanced middleware validation.
+* Enhanced user deletion workflow to fully remove accounts from both the database and authentication provider.
+* Refined AI FAQ chatbot responses to better align with user roles and project collaboration workflows.
+* Improved post-project deletion navigation with context-aware redirects.
+* Optimized mobile responsiveness across dashboard and navigation interfaces.
+
+### Fixed
+
+* Fixed password reset redirection issues preventing access to the password update page.
+* Fixed mobile dashboard stacking issues where filters were hidden behind status cards.
+* Fixed `profile_id` null constraint errors in Project Members management.
+* Fixed login page back-navigation behavior.
+* Fixed academic term dropdown display issues on mobile devices.
+* Fixed duplicate import errors affecting application stability.
+* Fixed empty-state rendering issues in the dashboard hero banner.
+* Resolved project-wide TypeScript type-checking issues.
+
 ## [KS.010.008] - 2026-5-28
 
 ### Added
